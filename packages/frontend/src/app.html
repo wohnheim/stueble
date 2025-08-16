@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <!-- PWA -->
+    <title>Stüble</title>
+    <meta name="viewport" content="width=device-width" />
+    <meta name="theme-color" content="#251E1D" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    %sveltekit.head%
+
+    <!-- Description -->
+    <meta name="description" content="Melde dich einfach beim nächsten Stüble im HES an." />
+    <meta name="keywords" content="Stüble, HES, Augsburg" />
+    <meta name="author" content="Quentin Frey et al." />
+
+    <!-- Icons -->
+    <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+    <link rel="apple-touch-icon" href="/pwa-assets/apple-icon-180.png" />
+
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2048-2732.jpg"
+      media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2732-2048.jpg"
+      media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1668-2388.jpg"
+      media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2388-1668.jpg"
+      media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1536-2048.jpg"
+      media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2048-1536.jpg"
+      media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1668-2224.jpg"
+      media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2224-1668.jpg"
+      media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1620-2160.jpg"
+      media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2160-1620.jpg"
+      media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1290-2796.jpg"
+      media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2796-1290.jpg"
+      media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1179-2556.jpg"
+      media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2556-1179.jpg"
+      media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1284-2778.jpg"
+      media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2778-1284.jpg"
+      media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1170-2532.jpg"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2532-1170.jpg"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1125-2436.jpg"
+      media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2436-1125.jpg"
+      media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1242-2688.jpg"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2688-1242.jpg"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-828-1792.jpg"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1792-828.jpg"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1242-2208.jpg"
+      media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-2208-1242.jpg"
+      media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-750-1334.jpg"
+      media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1334-750.jpg"
+      media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-640-1136.jpg"
+      media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/pwa-assets/apple-splash-1136-640.jpg"
+      media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    />
+  </head>
+
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>
+
+<style>
+  html,
+  body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  body {
+    position: absolute;
+    top: 0;
+    background: var(--background);
+  }
+
+  @media (prefers-color-scheme: light) {
+    body {
+      --background: #fffbff;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body {
+      --background: #201a19;
+    }
+  }
+
+  body.light {
+    --primary: #9c4330;
+    --on-primary: #ffffff;
+    --primary-container: #ffdad3;
+    --on-primary-container: #3e0500;
+    --primary-fixed: #ffdad3;
+    --on-primary-fixed: #3c0700;
+    --primary-fixed-dim: #ffb4a4;
+    --on-primary-fixed-variant: #891d00;
+    --secondary: #775750;
+    --on-secondary: #ffffff;
+    --secondary-container: #ffdad3;
+    --on-secondary-container: #2c1510;
+    --secondary-fixed: #ffdad3;
+    --on-secondary-fixed: #2c1510;
+    --secondary-fixed-dim: #e7bdb3;
+    --on-secondary-fixed-variant: #5d4038;
+    --tertiary: #6e5d2e;
+    --on-tertiary: #ffffff;
+    --tertiary-container: #f9e0a6;
+    --on-tertiary-container: #241a00;
+    --tertiary-fixed: #f9e0a6;
+    --on-tertiary-fixed: #241a00;
+    --tertiary-fixed-dim: #dac58d;
+    --on-tertiary-fixed-variant: #544519;
+    --error: #ba1a1a;
+    --error-container: #ffdad6;
+    --on-error: #ffffff;
+    --on-error-container: #410002;
+    --background: #fffbff;
+    --on-background: #201a19;
+    --surface: #fffbff;
+    --on-surface: #201a19;
+    --surface-variant: #f5ddd9;
+    --on-surface-variant: #534340;
+    --outline: #85736f;
+    --inverse-on-surface: #fbeeeb;
+    --inverse-surface: #362f2d;
+    --inverse-primary: #ffb4a4;
+    --shadow: #000000;
+    --surface-tint: #9c4330;
+    --outline-variant: #d8c2bd;
+    --scrim: #000000;
+    --surface-container-highest: #ede0dd;
+    --surface-container-high: #f3e5e2;
+    --surface-container: #f8ebe8;
+    --surface-container-low: #fef1ee;
+    --surface-container-lowest: #ffffff;
+    --surface-dim: #e4d7d4;
+    --surface-bright: #fff8f6;
+  }
+
+  body.dark {
+    --primary: #ffb4a4;
+    --on-primary: #5e1608;
+    --primary-container: #7d2c1b;
+    --on-primary-container: #ffdad3;
+    --primary-fixed: #ffdad3;
+    --on-primary-fixed: #3c0700;
+    --primary-fixed-dim: #ffb4a4;
+    --secondary: #e7bdb4;
+    --on-secondary: #442a24;
+    --secondary-container: #5d3f39;
+    --on-secondary-container: #ffdad3;
+    --secondary-fixed: #ffdad3;
+    --on-secondary-fixed: #2c1510;
+    --secondary-fixed-dim: #e7bdb4;
+    --on-secondary-fixed-variant: #5d4038;
+    --tertiary: #dbc48c;
+    --on-tertiary: #3c2f04;
+    --tertiary-container: #554519;
+    --on-tertiary-container: #f9e0a6;
+    --tertiary-fixed: #f9e0a6;
+    --on-tertiary-fixed: #231a00;
+    --tertiary-fixed-dim: #dac58d;
+    --on-tertiary-fixed-variant: #544519;
+    --error: #ffb4ab;
+    --error-container: #93000a;
+    --on-error: #690005;
+    --on-error-container: #ffdad6;
+    --background: #201a19;
+    --on-background: #ede0dd;
+    --surface: #201a19;
+    --on-surface: #ede0dd;
+    --surface-variant: #534340;
+    --on-surface-variant: #d8c2bd;
+    --outline: #a08c88;
+    --inverse-on-surface: #201a19;
+    --inverse-surface: #ede0dd;
+    --inverse-primary: #9c4330;
+    --shadow: #000000;
+    --surface-tint: #ffb4a4;
+    --outline-variant: #534340;
+    --scrim: #000000;
+    --surface-container-highest: #3b3331;
+    --surface-container-high: #2f2827;
+    --surface-container: #251e1d;
+    --surface-container-low: #201a19;
+    --surface-container-lowest: #120d0c;
+    --surface-dim: #181211;
+    --surface-bright: #3f3736;
+  }
+</style>
