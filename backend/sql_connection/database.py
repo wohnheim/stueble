@@ -249,11 +249,11 @@ def custom_call(connection, cursor, query: str, type_of_answer: int, variables: 
     send a custom query to the database
 
     Parameters:
-    connection (connection): can be None if it isn't needed (e.g. for SELECT statements)
-    cursor (cursor):
-    query (str):
-    type_of_answer (bool): -1 -> no answer is being expected, 0 -> single answer is being expected, 1 -> list of answers is being expected
-    variables (list): list of variables that should be passed into the query
+        connection (connection): can be None if it isn't needed (e.g. for SELECT statements)
+        cursor (cursor):
+        query (str):
+        type_of_answer (bool): -1 -> no answer is being expected, 0 -> single answer is being expected, 1 -> list of answers is being expected
+        variables (list): list of variables that should be passed into the query
     Returns:
         :: None, single variable, list of variables: depending on type_of_answer
     """

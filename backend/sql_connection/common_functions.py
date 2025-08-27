@@ -18,7 +18,6 @@ def add_user(connection, cursor, user_role: UserRole, room: str, residence: Resi
         password_hash (str): password hash of the user
         invited_by (int): id of the user who invited this user
         returning (bool): whether to return the id of the new user
-    
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
     """
@@ -72,7 +71,6 @@ def update_user(
         user_id (int | None): id of the user to be updated
         user_email (Email | None): email of the user to be updated
         **kwargs: fields to update
-
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
     """
@@ -118,6 +116,7 @@ def get_user(
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": user} otherwise
     """
+    
     # check, whether explicity of expect_single_answer and order_by is met
     if expect_single_answer and order_by != {}:
         raise ValueError("Either expect_single_answer=True or order_by can be set.")
