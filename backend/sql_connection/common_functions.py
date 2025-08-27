@@ -75,7 +75,7 @@ def update_user(
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
     """
 
-    allowed_fields = ["user_role", "room", "residence", "first_name", "last_name", "email", "password_hash", "invited_by"]
+    allowed_fields = ["user_role", "room", "residence", "first_name", "last_name", "email", "password_hash"]
     for k, v in kwargs:
         if k not in allowed_fields:
             raise ValueError(f"Field {k} is not allowed to be updated.")

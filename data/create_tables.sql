@@ -11,7 +11,7 @@ CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave', 'modify');
 
 -- check function for valid invited_by id in users
 CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
-    SELECT $1 IS NOT NULL;
+    SELECT $1 FROM users IS NOT NULL;
 $$ LANGUAGE SQL;
 
 -- table to save users
@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$'),
     password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    invited_by INTEGER REFERENCES users(id) CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by))), 
     personal_hash TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL
 );
 
@@ -42,14 +41,16 @@ CREATE TABLE IF NOT EXISTS stueble_codes (
     code TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
     expiration_date TIMESTAMPTZ NOT NULL, 
-    stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL
+    stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL,
+    invited_by INTEGER REFERENCES users(id) CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by)))
 );
 
 -- table to save login sessions
 CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,
     expiration_date TIMESTAMPTZ NOT NULL, 
-    userID INTEGER REFERENCES users(id) NOT NULL
+    userID INTEGER REFERENCES users(id) NOT NULL,
+    session_id TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL
 );
 
 -- table to save user and host events
