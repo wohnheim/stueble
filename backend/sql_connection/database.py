@@ -104,7 +104,7 @@ def read_table(cursor, table_name: str, keywords: list=["*"], conditions: dict={
         conditions (dict): under which conditions (key: column, value: value) values should be selected, if empty, no conditions
         expect_single_answer (bool): specify whether one or more answers are to be received, therefore it changes, whether list or single object will be returned
         select_max_of_key (bool): conditions must be empty, otherwise it won't be used
-        specific_where (str): select_max_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string)
+        specific_where (str): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string)
         order_by (tuple): (key to order by, 0: descending / 1: ascending) by default no ordering, if specified and second value is invalid, then set to DESC
         connection (connection): is added to make using the wrapper full_pack easier
     Returns:

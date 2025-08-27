@@ -32,6 +32,7 @@ Externs can be completely deleted before the present
 - SessionID
   - expiration_date (remove if older than 1 month)
 - Guest Lists will be created in Python
+- Run SQL code with: psql -d stueble_data -f filename.sql
 
 ## Weitere Informationen
 - Datenbanktyp: Postgres

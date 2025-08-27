@@ -4,6 +4,7 @@
 CREATE TYPE USER_ROLE AS ENUM ('admin', 'host', 'guest', 'extern');
 
 -- enum for event_type in table events
+-- arrive, leave will be handled by python, add, remove, modify by triggers
 CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave', 'modify');
 
 -- check function for valid invited_by id in users
