@@ -27,6 +27,19 @@ Externs can be completely deleted before the present
   - affected (UnsignedInt, referenced <- Users, !NULL)
   - submitted (timestamptz, !NULL, default=now())
 
+stueble_motto
+  - id SERIAL PRIMARY KEY, 
+  - motto TEXT NOT NULL,
+  - date_of_time TIMESTAMPTZ NOT NULL, 
+  - shared_apartment TEXT
+
+stueble_codes
+  - id SERIAL PRIMARY KEY, 
+  - userID INTEGER REFERENCES users(id) NOT NULL, 
+  - code TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, 
+  - created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
+  - expiration_date TIMESTAMPTZ NOT NULL, 
+  - stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL
 
 ## SQL-Functions
 - SessionID
