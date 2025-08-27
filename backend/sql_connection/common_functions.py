@@ -1,4 +1,4 @@
-from data_types import *
+from backend.data_types import *
 import database as db
 from typing import Annotated
 
@@ -49,7 +49,7 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
     if user_id is not None:
         conditions["id"] = user_id
     else:
-        conditions["email"] = user_email.value
+        conditions["email"] = user_email.email
     result = db.update_table(connection=connection, cursor=cursor, table_name="users", arguments={"password_hash": None}, conditions=conditions, returning_column="user_role")
     if result["success"] is False:
         return result
@@ -78,17 +78,17 @@ def update_user(
     """
 
     allowed_fields = ["user_role", "room", "residence", "first_name", "last_name", "email", "password_hash", "invited_by"]
-    for k, v in **kwargs:
+    for k, v in kwargs:
         if k not in allowed_fields:
             raise ValueError(f"Field {k} is not allowed to be updated.")
 
     if user_id is None and user_email is None:
-        return ValueError("Either user_id or user_email must be set.")
+        raise ValueError("Either user_id or user_email must be set.")
     conditions = {}
     if user_id is not None:
         conditions["id"] = user_id
     else:
-        conditions["email"] = user_email.value
+        conditions["email"] = user_email.email
     result = db.update_table(connection=connection, cursor=cursor, table_name="users", arguments=kwargs, conditions=conditions)
     return result
 
@@ -137,7 +137,7 @@ def get_user(
     if user_id is not None:
         conditions["id"] = user_id
     elif user_email is not None:
-        conditions["email"] = user_email.value
+        conditions["email"] = user_email.email
     result = db.read_table(
         cursor=cursor, 
         table_name="users", 

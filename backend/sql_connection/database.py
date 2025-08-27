@@ -28,7 +28,7 @@ def full_pack(func):
         return result
     return wrapped
 
-# TODO right now for development and testing enabled, for website rather use failesaves (SAME AS IN often_used_db_calls.py)
+# TODO right now for development and testing enabled, for website rather use failsafes (SAME AS IN often_used_db_calls.py)
 def catch_exception(func):
     """
     catches errors
@@ -42,7 +42,7 @@ def catch_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            raise Exception(f"An error occured in database: {e}")
+            raise Exception(f"An error occurred in database: {e}")
     return wrapper
 
 def connect(**kwargs):
@@ -74,7 +74,7 @@ def create_pool(max_connections : int = 20):
     Returns:
         connection_pool: connection_pool
     """
-    connection_pool = pool.ThreadedConctionPool(
+    connection_pool = pool.ThreadedConnectionPool(
         minconn=1,
         maxconn=max_connections,
         user=USER,
@@ -146,7 +146,7 @@ def insert_table(connection, cursor, table_name: str, arguments: dict = {}, retu
         arguments (list): values that should be entered (key: column, value: value), if empty, no conditions, if arguments is of type list, then list has to contain all values that have to be entered
         returning (bool): returns the id of the added row
     Returns:
-        dict: {"success": bool, "data": id} by default, {"success": bool} if returning is False, {"success": False, "error": e} if error occured
+        dict: {"success": bool, "data": id} by default, {"success": bool} if returning is False, {"success": False, "error": e} if error occurred
     """
     try:
         vals = []
@@ -187,7 +187,7 @@ def update_table(connection, cursor, table_name: str, arguments: dict={}, condit
         specific_set (str): arguments must be empty, otherwise arguments will be ignored, specifies what should be set
         returning_column (str): returns the specified column, returns just a single column
     Returns:
-        dict: {"success": bool} by default, {"success": bool, data: value} if returning_column is filled, {"success": False, "error": e} if error occured
+        dict: {"success": bool} by default, {"success": bool, data: value} if returning_column is filled, {"success": False, "error": e} if error occurred
     """
 
     if arguments is None:
@@ -273,7 +273,7 @@ def custom_call(connection, cursor, query: str, type_of_answer: int, variables: 
         elif type_of_answer == 1:
             return {"success": True, "data": cursor.fetchall()}
         else:
-            # would usually be better to check at the beginning, but since code is used backend, function is mostly used correctly. Thereas it is more effective to check at the end if no other case matches
+            # would usually be better to check at the beginning, but since code is used backend, function is mostly used correctly. Therefore, it is more effective to check at the end if no other case matches
             return {"success": False, "error": "parameter type_of_answer of the function must be -1 or 0"}
     except Exception as e:
         if connection is not None:
@@ -303,6 +303,7 @@ def close(connection, cursor=None):
     
     Parameters:
         connection (closed): connection that should be closed
+        cursor: cursor that should be closed
     """
     connection.close()
     if cursor is not None:
