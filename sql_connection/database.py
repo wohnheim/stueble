@@ -3,11 +3,13 @@ from psycopg2 import pool
 from functools import wraps
 import os
 
-USER = os.getenv("user")
-PASSWORD = os.getenv("password")
-HOST = os.getenv("host")
-PORRT = os.getenv("port")
-DBNAME = os.getenv("dbname")
+USER = os.getenv("USER") # stueble (like the linux user name!)
+PASSWORD = os.getenv("PASSWORD")
+HOST = os.getenv("HOST") # localhost
+PORT = os.getenv("PORT") # 5432
+DBNAME = os.getenv("DBNAME") # stueble_data
+
+print(USER, PASSWORD, HOST, PORT, DBNAME)
 
 def full_pack(func):
     """
@@ -55,7 +57,7 @@ def connect(**kwargs):
         conn = pg.connect(**kwargs)
         return conn, conn.cursor()
     conn = pg.connect(user=USER, password=PASSWORD, host=HOST,
-                                 port=PORRT, database=DBNAME)
+                                 port=PORT, database=DBNAME)
     return conn, conn.cursor()
 
 def create_pool(max_connections : int = 20):
@@ -73,7 +75,7 @@ def create_pool(max_connections : int = 20):
         user=USER,
         password=PASSWORD,
         host=HOST,
-        port=PORRT,
+        port=PORT,
         database=DBNAME
     )
 
