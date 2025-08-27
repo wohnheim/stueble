@@ -17,6 +17,7 @@
   - password_hash (text, !NULL (NULL when extern) when initializing, hash using not hmac)
   - user_role (text, !NULL (NULL when extern), default='user') (in python ENUM) -> to frontend host / admin
   - invited_by (ID can't loop, can just reference IDs, that have invited_by == NULL !!!)
+  - personal_hash TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL
 When a user is deleted, just the password will be set to null !!!
 Externs can be completely deleted before the present
 
