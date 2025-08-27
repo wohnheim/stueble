@@ -11,11 +11,11 @@ As persistent data management a postgres database is used. The user matches the 
 Information to the tables can be found in [notes.md](backend/notes.md).
 
 ## ENV-Variables
-user
-password
-host
-port
-dbname
+USER: stueble<br>
+PASSWORD<br>
+HOST: localhost<br>
+PORT 5432<br>
+DBNAME: stueble_data
 
 # TODOs
 - Tablet mit akzeptabler Kamera und SIM kaufen
