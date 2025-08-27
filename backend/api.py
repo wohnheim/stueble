@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 import json
 import sql_connection.database as db
 import sql_connection.common_functions as cf
@@ -24,7 +24,7 @@ def login():
     """
     checks, whether a user exists and whether user is logged in (if exists and not logged in, session is created)
     """
-
+    
     # load data
     data = request.get_json()
     email = data.get("email", None)
@@ -32,12 +32,18 @@ def login():
 
     # if data is not valid return error
     if email is None or password is None:
-        return jsonify("error": "specify email and password"), 401
+        return jsonify({"error": "specify email and password"}), 401
     
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    cf.get_user()
+    result = cf.get_user(cursor=cursor, user_email=email, keywords=["id", "password_hash", "user_role"])
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        return jsonify({"error": result["error"]}), 401
+
+    user = result["data"]
 
 
     # close cursor and return connection
