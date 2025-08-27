@@ -35,6 +35,8 @@ Externs can be completely deleted before the present
 
 ## Weitere Informationen
 - Datenbanktyp: Postgres
+- User: stueble
+- Further information can be found in [create_tables.sql](../data/create_tables.sql)
 
 # Externe Dienste
 strato
