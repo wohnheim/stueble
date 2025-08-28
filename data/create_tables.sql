@@ -61,3 +61,10 @@ CREATE TABLE IF NOT EXISTS events (
     affected INTEGER REFERENCES users(id) NOT NULL,
     submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- table to save configuration settings
+CREATE TABLE IF NOT EXISTS config (
+    id SERIAL PRIMARY KEY,
+    key TEXT UNIQUE NOT NULL,
+    value TEXT NOT NULL
+);
