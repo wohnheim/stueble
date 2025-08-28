@@ -135,7 +135,7 @@ def read_table(cursor, table_name: str, keywords: list=["*"], conditions: dict={
 
 # NOTE arguments is either of type dict or of type list
 @catch_exception
-def insert_table(connection, cursor, table_name: str, arguments: dict = {}, returning: bool = True):
+def insert_table(connection, cursor, table_name: str, arguments: dict = {}, returning_column: str = ""):
     """
     insert data into table
 
@@ -144,7 +144,7 @@ def insert_table(connection, cursor, table_name: str, arguments: dict = {}, retu
         cursor (cursor): cursor for interaction with db
         table_name (str): table to insert into, if empty set all
         arguments (list): values that should be entered (key: column, value: value), if empty, no conditions, if arguments is of type list, then list has to contain all values that have to be entered
-        returning (bool): returns the id of the added row
+        returning_column (int): returns the column
     Returns:
         dict: {"success": bool, "data": id} by default, {"success": bool} if returning is False, {"success": False, "error": e} if error occurred
     """
@@ -158,11 +158,11 @@ def insert_table(connection, cursor, table_name: str, arguments: dict = {}, retu
             query = f"""INSERT INTO {table_name} ({', '.join(arguments.keys())})
                     VALUES ({', '.join('%s' for index, _ in enumerate(arguments.keys()))})"""
             vals = list(arguments.values())
-        if returning:
-            query += " RETURNING id"
+        if returning_column != "":
+            query += f" RETURNING {returning_column}"
         cursor.execute(query, vals)
         connection.commit()
-        if returning:
+        if returning_column != "":
             data = cursor.fetchone()
             return {"success": True, "data": data}
         return {"success": True}

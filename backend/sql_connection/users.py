@@ -2,9 +2,11 @@ from backend.data_types import *
 import database as db
 from typing import Annotated
 
+from backend.sql_connection.common_functions import clean_single_data
+
 
 def add_user(connection, cursor, user_role: UserRole, room: str, residence: Residence, first_name: str, last_name: str,
-             email: Email, password_hash: str, invited_by: int, returning=False) -> dict:
+             email: Email, password_hash: str, invited_by: int, returning: str="") -> dict:
     """
     adds a user to the table users
 
@@ -19,7 +21,7 @@ def add_user(connection, cursor, user_role: UserRole, room: str, residence: Resi
         email (Email): email of the user
         password_hash (str): password hash of the user
         invited_by (int): id of the user who invited this user
-        returning (bool): whether to return the id of the new user
+        returning (str): which column to return
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
     """
@@ -28,9 +30,11 @@ def add_user(connection, cursor, user_role: UserRole, room: str, residence: Resi
         cursor=cursor,
         table_name="users",
         arguments={"user_role": user_role.value, "room": room, "residence": residence.value, "first_name": first_name,
-                   "last_name": last_name, "email": email.value, "password_hash": password_hash,
+                   "last_name": last_name, "email": email.email, "password_hash": password_hash,
                    "invited_by": invited_by},
         returning=returning)
+    if returning != "" and result["success"]:
+        return clean_single_data(result)
     return result
 
 
@@ -59,6 +63,7 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
                              arguments={"password_hash": None}, conditions=conditions, returning_column="user_role")
     if result["success"] is False:
         return result
+    result = clean_single_data(result)
     if result["data"] == UserRole.GUEST.value:
         return {"success": False, "error": "User role is guest."}
     return result
@@ -157,5 +162,6 @@ def get_user(
         select_max_of_key=select_max_of_key,
         specific_where=specific_where,
         order_by=order_by)
-
+    if expect_single_answer:
+        return clean_single_data(result)
     return result
