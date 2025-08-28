@@ -63,8 +63,9 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- table to save configuration settings
-CREATE TABLE IF NOT EXISTS config (
+CREATE TABLE IF NOT EXISTS configurations (
     id SERIAL PRIMARY KEY,
     key TEXT UNIQUE NOT NULL,
-    value TEXT NOT NULL
+    value TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );

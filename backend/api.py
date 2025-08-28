@@ -37,7 +37,9 @@ def login():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    result = cf.get_user(cursor=cursor, user_email=email, keywords=["id", "password_hash", "user_role"])
+    result = u.get_user(cursor=cursor, user_email=email, keywords=["id", "password_hash", "user_role"])
+    if not result["success"]:
+        return jsonify({"error": result["error"]}), 401
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)

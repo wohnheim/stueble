@@ -42,7 +42,7 @@ stueble_codes
   - stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL
   - invited_by (ID can't loop, can just reference IDs, that have invited_by == NULL !!!)
 
-configs
+configurations
   - id SERIAL PRIMARY KEY,
   - name TEXT UNIQUE NOT NULL,
   - value TEXT NOT NULL
