@@ -24,7 +24,7 @@ print(result)"""
 
 # double email
 # adding a user
-"""result = users.add_user(connection=connection,
+result = users.add_user(connection=connection,
                cursor=cursor,
                user_role=users.UserRole.GUEST,
                room="321",
@@ -34,7 +34,7 @@ print(result)"""
                email=users.Email("lpwgfs@gmail.com"),
                password_hash=password,
                returning="id")
-print(result)"""
+print(result)
 
 """result = users.remove_user(connection=connection,
                cursor=cursor,
