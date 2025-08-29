@@ -1,5 +1,6 @@
 from backend.data_types import *
 import backend.sql_connection.database as db
+from backend.data_types import *
 from typing import Annotated
 from datetime import datetime, timedelta
 import pytz
@@ -52,7 +53,7 @@ def get_session(cursor, session_id: str) -> dict:
         table_name="sessions",
         expect_single_answer=True,
         conditions={"session_id": session_id})
-    if result["data"] is None:
+    if result["success"] and result["data"] is None:
         return {"success": False, "error": "no session found"}
     return result
 
@@ -75,4 +76,26 @@ def remove_session(connection, cursor, session_id: str) -> dict:
         returning_column="session_id")
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "no session found"}
+    return result
+
+def get_user_role(cursor, session_id: str) -> dict:
+    """
+    gets the user role of a user from the table users via the sessions table
+    Parameters:
+        cursor: cursor for the connection
+        session_id (str): id of the user
+    Returns:
+        dict: {"success": bool, "data": user_role}, {"success": False, "error": e} if error occurred
+    """
+
+    result = db.read_table(
+        cursor=cursor,
+        keywords=["u.user_role"],
+        table_name="sessions s JOIN users u ON s.user_id = u.id",
+        expect_single_answer=True,
+        conditions={"s.session_id": session_id})
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "no matchins session and user found"}
+    if result["success"]:
+        result["data"] = UserRole(result["data"])
     return result
