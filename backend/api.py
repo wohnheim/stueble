@@ -3,6 +3,8 @@ import json
 import backend.sql_connection.database as db
 import backend.sql_connection.users as u
 
+# TODO make sure that change password doesn't allow an empty password, since that would delete the user
+
 # Initialize connections to database
 pool = db.create_pool()
 

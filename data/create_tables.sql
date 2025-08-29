@@ -31,9 +31,10 @@ CREATE TABLE IF NOT EXISTS users (
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
     email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$'),
-    password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR (user_role != 'extern' AND password_hash IS NOT NULL)),
+    password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    personal_hash TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL
+    personal_hash TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, 
+    last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS stueble_motto (
