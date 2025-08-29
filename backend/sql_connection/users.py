@@ -5,7 +5,7 @@ from typing import Annotated
 from backend.sql_connection.common_functions import clean_single_data
 
 
-def add_user(connection, cursor, user_role: UserRole, room: str, residence: Residence, first_name: str, last_name: str,
+def add_user(connection, cursor, user_role: UserRole, room: str | int, residence: Residence, first_name: str, last_name: str,
              email: Email, password_hash: str, returning: str="") -> dict:
     """
     adds a user to the table users
@@ -14,7 +14,7 @@ def add_user(connection, cursor, user_role: UserRole, room: str, residence: Resi
         connection: connection to the db
         cursor: cursor for the connection
         user_role (UserRole): available roles for the user
-        room (str): room of the user
+        room (str | int): room of the user
         residence (Residence): residence of the user
         first_name (str): first name of the user
         last_name (str): last name of the user
@@ -24,6 +24,12 @@ def add_user(connection, cursor, user_role: UserRole, room: str, residence: Resi
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
     """
+
+    try:
+        room = int(room)
+    except ValueError:
+        return {"success": False, "error": "Room must be an integer, provided as str | int."}
+
     result = db.insert_table(
         connection=connection,
         cursor=cursor,
