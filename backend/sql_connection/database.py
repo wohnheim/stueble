@@ -170,7 +170,7 @@ def insert_table(connection, cursor, table_name: str, arguments: dict = {}, retu
             return {"success": True, "data": data}
         return {"success": True}
     except Exception as e:
-        cursor.execute("rollback")
+        cursor.rollback()
         return {"success": False, "error": e}
 
 # for specific_where conditions must be empty, otherwise conditions will be ignored IMPORTANT what is being ignored differs from the other functions
@@ -214,7 +214,7 @@ def update_table(connection, cursor, table_name: str, arguments: dict={}, condit
             return {"success": True, "data": data}
         return {"success": True}
     except Exception as e:
-        connection.execute("rollback")
+        connection.rollback()
         return {"success": False, "error": e}
 
 def remove_table(connection, cursor, table_name: str, conditions: dict, returning_column: str = ""):
@@ -244,7 +244,7 @@ def remove_table(connection, cursor, table_name: str, conditions: dict, returnin
             return {"success": True, "data": data}
         return {"success": True}
     except Exception as e:
-        connection.execute("rollback")
+        connection.rollback()
         return {"success": False, "error": e}
 
 def custom_call(connection, cursor, query: str, type_of_answer: int, variables: list=None):
@@ -280,7 +280,7 @@ def custom_call(connection, cursor, query: str, type_of_answer: int, variables: 
             return {"success": False, "error": "parameter type_of_answer of the function must be -1 or 0"}
     except Exception as e:
         if connection is not None:
-            connection.execute("rollback")
+            connection.rollback()
         return {"success": False, "error": e}
 
 # TODO can only return success True right now
