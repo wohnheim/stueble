@@ -11,8 +11,13 @@ CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave', 'modify');
 
 -- check function for valid invited_by id in users
 CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
-    SELECT $1 FROM users IS NOT NULL;
+    SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE userID = $1 LIMIT 1), false);
 $$ LANGUAGE SQL;
+
+-- CHECK-Constraint nachträglich hinzufügen
+ALTER TABLE stueble_codes
+    ADD CONSTRAINT stueble_codes_invited_by_check
+    CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by)));
 
 -- table to save users
 CREATE TABLE IF NOT EXISTS users (
@@ -42,7 +47,7 @@ CREATE TABLE IF NOT EXISTS stueble_codes (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
     expiration_date TIMESTAMPTZ NOT NULL, 
     stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL,
-    invited_by INTEGER REFERENCES users(id) CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by)))
+    invited_by INTEGER REFERENCES users(id)
 );
 
 -- table to save login sessions
