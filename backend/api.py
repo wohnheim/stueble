@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import json
-import sql_connection.database as db
-import sql_connection.users as u
+import backend.sql_connection.database as db
+import backend.sql_connection.users as u
 
 # Initialize connections to database
 pool = db.create_pool()
