@@ -1,10 +1,11 @@
 from backend.data_types import *
 import backend.sql_connection.database as db
+from backend.data_types import *
 from typing import Annotated
 from datetime import datetime, timedelta
 import pytz
 
-def create_session(connection, cursor, user_id: int, expiration_date: str) -> dict:
+def create_session(connection, cursor, user_id: int) -> dict:
     """
     creates a session for a user in the table sessions
 
@@ -12,7 +13,6 @@ def create_session(connection, cursor, user_id: int, expiration_date: str) -> di
         connection: connection to the db
         cursor: cursor for the connection
         user_id (int): id of the user
-        expiration_date (str): expiration date of the session (YYYY-MM-DD HH:MM:SS)
     Returns:
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occured
     """
@@ -34,8 +34,68 @@ def create_session(connection, cursor, user_id: int, expiration_date: str) -> di
         cursor=cursor,
         table_name="sessions",
         arguments={"user_id": user_id, "expiration_date": expiration_date},
-        returning="session_id")
-    if result["success"] is False:
-        return {"success": False, "error": result["error"]}
+        returning_column="session_id")
+    return result
 
-    return {"success": True, "data": result["data"]}
+def get_session(cursor, session_id: str) -> dict:
+    """
+    gets the session of a user from the table sessions
+    Parameters:
+        cursor: cursor for the connection
+        session_id (str): id of the user
+    Returns:
+        dict: {"success": bool, "data": (session_id, expiration_date)}, {"success": False, "error": e} if error occurred
+    """
+
+    result = db.read_table(
+        cursor=cursor,
+        keywords=["session_id", "expiration_date"],
+        table_name="sessions",
+        expect_single_answer=True,
+        conditions={"session_id": session_id})
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "no session found"}
+    return result
+
+def remove_session(connection, cursor, session_id: str) -> dict:
+    """
+    removes a session from the table sessions
+    Parameters:
+        connection: connection to the db
+        cursor: cursor for the connection
+        session_id (str): id of the user
+    Returns:
+        dict: {"success": bool, "data": data}, {"success": False, "error": e} if error occurred
+    """
+
+    result = db.remove_table(
+        connection=connection,
+        cursor=cursor,
+        table_name="sessions",
+        conditions={"session_id": session_id},
+        returning_column="session_id")
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "no session found"}
+    return result
+
+def get_user_role(cursor, session_id: str) -> dict:
+    """
+    gets the user role of a user from the table users via the sessions table
+    Parameters:
+        cursor: cursor for the connection
+        session_id (str): id of the user
+    Returns:
+        dict: {"success": bool, "data": user_role}, {"success": False, "error": e} if error occurred
+    """
+
+    result = db.read_table(
+        cursor=cursor,
+        keywords=["u.user_role"],
+        table_name="sessions s JOIN users u ON s.user_id = u.id",
+        expect_single_answer=True,
+        conditions={"s.session_id": session_id})
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "no matchins session and user found"}
+    if result["success"]:
+        result["data"] = UserRole(result["data"])
+    return result

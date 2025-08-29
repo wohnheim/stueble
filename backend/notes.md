@@ -60,5 +60,12 @@ configurations
 - User: stueble
 - Further information can be found in [create_tables.sql](../data/create_tables.sql)
 
+
+## Response codes
+- 200: OK + data
+- 201: OK + no data
+- 
+
+
 # Externe Dienste
 strato

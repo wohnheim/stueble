@@ -4,7 +4,7 @@ pool = db.create_pool()
 connection = pool.getconn()
 cursor = connection.cursor()
 
-#
+# hashing the password
 password = hash_pwd("TestPassword123")
 
 # adding a user
