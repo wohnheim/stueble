@@ -10,15 +10,15 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION event_change_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.PASSWORD IS NULL
+    IF NEW.password_hash IS NULL
     THEN
         INSERT INTO events (userID, event_type, affected)
         VALUES (NEW.id, 'delete', NEW.id);
-        RETURN NEW;
     ELSE
         INSERT INTO events (userID, event_type, affected)
         VALUES (NEW.id, 'modify', NEW.id);
-        RETURN NEW;
     END IF;
+    UPDATE users SET last_updated = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
