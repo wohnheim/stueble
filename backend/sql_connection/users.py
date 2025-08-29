@@ -30,7 +30,7 @@ def add_user(connection, cursor, user_role: UserRole, room: str, residence: Resi
         table_name="users",
         arguments={"user_role": user_role.value, "room": room, "residence": residence.value, "first_name": first_name,
                    "last_name": last_name, "email": email.email, "password_hash": password_hash},
-        returning=returning)
+        returning_column=returning)
     if returning != "" and result["success"]:
         return clean_single_data(result)
     return result
