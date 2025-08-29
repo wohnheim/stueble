@@ -67,6 +67,8 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
                              arguments={"password_hash": None}, conditions=conditions, returning_column="user_role")
     if result["success"] is False:
         return result
+    if result["data"] is None:
+        return {"success": False, "error": "User doesn't exist."}
     result = clean_single_data(result)
     if result["data"] == UserRole.GUEST.value:
         return {"success": False, "error": "User role is guest."}
