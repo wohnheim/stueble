@@ -143,7 +143,7 @@ def get_user(
     if expect_single_answer and order_by != {}:
         raise ValueError("Either expect_single_answer=True or order_by can be set.")
 
-    # check, whether an where statement is set for sql query
+    # check, whether a where statement is set for sql query
     if user_id is None and user_email is None and conditions == {} and specific_where == "":
         raise ValueError("Either user_id, user_email, conditions or specific_where must be set.")
     conditions_counter = 0

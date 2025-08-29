@@ -219,6 +219,7 @@ def get_motto():
 app.route("/guests")
 def guests():
     """
+    returns list of all guests
     """
 
 app.route("/websocket")
@@ -231,7 +232,64 @@ def user():
     """
     """
 
-app.route("/user/search")
+app.route("/host/search_guest")
 def search():
     """
     """
+
+app.route("/host/add_guest", methods=["POST"])
+def add_guest():
+    """
+    add a guest to the guest_list of present people
+    """
+
+    # load data
+    data = request.get_json()
+    session_id = data.get("session_id", None)
+    guest_stueble_id = data.get("guest_stueble_id", None)
+
+    if session_id is None or guest_stueble_id is None:
+        response = Response(
+            response=json.dumps({"error": f"The {'session_id' if session_id is None else 'guest_stueble_id' if guest_stueble_id is None else 'session_id and guest_stueble_id'} must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only hosts can add guests
+    result = sessions.get_user_role(cursor=cursor, session_id=session_id)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+    user_role = result["data"]
+    if user_role != UserRole.HOST:
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role host"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    # add guest to table
+
+    # add guest to table
+    result = guests.add_guest(connection=conn, cursor=cursor, guest_name=guest_name)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    # close cursor and return connection
+    close_conn_cursor(conn, cursor)
+
+    # return 204
+    response = Response(
+        status=204)
+    return response
