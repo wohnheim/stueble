@@ -3,7 +3,7 @@ import re
 
 class UserRole(Enum):
     ADMIN = "admin"
-    USER = "user"
+    USER = "host"
     GUEST = "guest"
     EXTERN = "extern"
 

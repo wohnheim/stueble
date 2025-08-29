@@ -9,7 +9,7 @@ password = hash_pwd("TestPassword123")
 # adding a user
 result = users.add_user(connection=connection,
                cursor=cursor,
-               user_role=users.UserRole.USER,
+               user_role=users.UserRole.GUEST,
                room="321",
                residence=users.Residence.ALTBAU,
                first_name="Leon",
