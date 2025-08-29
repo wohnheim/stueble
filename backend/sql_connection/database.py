@@ -3,6 +3,7 @@ from psycopg2 import pool
 from functools import wraps
 import os
 from dotenv import load_dotenv
+from enum import Enum
 
 load_dotenv()
 
@@ -12,7 +13,13 @@ HOST = os.getenv("HOST") # localhost
 PORT = os.getenv("PORT") # 5432
 DBNAME = os.getenv("DBNAME") # stueble_data
 
-print(USER, PASSWORD, HOST, PORT, DBNAME)
+class ANSWER_TYPE(Enum):
+    NO_ANSWER = -1
+    SINGLE_ANSWER = 0
+    LIST_ANSWER = 1
+
+def is_valid_answer_type(value):
+    return value in ANSWER_TYPE._value2member_map_
 
 def full_pack(func):
     """
@@ -247,7 +254,7 @@ def remove_table(connection, cursor, table_name: str, conditions: dict, returnin
         connection.rollback()
         return {"success": False, "error": e}
 
-def custom_call(connection, cursor, query: str, type_of_answer: int, variables: list=None):
+def custom_call(connection, cursor, query: str, type_of_answer: ANSWER_TYPE, variables: list=None):
     """
     send a custom query to the database
 
@@ -255,7 +262,7 @@ def custom_call(connection, cursor, query: str, type_of_answer: int, variables: 
         connection (connection): can be None if it isn't needed (e.g. for SELECT statements)
         cursor (cursor):
         query (str):
-        type_of_answer (bool): -1 -> no answer is being expected, 0 -> single answer is being expected, 1 -> list of answers is being expected
+        type_of_answer (ANSWER_TYPE): what answer to expect
         variables (list): list of variables that should be passed into the query
     Returns:
         :: None, single variable, list of variables: depending on type_of_answer
@@ -266,18 +273,18 @@ def custom_call(connection, cursor, query: str, type_of_answer: int, variables: 
         else:
             cursor.execute(query, variables)
         connection.commit()
-        if type_of_answer == -1:
+        if type_of_answer == ANSWER_TYPE.NO_ANSWER:
             return {"success": True}
-        elif type_of_answer == 0:
+        elif type_of_answer == ANSWER_TYPE.SINGLE_ANSWER:
             data = cursor.fetchone()
             if data is not None:
                 data = data[0]
             return {"success": True, "data": data}
-        elif type_of_answer == 1:
+        elif type_of_answer == ANSWER_TYPE.LIST_ANSWER:
             return {"success": True, "data": cursor.fetchall()}
         else:
             # would usually be better to check at the beginning, but since code is used backend, function is mostly used correctly. Therefore, it is more effective to check at the end if no other case matches
-            return {"success": False, "error": "parameter type_of_answer of the function must be -1 or 0"}
+            return {"success": False, "error": "parameter type_of_answer of the function must be of enum type ANSWER_TYPE"}
     except Exception as e:
         if connection is not None:
             connection.rollback()

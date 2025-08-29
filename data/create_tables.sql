@@ -3,7 +3,7 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- enum for user_role in table users
-CREATE TYPE USER_ROLE AS ENUM ('admin', 'host', 'guest', 'extern');
+CREATE TYPE USER_ROLE AS ENUM ('admin', 'host', 'user', 'extern');
 
 -- enum for event_type in table events
 -- arrive, leave will be handled by python, add, remove, modify by triggers
@@ -14,7 +14,11 @@ CREATE TYPE RESIDENCE AS ENUM('altbau', 'neubau', 'anbau', 'hirte');
 
 -- check function for valid invited_by id in users
 CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
-    SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE userID = $1 LIMIT 1), false);
+    SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE user_id = $1 LIMIT 1), false);
+$$ LANGUAGE SQL;
+
+CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
+    SELECT submitted FROM events WHERE id = $1 LIMIT 1;
 $$ LANGUAGE SQL;
 
 -- CHECK-Constraint for valid invited_by id in stueble_codes
@@ -33,7 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$'),
     password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    personal_hash TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, 
+    personal_hash TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -44,9 +48,10 @@ CREATE TABLE IF NOT EXISTS stueble_motto (
     shared_apartment TEXT
 );
 
+-- table for stueble codes
 CREATE TABLE IF NOT EXISTS stueble_codes (
     id SERIAL PRIMARY KEY, 
-    userID INTEGER REFERENCES users(id) NOT NULL, 
+    user_id INTEGER REFERENCES users(id) NOT NULL,
     code TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
     expiration_date TIMESTAMPTZ NOT NULL, 
@@ -58,17 +63,23 @@ CREATE TABLE IF NOT EXISTS stueble_codes (
 CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,
     expiration_date TIMESTAMPTZ NOT NULL, 
-    userID INTEGER REFERENCES users(id) NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
     session_id TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL
 );
 
 -- table to save user and host events
 CREATE TABLE IF NOT EXISTS events (
     id SERIAL PRIMARY KEY, 
-    userID INTEGER REFERENCES users(id) NOT NULL, 
-    event_type EVENT_TYPE NOT NULL, 
-    affected INTEGER REFERENCES users(id) NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    event_type EVENT_TYPE NOT NULL,
     submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS events_affected_users (
+    id SERIAL PRIMARY KEY,
+    event_id INTEGER REFERENCES events(id) NOT NULL,
+    affected_user_id INTEGER REFERENCES users(id) NOT NULL,
+    submitted TIMESTAMPTZ NOT NULL DEFAULT get_submitted_timestamp(event_id)
 );
 
 -- table to save configuration settings
