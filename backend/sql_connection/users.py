@@ -1,12 +1,12 @@
 from backend.data_types import *
-import database as db
+import backend.sql_connection.database as db
 from typing import Annotated
 
 from backend.sql_connection.common_functions import clean_single_data
 
 
 def add_user(connection, cursor, user_role: UserRole, room: str, residence: Residence, first_name: str, last_name: str,
-             email: Email, password_hash: str, invited_by: int, returning: str="") -> dict:
+             email: Email, password_hash: str, returning: str="") -> dict:
     """
     adds a user to the table users
 
@@ -20,7 +20,6 @@ def add_user(connection, cursor, user_role: UserRole, room: str, residence: Resi
         last_name (str): last name of the user
         email (Email): email of the user
         password_hash (str): password hash of the user
-        invited_by (int): id of the user who invited this user
         returning (str): which column to return
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
@@ -30,8 +29,7 @@ def add_user(connection, cursor, user_role: UserRole, room: str, residence: Resi
         cursor=cursor,
         table_name="users",
         arguments={"user_role": user_role.value, "room": room, "residence": residence.value, "first_name": first_name,
-                   "last_name": last_name, "email": email.email, "password_hash": password_hash,
-                   "invited_by": invited_by},
+                   "last_name": last_name, "email": email.email, "password_hash": password_hash},
         returning=returning)
     if returning != "" and result["success"]:
         return clean_single_data(result)

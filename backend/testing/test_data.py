@@ -1,0 +1,20 @@
+from backend.sql_connection import users, sessions, database as db
+from backend.hash_pwd import *
+pool = db.create_pool()
+connection = pool.getconn()
+cursor = connection.cursor()
+
+#
+password = hash_pwd("TestPassword123")
+# adding a user
+result = users.add_user(connection=connection,
+               cursor=cursor,
+               user_role=users.UserRole.USER,
+               room="321",
+               residence=users.Residence.ALTBAU,
+               first_name="Leon",
+               last_name="Gattermeyer",
+               email=users.Email("lpwgfs@gmail.com"),
+               password_hash=password,
+               returning="id")
+print(result)

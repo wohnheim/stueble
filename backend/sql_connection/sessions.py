@@ -1,5 +1,5 @@
 from backend.data_types import *
-import database as db
+import backend.sql_connection.database as db
 from typing import Annotated
 from datetime import datetime, timedelta
 import pytz

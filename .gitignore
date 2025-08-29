@@ -7,3 +7,4 @@ passwords.md
 __pycache__
 do_not_track
 .venv
+.env
