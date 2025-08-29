@@ -106,7 +106,9 @@ def update_user(
     else:
         conditions["email"] = user_email.email
     result = db.update_table(connection=connection, cursor=cursor, table_name="users", arguments=kwargs,
-                             conditions=conditions)
+                             conditions=conditions, returning_column="id")
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "User doesn't exist."}
     return result
 
 
@@ -167,6 +169,10 @@ def get_user(
         select_max_of_key=select_max_of_key,
         specific_where=specific_where,
         order_by=order_by)
+
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "User doesn't exist."}
+
     if expect_single_answer:
         return clean_single_data(result)
     return result
