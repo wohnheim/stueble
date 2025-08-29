@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, Response
 import json
 from backend.sql_connection import users, sessions, motto, database as db
 import backend.hash_pwd as hp
+from backend.data_types import *
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
