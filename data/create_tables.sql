@@ -9,12 +9,15 @@ CREATE TYPE USER_ROLE AS ENUM ('admin', 'host', 'guest', 'extern');
 -- arrive, leave will be handled by python, add, remove, modify by triggers
 CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave', 'modify');
 
+-- enum for residence in table users
+CREATE TYPE RESIDENCE AS ENUM('altbau', 'neubau', 'anbau', 'hirte');
+
 -- check function for valid invited_by id in users
 CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
     SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE userID = $1 LIMIT 1), false);
 $$ LANGUAGE SQL;
 
--- CHECK-Constraint nachträglich hinzufügen
+-- CHECK-Constraint for valid invited_by id in stueble_codes
 ALTER TABLE stueble_codes
     ADD CONSTRAINT stueble_codes_invited_by_check
     CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by)));
@@ -23,8 +26,8 @@ ALTER TABLE stueble_codes
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     user_role USER_ROLE NOT NULL,
-    room INTEGER CHECK ((user_role = 'extern' AND room IS NULL) OR (user_role != 'guest' AND room > 0)), 
-    residence INTEGER CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence > 0)),
+    room INTEGER CHECK ((user_role = 'extern' AND room IS NULL) OR (user_role != 'guest' AND room > 0)),
+    residence RESIDENCE NULL CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence IS NOT NULL)),
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
     email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$'),
