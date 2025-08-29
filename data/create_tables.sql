@@ -26,7 +26,7 @@ ALTER TABLE stueble_codes
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     user_role USER_ROLE NOT NULL,
-    room INTEGER CHECK ((user_role = 'extern' AND room IS NULL) OR (user_role != 'guest' AND room > 0)),
+    room INTEGER CHECK ((user_role = 'extern' AND room IS NULL) OR (user_role != 'extern' AND room > 0)),
     residence RESIDENCE NULL CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence IS NOT NULL)),
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
