@@ -72,8 +72,7 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
     result = clean_single_data(result)
     if result["data"] == UserRole.EXTERN.value:
         return {"success": False, "error": "User role is extern."}
-    return result
-
+    return {"success": True, "data": user_id}
 
 def update_user(
         connection,
@@ -107,7 +106,9 @@ def update_user(
     else:
         conditions["email"] = user_email.email
     result = db.update_table(connection=connection, cursor=cursor, table_name="users", arguments=kwargs,
-                             conditions=conditions)
+                             conditions=conditions, returning_column="id")
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "User doesn't exist."}
     return result
 
 
@@ -142,7 +143,7 @@ def get_user(
     if expect_single_answer and order_by != {}:
         raise ValueError("Either expect_single_answer=True or order_by can be set.")
 
-    # check, whether an where statement is set for sql query
+    # check, whether a where statement is set for sql query
     if user_id is None and user_email is None and conditions == {} and specific_where == "":
         raise ValueError("Either user_id, user_email, conditions or specific_where must be set.")
     conditions_counter = 0
@@ -168,6 +169,10 @@ def get_user(
         select_max_of_key=select_max_of_key,
         specific_where=specific_where,
         order_by=order_by)
+
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "User doesn't exist."}
+
     if expect_single_answer:
         return clean_single_data(result)
     return result
