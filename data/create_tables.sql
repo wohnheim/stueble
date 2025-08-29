@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     user_role USER_ROLE NOT NULL,
     room INTEGER CHECK ((user_role = 'extern' AND room IS NULL) OR (user_role != 'guest' AND room > 0)), 
-    residence INTEGER CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'guest' AND residence > 0)),
+    residence INTEGER CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence > 0)),
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
     email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$'),
