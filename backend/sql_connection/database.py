@@ -170,7 +170,7 @@ def insert_table(connection, cursor, table_name: str, arguments: dict = {}, retu
             return {"success": True, "data": data}
         return {"success": True}
     except Exception as e:
-        cursor.rollback()
+        connection.rollback()
         return {"success": False, "error": e}
 
 # for specific_where conditions must be empty, otherwise conditions will be ignored IMPORTANT what is being ignored differs from the other functions
