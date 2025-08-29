@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import json
 import backend.sql_connection.database as db
 import backend.sql_connection.users as u
+from backend.data_types import *
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
 
