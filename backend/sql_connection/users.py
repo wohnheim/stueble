@@ -72,8 +72,7 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
     result = clean_single_data(result)
     if result["data"] == UserRole.EXTERN.value:
         return {"success": False, "error": "User role is extern."}
-    return result
-
+    return {"success": True, "data": user_id}
 
 def update_user(
         connection,
