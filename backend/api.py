@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify, Response
 import json
-from backend.sql_connection import users, sessions, database as db
+from backend.sql_connection import users, sessions, motto, database as db
 import backend.hash_pwd as hp
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
-
+# TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
 # Initialize connections to database
 pool = db.create_pool()
 
@@ -94,12 +94,12 @@ def login():
         mimetype="application/json")
     return response
 
-app.route("/auth/signup")
+app.route("/auth/signup", methods=["POST"])
 def signup():
     """
     """
 
-app.route("/auth/logout")
+app.route("/auth/logout", methods=["POST"])
 def logout():
     """
     removes the session id
@@ -137,7 +137,7 @@ def logout():
 
 
 
-app.route("/auth/delete")
+app.route("/auth/delete", methods=["DELETE"])
 def delete():
     """
     delete a user (set password to NULL)
@@ -166,15 +166,6 @@ def delete():
             mimetype="application/json")
         return response
 
-    # if no session found return error
-    if result["data"] is None:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"error": "no session found"}),
-            status=401,
-            mimetype="application/json")
-        return response
-
     # set user_id
     user_id = result["data"]
 
@@ -184,15 +175,6 @@ def delete():
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    # if no user found return error
-    if result["data"] is None:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"error": "no user found"}),
             status=500,
             mimetype="application/json")
         return response
@@ -207,15 +189,6 @@ def delete():
             mimetype="application/json")
         return response
 
-    # if no session found return error
-    if result["data"] is None:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"error": "no session found"}),
-            status=500,
-            mimetype="application/json")
-        return response
-
     # close cursor and return connection
     close_conn_cursor(conn, cursor)
 
@@ -223,7 +196,24 @@ def delete():
     response = Response(
         status=204)
     return response
-    
+
+app.route("/motto", methods=["GET"])
+def get_motto():
+    """
+    returns the motto for the next stueble party
+    """
+
+    # load data
+    data = request.get_json()
+    date = data.get("date", None)
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # get motto from table
+    result = motto.get_motto(cursor=cursor, date=date)
+
+    # TODO add the option to see all mottos
 
 app.route("/guests")
 def guests():
