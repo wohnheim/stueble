@@ -2,6 +2,9 @@ import psycopg2 as pg
 from psycopg2 import pool
 from functools import wraps
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 USER = os.getenv("USER") # stueble (like the linux user name!)
 PASSWORD = os.getenv("PASSWORD")
