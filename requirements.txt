@@ -3,3 +3,4 @@ psycopg2-binary
 bcrypt
 pytz
 python-dotenv
+qrcode
