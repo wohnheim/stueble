@@ -151,6 +151,7 @@ def guest_list(cursor, stueble_id: int) -> dict:
         key = sub[1]   # group by user_id
         groups[key].append(sub)
 
+    # data in clean dict format
     data_dict = {key: [{"status": item[2], "time": item[3]} for item in value] for key, value in groups.items()}
 
     return data_dict
