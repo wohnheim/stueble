@@ -1,5 +1,6 @@
 import backend.sql_connection.database as db
 from backend.data_types import EventType
+from collections import defaultdict
 
 def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -> dict:
     """
@@ -143,4 +144,14 @@ def guest_list(cursor, stueble_id: int) -> dict:
     if result["data"] is None:
         return result
 
-    print(result["data"])
+    data = result["data"]
+    groups = defaultdict(list)
+
+    for sub in data:
+        key = sub[1]   # group by user_id
+        groups[key].append(sub)
+
+    data_dict = {key: [{"status": item[2], "time": item[3]} for item in value] for key, value in groups.items()}
+
+    return data_dict
+
