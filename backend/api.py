@@ -314,6 +314,86 @@ def user():
 def search():
     """
     """
+    # load data
+    data = request.get_json()
+
+    if data is None or not isinstance(data, dict):
+        response = Response(
+            response=json.dumps({"error": "The data must be a valid json object"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    allowed_keys = ["first_name", "last_name", "room", "residence", "email"]
+
+    if any(key not in allowed_keys for key in data.keys()):
+        response = Response(
+            response=json.dumps({"error": f"Only the following keys are allowed: {', '.join(allowed_keys)}"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    keywords = ["first_name", "last_name", "room", "residence", "email", "user_role"]
+
+    if "email" in data:
+        result = db.read_table(
+            cursor=cursor,
+            keywords=keywords,
+            conditions={"email": data["email"]},
+            expect_single_answer=True)
+    else:
+        conditions = {key: value for key, value in data.items() if value is not None}
+        result = db.read_table(
+            cursor=cursor,
+            conditions=conditions,
+            keywords=keywords,
+            expect_single_answer=False)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    if result["data"] is None:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "No user found with the given email"}),
+            status=404,
+            mimetype="application/json")
+        return response
+
+    users = []
+    if "email" in data:
+        data = result["data"]
+        user = {"first_name": data[0],
+                "last_name": data[1],
+                "room": data[2],
+                "residence": data[3],
+                "email": data[4],
+                "user_role": FrontendUserRole.EXTERN if data[5] == "extern" else FrontendUserRole.INTERN}
+        users.append(user)
+    else:
+        for entry in result["data"]:
+            users.append({"first_name": entry[0],
+                          "last_name": entry[1],
+                          "room": entry[2],
+                          "residence": entry[3],
+                          "email": entry[4],
+                          "user_role": FrontendUserRole.EXTERN if entry[5] == "extern" else FrontendUserRole.INTERN})
+
+    response = Response(
+        response=json.dumps({"users": users}),
+        status=200,
+        mimetype="application/json")
+
+    close_conn_cursor(conn, cursor)
+    return response
 
 @app.route("/host/add_guest", methods=["POST"])
 @app.route("host/remove_guest", methods=["POST"])
