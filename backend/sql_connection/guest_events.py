@@ -113,12 +113,12 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
 
     return {"success": True, "data": data}
 
-def guest_list(cursor, stueble_id: str) -> dict:
+def guest_list(cursor, stueble_id: int) -> dict:
     """
     returns list of all guests that are currently present
     Parameters:
         cursor: cursor from connection
-        stueble_id (str): id for a specific stueble party
+        stueble_id (int): id for a specific stueble party
     """
 
     query = """
@@ -131,3 +131,16 @@ def guest_list(cursor, stueble_id: str) -> dict:
     ORDER BY user_id, submitted ASC;
     """
 
+    result = db.custom_call(
+        connection=None,
+        cursor=cursor,
+        query=query,
+        variables=[stueble_id],
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
+    if result["success"] is False:
+        return result
+
+    if result["data"] is None:
+        return result
+
+    print(result["data"])
