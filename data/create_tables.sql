@@ -44,18 +44,18 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS stueble_motto (
     id SERIAL PRIMARY KEY, 
     motto TEXT NOT NULL,
-    date_of_time TIMESTAMPTZ NOT NULL, 
+    date_of_time DATE NOT NULL,
     shared_apartment TEXT
 );
 
 -- table for stueble codes
 CREATE TABLE IF NOT EXISTS stueble_codes (
     id SERIAL PRIMARY KEY, 
-    user_id INTEGER REFERENCES users(id) NOT NULL,
+    user_id INTEGER REFERENCES users(id) UNIQUE NOT NULL,
     code TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    expiration_date TIMESTAMPTZ NOT NULL, 
-    stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL,
+    date_of_time DATE NOT NULL,
+    stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL, -- references the correct stueble event
     invited_by INTEGER REFERENCES users(id)
 );
 
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS events_affected_users (
     id SERIAL PRIMARY KEY,
     event_id INTEGER REFERENCES events(id) NOT NULL,
     affected_user_id INTEGER REFERENCES users(id) NOT NULL,
-    submitted TIMESTAMPTZ NOT NULL DEFAULT get_submitted_timestamp(event_id)
+    submitted TIMESTAMPTZ
 );
 
 -- table to save configuration settings
