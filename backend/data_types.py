@@ -28,6 +28,12 @@ class UserRole(str, Enum):
 def is_valid_role(value):
     return value in UserRole._value2member_map_
 
+class FrontendUserRole(str, Enum):
+    INTERN = "intern"
+    EXTERN = "extern"
+
+def is_valid_frontend_role(value):
+    return value in FrontendUserRole._value2member_map_
 
 class Residence(Enum):
     ALTBAU = "altbau"

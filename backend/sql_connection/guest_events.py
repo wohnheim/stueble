@@ -1,6 +1,7 @@
 import backend.sql_connection.database as db
 from backend.data_types import EventType
 from collections import defaultdict
+from backend.data_types import FrontendUserRole
 
 def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -> dict:
     """
@@ -60,7 +61,7 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
             "id": guest_id,
             "first_name": guest_first_name,
             "last_name": guest_last_name,
-            "user_role": guest_user_role,
+            "user_role": FrontendUserRole.EXTERN if guest_user_role == "extern" else FrontendUserRole.INTERN,
             "is_invited": is_invited}
     }
     if is_invited:
@@ -68,7 +69,7 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
             "id": inviter_id,
             "first_name": inviter_first_name,
             "last_name": inviter_last_name,
-            "user_role": inviter_user_role}
+            "user_role": FrontendUserRole.EXTERN if inviter_user_role == "extern" else FrontendUserRole.INTERN}
 
     # check if user is already present or absent
     result = db.read_table(
