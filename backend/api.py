@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, Response
 import json
-from backend.sql_connection import users, sessions, motto, database as db
+from backend.sql_connection import users, sessions, motto, guest_events as guests, database as db
 import backend.hash_pwd as hp
 from backend.data_types import *
 
@@ -95,12 +95,12 @@ def login():
         mimetype="application/json")
     return response
 
-app.route("/auth/signup", methods=["POST"])
+@app.route("/auth/signup", methods=["POST"])
 def signup():
     """
     """
 
-app.route("/auth/logout", methods=["POST"])
+@app.route("/auth/logout", methods=["POST"])
 def logout():
     """
     removes the session id
@@ -138,7 +138,7 @@ def logout():
 
 
 
-app.route("/auth/delete", methods=["DELETE"])
+@app.route("/auth/delete", methods=["DELETE"])
 def delete():
     """
     delete a user (set password to NULL)
@@ -198,7 +198,7 @@ def delete():
         status=204)
     return response
 
-app.route("/motto", methods=["GET"])
+@app.route("/motto", methods=["GET"])
 def get_motto():
     """
     returns the motto for the next stueble party
@@ -216,29 +216,30 @@ def get_motto():
 
     # TODO add the option to see all mottos
 
-app.route("/guests")
+@app.route("/guests")
 def guests():
     """
     returns list of all guests
     """
 
-app.route("/websocket")
+@app.route("/websocket")
 def websocket():
     """
     """
 
-app.route("/user")
+@app.route("/user")
 def user():
     """
     """
 
-app.route("/host/search_guest")
+@app.route("/host/search_guest")
 def search():
     """
     """
 
-app.route("/host/add_guest", methods=["POST"])
-def add_guest():
+@app.route("/host/add_guest", methods=["POST"])
+@app.route("host/remove_guest", methods=["POST"])
+def guest_change():
     """
     add a guest to the guest_list of present people
     """
@@ -246,11 +247,11 @@ def add_guest():
     # load data
     data = request.get_json()
     session_id = data.get("session_id", None)
-    guest_stueble_id = data.get("guest_stueble_id", None)
+    guest_stueble_code = data.get("guest_stueble_code", None)
 
-    if session_id is None or guest_stueble_id is None:
+    if session_id is None or guest_stueble_code is None:
         response = Response(
-            response=json.dumps({"error": f"The {'session_id' if session_id is None else 'guest_stueble_id' if guest_stueble_id is None else 'session_id and guest_stueble_id'} must be specified"}),
+            response=json.dumps({"error": f"The {'session_id' if session_id is None else 'guest_stueble_code' if guest_stueble_code is None else 'session_id and guest_stueble_id'} must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -274,10 +275,19 @@ def add_guest():
             mimetype="application/json")
         return response
 
-    # add guest to table
+    event_type = EventType.ARRIVE if request.path == "/host/add_guest" else EventType.LEAVE if request.path == "/host/remove_guest" else None
 
-    # add guest to table
-    result = guests.add_guest(connection=conn, cursor=cursor, guest_name=guest_name)
+    # can't occur, for security reasons still checked
+    if event_type is None:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "invalid path"}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    # change guest status to arrive / leave
+    result = guests.change_guest(connection=conn, cursor=cursor, stueble_code=guest_stueble_code, event_type=event_type)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(

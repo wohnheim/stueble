@@ -1,13 +1,13 @@
 import backend.sql_connection.database as db
 from backend.data_types import EventType
 
-def change_guest(connection, cursor, guest_stueble_id: str, event_type: EventType) -> dict:
+def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -> dict:
     """
     add a guest to the guest_list of present people in events
     Parameters:
         connection: connection to db
         cursor: cursor from connection
-        guest_stueble_id (str): stueble_id of the guest to add from stueble_codes
+        stueble_code (str): code for a stueble for a guest
         event_type (EventType): type of event
     """
 
@@ -25,7 +25,15 @@ def change_guest(connection, cursor, guest_stueble_id: str, event_type: EventTyp
         inviter.last_name as inviter_last_name,
         inviter.user_role as inviter_user_role
         
-        FROM (SELECT * FROM users WHERE id = (SELECT user_id FROM stueble_codes WHERE stueble_id = %s)) guest
+        FROM (SELECT * 
+              FROM users 
+              WHERE id = (SELECT user_id 
+                          FROM stueble_codes 
+                          WHERE code = %s 
+                            AND (date_of_time = CURRENT_DATE 
+                              OR date_of_time = (CURRENT_DATE - INTERVAL '1 day'))
+              ))
+        guest
         LEFT JOIN users inviter ON guest.invited_by = inviter.id;
     """
 
@@ -33,7 +41,7 @@ def change_guest(connection, cursor, guest_stueble_id: str, event_type: EventTyp
         connection=connection,
         cursor=cursor,
         query=query,
-        variables=[guest_stueble_id],
+        variables=[stueble_code],
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
 
     if result["success"] is False:
@@ -66,9 +74,12 @@ def change_guest(connection, cursor, guest_stueble_id: str, event_type: EventTyp
         cursor=cursor,
         table="events",
         columns=["user_id", "event_type"],
-        values=[guest_id, event_type.value]
+        values=[guest_id, event_type.value],
+        returning_column="id"
     )
+    if result["success"] is False:
+        return result
 
-
+    data["event_id"] = result["data"]
 
     return {"success": True, "data": data}
