@@ -3,7 +3,8 @@ from backend.data_types import EventType
 
 def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -> dict:
     """
-    add a guest to the guest_list of present people in events
+    add or remove a guest to the guest_list of present people in events for a stueble party \n
+    used when a guest arrives / leaves
     Parameters:
         connection: connection to db
         cursor: cursor from connection
@@ -68,6 +69,34 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
             "last_name": inviter_last_name,
             "user_role": inviter_user_role}
 
+    # check if user is already present or absent
+    result = db.read_table(
+        cursor=cursor,
+        table_name="events",
+        keywords=["event_type"],
+        conditions={"user_id": guest_id},
+        expect_single_answer=True,
+        select_max_of_key="submitted"
+    )
+    # TODO test, that no error is thrown when no data available
+    if result["success"] is False:
+        return result
+
+    # if user has already been to the party, set last event
+    if result["data"] is not None:
+        last_event = EventType(result["data"])
+    else:
+        # if user hasn't been to the party yet, leave is not an option
+        if event_type == EventType.LEAVE:
+            return {"success": False, "error": "Guest hasn't arrived yet."}
+        # if user hasn't been to the party yet, set last event to leave, so that the next check allows him to arrive
+        else:
+            last_event = EventType.LEAVE
+
+    # make sure last_event isn't the same as the current event
+    if last_event == event_type:
+        return {"success": False, "error": f"Guest is already {'present' if event_type == EventType.ARRIVE else 'absent'}"}
+
     # add user to events
     result = db.insert_table(
         connection=connection,
@@ -83,3 +112,22 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
     data["event_id"] = result["data"]
 
     return {"success": True, "data": data}
+
+def guest_list(cursor, stueble_id: str) -> dict:
+    """
+    returns list of all guests that are currently present
+    Parameters:
+        cursor: cursor from connection
+        stueble_id (str): id for a specific stueble party
+    """
+
+    query = """
+    SELECT  id, user_id, event_type, submitted FROM (
+        SELECT 
+            *, 
+            ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY submitted DESC) as rn
+        FROM events
+            WHERE stueble_id = %s) AS subquery
+    ORDER BY user_id, submitted ASC;
+    """
+
