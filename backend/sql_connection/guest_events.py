@@ -155,4 +155,3 @@ def guest_list(cursor, stueble_id: int) -> dict:
     data_dict = {key: [{"status": item[2], "time": item[3]} for item in value] for key, value in groups.items()}
 
     return data_dict
-

@@ -13,6 +13,25 @@ pool = db.create_pool()
 app = Flask(__name__)
 app.pool = pool
 
+def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
+    """
+    checks whether the user with the given session_id has the required role
+    Parameters:
+        cursor: cursor for the connection
+        session_id (str): session id of the user
+        required_role (UserRole): required role of the user
+    Returns:
+        dict: {"success": bool, "data": True} if user has required role, {"success": bool, "data": False} if user doesn't have required role, {"success": False, "error": e} if error occurred
+    """
+
+    result = sessions.get_user_role(cursor=cursor, session_id=session_id)
+    if result["success"] is False:
+        return result
+    user_role = result["data"]
+    if user_role >= required_role:
+        return {"success": True, "data": True}
+    return {"success": True, "data": False}
+
 def get_conn_cursor():
     conn = app.pool.getconn()
     cursor = conn.cursor()
@@ -136,14 +155,12 @@ def logout():
         status=204)
     return response
 
-
-
 @app.route("/auth/delete", methods=["DELETE"])
 def delete():
     """
     delete a user (set password to NULL)
     """
-    
+
     # load data
     data = request.get_json()
     session_id = data.get("session_id", None)
@@ -222,6 +239,52 @@ def guests():
     returns list of all guests
     """
 
+    # load data
+    data = request.get_json()
+    session_id = data.get("session_id", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"error": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only hosts can add guests
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"] is False:
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role host"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    # get guest list
+    result = guests.guest_list(cursor=cursor)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    response = Response(
+        response=json.dumps(result["data"]),
+        status=200,
+        mimetype="application/json")
+    )
+    return response
+
+
 @app.route("/websocket")
 def websocket():
     """
@@ -260,15 +323,14 @@ def guest_change():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
-    result = sessions.get_user_role(cursor=cursor, session_id=session_id)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"error": result["error"]}),
             status=401,
             mimetype="application/json")
         return response
-    user_role = result["data"]
-    if user_role != UserRole.HOST:
+    if result["data"] is False:
         response = Response(
             response=json.dumps({"error": "invalid permissions, need role host"}),
             status=403,

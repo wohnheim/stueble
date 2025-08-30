@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS stueble_motto (
     id SERIAL PRIMARY KEY, 
     motto TEXT NOT NULL,
-    date_of_time DATE NOT NULL,
+    date_of_time DATE NOT NULL UNIQUE,
     shared_apartment TEXT
 );
 
