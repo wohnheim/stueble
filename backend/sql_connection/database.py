@@ -272,7 +272,9 @@ def custom_call(connection, cursor, query: str, type_of_answer: ANSWER_TYPE, var
             cursor.execute(query)
         else:
             cursor.execute(query, variables)
-        connection.commit()
+        # can't be None when using UPDATE or DELETE or INSERT statements
+        if connection is not None:
+            connection.commit()
         if type_of_answer == ANSWER_TYPE.NO_ANSWER:
             return {"success": True}
         elif type_of_answer == ANSWER_TYPE.SINGLE_ANSWER:
