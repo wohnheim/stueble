@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, Response
 import json
 from backend.sql_connection import users, sessions, motto, guest_events as guests, database as db
 import backend.hash_pwd as hp
@@ -7,6 +7,8 @@ import backend.qr_code as qr
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
+# TODO always close connection after last request
+# NOTE frontend barely ever gets the real user role, rather just gets intern / extern
 # Initialize connections to database
 pool = db.create_pool()
 
@@ -95,8 +97,8 @@ def login():
 
     # create a new session
     result = sessions.create_session(connection=conn, cursor=cursor, user_id=user[0])
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}), 
             status=500, 
@@ -104,9 +106,6 @@ def login():
         return response
     
     session_id = result["data"]
-
-    # close cursor and return connection
-    close_conn_cursor(conn, cursor)
 
     # return 200
     response = Response(
@@ -118,7 +117,9 @@ def login():
 @app.route("/auth/signup", methods=["POST"])
 def signup():
     """
+    create a new user
     """
+
 
 @app.route("/auth/logout", methods=["POST"])
 def logout():
@@ -142,9 +143,10 @@ def logout():
     # remove session from table
     result = sessions.remove_session(connection=conn, cursor=cursor, session_id=session_id)
 
+    close_conn_cursor(conn, cursor)
+
     # if nothing could be removed, return error
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
             status=401,
@@ -176,7 +178,7 @@ def delete():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_session(cursor=cursor, session_id=session_id)
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -200,16 +202,13 @@ def delete():
 
     # remove session from table
     result = sessions.remove_session(connection=conn, cursor=cursor, session_id=session_id)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
             status=500,
             mimetype="application/json")
         return response
-
-    # close cursor and return connection
-    close_conn_cursor(conn, cursor)
 
     # return 204
     response = Response(
@@ -238,10 +237,11 @@ def get_motto():
             status=500,
             mimetype="application/json")
         return response
+
     response = Response(
         response=json.dumps(result["data"]),
         status=200,
-        mimetype="application/json"))
+        mimetype="application/json")
     return response
 
     # TODO add the option to see all mottos
@@ -295,7 +295,7 @@ def guests():
     response = Response(
         response=json.dumps(result["data"]),
         status=200,
-        mimetype="application/json")
+        mimetype="application/json"
     )
     return response
 
@@ -308,7 +308,46 @@ def websocket():
 @app.route("/user")
 def user():
     """
+    return data of the user
     """
+
+    # load data
+    data = request.get_json()
+    session_id = data.get("session_id", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"error": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # get user id from session id
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_role"])
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    data = result["data"]
+
+    user = {"first_name": data[0],
+            "last_name": data[1],
+            "room": data[2],
+            "residence": data[3],
+            "email": data[4],
+            "user_role": FrontendUserRole.EXTERN if data[5] == "extern" else FrontendUserRole.INTERN}
+
+    response = Response(
+        response=json.dumps(user),
+        status=200,
+        mimetype="application/json")
+    return response
 
 @app.route("/host/search_guest")
 def search():
@@ -352,8 +391,8 @@ def search():
             keywords=keywords,
             expect_single_answer=False)
 
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
             status=500,
@@ -361,7 +400,6 @@ def search():
         return response
 
     if result["data"] is None:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": "No user found with the given email"}),
             status=404,
@@ -392,7 +430,6 @@ def search():
         status=200,
         mimetype="application/json")
 
-    close_conn_cursor(conn, cursor)
     return response
 
 @app.route("/host/add_guest", methods=["POST"])

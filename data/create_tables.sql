@@ -90,3 +90,12 @@ CREATE TABLE IF NOT EXISTS configurations (
     value TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS allowed_users (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    room INTEGER CHECK (room > 0),
+    residence RESIDENCE NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL
+);
