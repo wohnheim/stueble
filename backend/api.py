@@ -3,6 +3,7 @@ import json
 from backend.sql_connection import users, sessions, motto, guest_events as guests, database as db
 import backend.hash_pwd as hp
 from backend.data_types import *
+import backend.qr_code as qr
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
@@ -230,6 +231,18 @@ def get_motto():
 
     # get motto from table
     result = motto.get_motto(cursor=cursor, date=date)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+    response = Response(
+        response=json.dumps(result["data"]),
+        status=200,
+        mimetype="application/json"))
+    return response
 
     # TODO add the option to see all mottos
 
@@ -255,12 +268,14 @@ def guests():
     # check permissions, since only hosts can add guests
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": "invalid permissions, need role host"}),
             status=403,
@@ -269,8 +284,8 @@ def guests():
 
     # get guest list
     result = guests.guest_list(cursor=cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
             status=500,
@@ -325,12 +340,14 @@ def guest_change():
     # check permissions, since only hosts can add guests
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": "invalid permissions, need role host"}),
             status=403,
@@ -350,16 +367,13 @@ def guest_change():
 
     # change guest status to arrive / leave
     result = guests.change_guest(connection=conn, cursor=cursor, stueble_code=guest_stueble_code, event_type=event_type)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
             status=500,
             mimetype="application/json")
         return response
-
-    # close cursor and return connection
-    close_conn_cursor(conn, cursor)
 
     # return 204
     response = Response(
