@@ -42,7 +42,7 @@ def get_session(cursor, session_id: str) -> dict:
     gets the session of a user from the table sessions
     Parameters:
         cursor: cursor for the connection
-        session_id (str): id of the user
+        session_id (str): id of the session
     Returns:
         dict: {"success": bool, "data": (session_id, expiration_date)}, {"success": False, "error": e} if error occurred
     """
@@ -78,24 +78,26 @@ def remove_session(connection, cursor, session_id: str) -> dict:
         return {"success": False, "error": "no session found"}
     return result
 
-def get_user_role(cursor, session_id: str) -> dict:
+def get_user(cursor, session_id: str, keywords: list[str]=["id, user_role"]) -> dict:
     """
     gets the user role of a user from the table users via the sessions table
     Parameters:
         cursor: cursor for the connection
         session_id (str): id of the user
+        keywords (list[str]): list of keywords to be returned
     Returns:
         dict: {"success": bool, "data": user_role}, {"success": False, "error": e} if error occurred
     """
 
+    allowed_keywords = ["id", "user_role", "first_name", "last_name", "email", "room", "residence"]
     result = db.read_table(
         cursor=cursor,
-        keywords=["u.user_role"],
+        keywords=["u" + i for i in keywords],
         table_name="sessions s JOIN users u ON s.user_id = u.id",
         expect_single_answer=True,
         conditions={"s.session_id": session_id})
     if result["success"] and result["data"] is None:
-        return {"success": False, "error": "no matchins session and user found"}
+        return {"success": False, "error": "no matching session and user found"}
     if result["success"]:
         result["data"] = UserRole(result["data"])
     return result
