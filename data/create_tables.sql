@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS events (
     id SERIAL PRIMARY KEY, 
     user_id INTEGER REFERENCES users(id) NOT NULL,
     event_type EVENT_TYPE NOT NULL,
-    submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    stueble_id INTEGER REFERENCES stueble_motto(id) CHECK ((event_type IN ('arrive', 'leave') AND stueble_id IS NOT NULL) OR (event_type NOT IN ('arrive', 'leave') AND stueble_id IS NULL))
 );
 
 CREATE TABLE IF NOT EXISTS events_affected_users (
