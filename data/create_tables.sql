@@ -77,6 +77,10 @@ CREATE TABLE IF NOT EXISTS configurations (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- set default configuration values
+INSERT INTO configurations (key, value) VALUES
+('session_expiration_days', '30');
+
 CREATE TABLE IF NOT EXISTS allowed_users (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
