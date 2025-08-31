@@ -4,3 +4,4 @@ bcrypt
 pytz
 python-dotenv
 qrcode
+flask_socketio
