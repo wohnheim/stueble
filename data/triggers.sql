@@ -60,3 +60,6 @@ CREATE TRIGGER event_add_user_trigger
 AFTER INSERT ON users
 FOR EACH ROW EXECUTE FUNCTION event_add_user();
 
+CREATE TRIGGER event_guest_change_trigger
+AFTER INSERT ON events
+FOR EACH ROW EXECUTE FUNCTION event_guest_change();
