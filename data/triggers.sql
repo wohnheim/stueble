@@ -35,6 +35,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION event_guest_change()
 RETURNS TRIGGER AS $$
 DECLARE event_id INTEGER;
+DECLARE affected RECORD;
 BEGIN
     IF NEW.event_type = 'arrive' OR NEW.event_type = 'leave'
     THEN
