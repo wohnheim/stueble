@@ -1,4 +1,5 @@
 from flask import Flask, request, Response
+from flask_socketio import SocketIO, emit
 import json
 from backend.sql_connection import users, sessions, motto, guest_events as guests, database as db
 import backend.hash_pwd as hp
@@ -14,6 +15,7 @@ pool = db.create_pool()
 
 # initialize flask app
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
 app.pool = pool
 
 def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
