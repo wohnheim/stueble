@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS stueble_codes (
     user_id INTEGER REFERENCES users(id) UNIQUE NOT NULL,
     code TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    date_of_time DATE NOT NULL,
+    date_of_time DATE NOT NULL REFERENCES stueble_motto(date_of_time),
     stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL, -- references the correct stueble event
     invited_by INTEGER REFERENCES users(id)
 );
@@ -79,7 +79,9 @@ CREATE TABLE IF NOT EXISTS configurations (
 
 -- set default configuration values
 INSERT INTO configurations (key, value) VALUES
-('session_expiration_days', '30');
+('session_expiration_days', '30'),
+('maximum_guests', '50'),
+('maximum_guests_per_user', '1');
 
 CREATE TABLE IF NOT EXISTS allowed_users (
     id SERIAL PRIMARY KEY,
@@ -93,7 +95,17 @@ CREATE TABLE IF NOT EXISTS allowed_users (
 
 -- check function for valid invited_by id in users
 CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
-    SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE user_id = $1 LIMIT 1), false);
+    SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE user_id = $1 LIMIT 1), false) AND
+           (
+               (SELECT COUNT(*)
+                FROM stueble_codes
+                WHERE invited_by = $1)
+                <  -- really smaller since one is added
+               (SELECT
+                    CAST(value AS INTEGER)
+                FROM configurations
+                WHERE key = 'maximum_guests_per_user')
+           );
 $$ LANGUAGE SQL;
 
 CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
@@ -104,3 +116,19 @@ $$ LANGUAGE SQL;
 ALTER TABLE stueble_codes
     ADD CONSTRAINT stueble_codes_invited_by_check
     CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by)));
+
+
+CREATE FUNCTION stueble_max_guests(INTEGER) RETURNS boolean AS $$
+    SELECT
+        (COUNT(*))
+        < -- really smaller since one is added
+        (SELECT CAST (value AS INTEGER)
+        FROM configurations
+        WHERE key = 'maximum_guests')
+    FROM stueble_codes
+    WHERE stueble_id = $1;
+$$ LANGUAGE SQL;
+
+ALTER TABLE stueble_codes
+    ADD CONSTRAINT stueble_codes_max_guests_check
+    CHECK (stueble_max_guests(stueble_id));
