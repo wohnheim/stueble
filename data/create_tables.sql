@@ -12,20 +12,6 @@ CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave', 'modify');
 -- enum for residence in table users
 CREATE TYPE RESIDENCE AS ENUM('altbau', 'neubau', 'anbau', 'hirte');
 
--- check function for valid invited_by id in users
-CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
-    SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE user_id = $1 LIMIT 1), false);
-$$ LANGUAGE SQL;
-
-CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
-    SELECT submitted FROM events WHERE id = $1 LIMIT 1;
-$$ LANGUAGE SQL;
-
--- CHECK-Constraint for valid invited_by id in stueble_codes
-ALTER TABLE stueble_codes
-    ADD CONSTRAINT stueble_codes_invited_by_check
-    CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by)));
-
 -- table to save users
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -99,3 +85,18 @@ CREATE TABLE IF NOT EXISTS allowed_users (
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL
 );
+
+
+-- check function for valid invited_by id in users
+CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
+    SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE user_id = $1 LIMIT 1), false);
+$$ LANGUAGE SQL;
+
+CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
+    SELECT submitted FROM events WHERE id = $1 LIMIT 1;
+$$ LANGUAGE SQL;
+
+-- CHECK-Constraint for valid invited_by id in stueble_codes
+ALTER TABLE stueble_codes
+    ADD CONSTRAINT stueble_codes_invited_by_check
+    CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by)));
