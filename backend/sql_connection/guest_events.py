@@ -26,15 +26,16 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
         inviter.id as inviter_id,
         inviter.first_name as inviter_first_name,
         inviter.last_name as inviter_last_name,
-        inviter.user_role as inviter_user_role
+        inviter.user_role as inviter_user_role, 
         
-        FROM (SELECT * 
+        guest.stueble_id as stueble_id
+        
+        FROM (SELECT users.*, sc.stueble_id
               FROM users 
-              WHERE id = (SELECT user_id 
-                          FROM stueble_codes 
-                          WHERE code = %s 
-                            AND (date_of_time = CURRENT_DATE 
-                              OR date_of_time = (CURRENT_DATE - INTERVAL '1 day'))
+              JOIN stueble_codes sc ON users.id = sc.user_id
+              WHERE code = %s 
+                AND (date_of_time = CURRENT_DATE 
+                OR date_of_time = (CURRENT_DATE - INTERVAL '1 day'))
               ))
         guest
         LEFT JOIN users inviter ON guest.invited_by = inviter.id;
@@ -70,6 +71,8 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
             "first_name": inviter_first_name,
             "last_name": inviter_last_name,
             "user_role": FrontendUserRole.EXTERN if inviter_user_role == "extern" else FrontendUserRole.INTERN}
+
+    data["stueble_id"] = result["data"][-1]
 
     # check if user is already present or absent
     result = db.read_table(
