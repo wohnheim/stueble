@@ -18,6 +18,9 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.pool = pool
 
+def valid_session_id(func)
+
+
 def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
     """
     checks whether the user with the given session_id has the required role
@@ -305,12 +308,13 @@ def guests():
 @app.route("/websocket")
 def websocket():
     """
+    send data to devices
     """
 
 @app.route("/user")
 def user():
     """
-    return data of the user
+    return data to hosts and admins
     """
 
     # load data
