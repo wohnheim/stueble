@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS configurations (
 INSERT INTO configurations (key, value) VALUES
 ('session_expiration_days', '30'),
 ('maximum_guests', '150'),
-('maximum_guests_per_user', '1');
+('maximum_invites_per_user', '1');
 
 CREATE TABLE IF NOT EXISTS allowed_users (
     id SERIAL PRIMARY KEY,

@@ -1,7 +1,7 @@
-from flask import Flask, request, Response
+from flask import Flask, request, Response, send_file
 from flask_socketio import SocketIO, emit
 import json
-from backend.sql_connection import users, sessions, motto, guest_events as guests, database as db
+from backend.sql_connection import users, sessions, motto, guest_events as guests, configs, stueble_codes as codes, database as db
 import backend.hash_pwd as hp
 from backend.data_types import *
 import backend.qr_code as qr
@@ -35,13 +35,14 @@ def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
         dict: {"success": bool, "data": True} if user has required role, {"success": bool, "data": False} if user doesn't have required role, {"success": False, "error": e} if error occurred
     """
 
-    result = sessions.get_user_role(cursor=cursor, session_id=session_id)
+    result = sessions.get_user(cursor=cursor, session_id=session_id)
     if result["success"] is False:
         return result
-    user_role = result["data"]
+    user_id = result["data"][0]
+    user_role = result["data"][1]
     if user_role >= required_role:
-        return {"success": True, "data": True}
-    return {"success": True, "data": False}
+        return {"success": True, "data": {"allowed": True, "user_id": user_id, "user_role": user_role}}
+    return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role}}
 
 def get_conn_cursor():
     conn = app.pool.getconn()
@@ -283,7 +284,7 @@ def guests():
             status=401,
             mimetype="application/json")
         return response
-    if result["data"] is False:
+    if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": "invalid permissions, need role host"}),
@@ -388,7 +389,7 @@ def search():
             status=401,
             mimetype="application/json")
         return response
-    if result["data"] is False:
+    if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": "invalid permissions, need at least role host"}),
@@ -476,7 +477,7 @@ def search():
 @app.route("host/remove_guest", methods=["POST"])
 def guest_change():
     """
-    add a guest to the guest_list of present people
+    add / remove a guest to the guest_list of present people
     """
 
     # load data
@@ -503,7 +504,7 @@ def guest_change():
             status=401,
             mimetype="application/json")
         return response
-    if result["data"] is False:
+    if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": "invalid permissions, need role host"}),
@@ -536,3 +537,116 @@ def guest_change():
     response = Response(
         status=204)
     return response
+
+def invite_friend():
+    """
+    invite a friend and share a qr-code
+    """
+
+    # load data
+    data = request.get_json()
+    session_id = data.get("session_id", None)
+    guest_stueble_code = data.get("guest_stueble_code", None)
+
+    if session_id is None or guest_stueble_code is None:
+        response = Response(
+            response=json.dumps({
+                "error": f"The {'session_id' if session_id is None else 'guest_stueble_code' if guest_stueble_code is None else 'session_id and guest_stueble_id'} must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only hosts can add guests
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role user"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    user_id = result["data"]["user_id"]
+
+    result = motto.get_info(cursor=cursor)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    stueble_id = result["data"][0]
+
+    result = users.get_invited_friends(cursor=cursor, user_id=user_id, stueble_id=stueble_id)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    friends = result["data"]
+
+    result = configs.get_configuration(cursor=cursor, key="maximum_invites_per_user")
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json"
+        )
+        return response
+
+    max_invites = int(result["data"])
+
+    if len(friends) >= max_invites:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "maximum number of invites already reached"}),
+            status=403,
+            mimetype="application/json"
+        )
+        return response
+
+    result = codes.add_guest(
+        connection=conn,
+        cursor=cursor,
+        user_id=user_id,
+        stueble_id=stueble_id)
+
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    code = result["data"]
+
+    try:
+        qr_code = qr.generate(code=code)
+    except Exception as e:
+        response = Response(
+            response=json.dumps({"error": e}),
+            status=500,
+            mimetype="application/json"
+        )
+        return  response
+
+    return send_file(qr_code, mimetype="image/png")
