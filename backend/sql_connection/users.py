@@ -175,3 +175,45 @@ def get_user(
     if expect_single_answer:
         return clean_single_data(result)
     return result
+
+def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
+    """
+    retrieves all friends that were invited by a specific user to a specific stueble party
+
+    Parameters:
+        cursor: cursor for the connection
+        user_id (int): id of the user who invited friends
+        stueble_id (int): id of the specific stueble party
+    Returns:
+        dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": friends} otherwise
+    """
+
+    query = """
+    SELECT users.first_name, users.last_name, users.user_role, users.personal_hash
+    FROM users
+    INNER JOIN (SELECT user_id FROM stueble_codes WHERE invited_by = %s AND stueble_id = %s) as invited ON users.id = invited.user_id"""
+
+    # check how many friends were invited by the user to a specific stueble party
+    result = db.custom_call(
+        connection=None,
+        cursor=cursor,
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER
+    )
+
+    if result["success"] is True and result["data"] is None:
+        # if no friends were invited, check if user is registered for the specific stueble
+        result = db.read_table(
+            cursor=cursor,
+            table_name="stueble_codes",
+            keywords=["user_id"],
+            conditions={"user_id": user_id},
+            expect_single_answer=True
+        )
+        if result["success"] is True and result["data"] is None:
+            return {"success": False, "error": "User has to be in stueble in order to invite friends."}
+        elif result["success"] is False:
+            return result
+        return {"success": True, "data": []}
+
+    return result

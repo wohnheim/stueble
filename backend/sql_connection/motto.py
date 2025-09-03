@@ -30,7 +30,7 @@ def get_motto(cursor, date: datetime.date | None=None) -> dict:
         return {"success": False, "error": "no motto found"}
     return result
 
-def get_info(cursor, date: datetime.date | None) -> dict:
+def get_info(cursor, date: datetime.date | None=None) -> dict:
     """
     gets the info from the table motto for a party at a specific date
     Parameters:
@@ -44,7 +44,7 @@ def get_info(cursor, date: datetime.date | None) -> dict:
         cursor=cursor,
         table_name="stueble_motto",
         keywords=["id", "motto"],
-        conditions={"date_of_time": date},
+        conditions={"date_of_time": date if date is not None else """SELECT date_of_time FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""},
         expect_single_answer=True
     )
 
