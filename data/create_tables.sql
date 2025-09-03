@@ -20,10 +20,11 @@ CREATE TABLE IF NOT EXISTS users (
     residence RESIDENCE NULL CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence IS NOT NULL)),
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
-    email VARCHAR(255) UNIQUE CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR password_hash is NULL),
     password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    personal_hash TEXT GENERATED ALWAYS AS (encode(gen_random_bytes(16), 'hex')) STORED UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
+    email VARCHAR(255) UNIQUE CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR password_hash is NULL),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    personal_hash TEXT GENERATED ALWAYS AS (
+        encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_name Text NOT NULL UNIQUE
 );
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS stueble_motto (
 CREATE TABLE IF NOT EXISTS stueble_codes (
     id SERIAL PRIMARY KEY, 
     user_id INTEGER REFERENCES users(id) UNIQUE NOT NULL,
-    code TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, 
+    code TEXT GENERATED ALWAYS AS (encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
     date_of_time DATE NOT NULL REFERENCES stueble_motto(date_of_time),
     stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL, -- references the correct stueble event
@@ -51,7 +52,8 @@ CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,
     expiration_date TIMESTAMPTZ NOT NULL, 
     user_id INTEGER REFERENCES users(id) NOT NULL,
-    session_id TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL
+    session_id TEXT GENERATED ALWAYS AS (
+        encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL
 );
 
 -- table to save user and host events
