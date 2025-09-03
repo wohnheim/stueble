@@ -3,7 +3,7 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- enum for user_role in table users
-CREATE TYPE USER_ROLE AS ENUM ('admin', 'host', 'user', 'extern');
+CREATE TYPE USER_ROLE AS ENUM ('admin', 'tutor', 'host', 'user', 'extern');
 
 -- enum for event_type in table events
 -- arrive, leave will be handled by python, add, remove, modify by triggers
@@ -20,11 +20,12 @@ CREATE TABLE IF NOT EXISTS users (
     residence RESIDENCE NULL CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence IS NOT NULL)),
     first_name TEXT NOT NULL, 
     last_name TEXT NOT NULL, 
-    email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$'),
+    email VARCHAR(255) UNIQUE CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR password_hash is NULL),
     password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    personal_hash TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
-    last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    personal_hash TEXT GENERATED ALWAYS AS (encode(gen_random_bytes(16), 'hex')) STORED UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
+    last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    user_name Text NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS stueble_motto (
@@ -80,7 +81,7 @@ CREATE TABLE IF NOT EXISTS configurations (
 -- set default configuration values
 INSERT INTO configurations (key, value) VALUES
 ('session_expiration_days', '30'),
-('maximum_guests', '50'),
+('maximum_guests', '150'),
 ('maximum_guests_per_user', '1');
 
 CREATE TABLE IF NOT EXISTS allowed_users (

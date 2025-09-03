@@ -265,7 +265,7 @@ def custom_call(connection, cursor, query: str, type_of_answer: ANSWER_TYPE, var
         type_of_answer (ANSWER_TYPE): what answer to expect
         variables (list): list of variables that should be passed into the query
     Returns:
-        :: None, single variable, list of variables: depending on type_of_answer
+        dict
     """
     try:
         if variables is None:

@@ -2,6 +2,8 @@ flask
 psycopg2-binary
 bcrypt
 pytz
+pyzbar
 python-dotenv
 qrcode
 flask_socketio
+pillow
