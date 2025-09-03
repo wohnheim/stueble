@@ -111,7 +111,6 @@ def update_user(
         return {"success": False, "error": "User doesn't exist."}
     return result
 
-
 def get_user(
         cursor,
         user_id: Annotated[int | None, "set EITHER user_id OR user_email"] = None,

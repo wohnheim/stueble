@@ -29,3 +29,11 @@ def read(qr_code: Image.Image):
     if result:
         return {"success": True, "data": result[0].data.decode("utf-8")}
     return {"success": False, "error": "No data found."}
+
+if __name__ == "__main__":
+    # Example usage
+    img = generate("https://musikraum.onrender.com/")
+    img.show()
+
+    decoded = read(img)
+    print(decoded)

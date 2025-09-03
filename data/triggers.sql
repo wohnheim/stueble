@@ -42,19 +42,19 @@ BEGIN
         INSERT INTO events (user_id, event_type, stueble_id)
         VALUES (NEW.user_id, NEW.event_type, NEW.stueble_id)
         RETURNING id INTO event_id;
-    END IF;
-    FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
-    LOOP
-        INSERT INTO events_affected_users (event_id, affected_user_id)
-        VALUES (event_id, affected.id);
-    END LOOP;
-    PERFORM pg_notify(
+        PERFORM pg_notify(
             'guest_list_update',
             json_build_object(
             'event', NEW.event_type,
             'user_id', NEW.user_id,
             'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
             )::text);
+    END IF;
+    FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
+    LOOP
+        INSERT INTO events_affected_users (event_id, affected_user_id)
+        VALUES (event_id, affected.id);
+    END LOOP;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

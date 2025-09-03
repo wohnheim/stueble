@@ -5,6 +5,7 @@ from backend.sql_connection import users, sessions, motto, guest_events as guest
 import backend.hash_pwd as hp
 from backend.data_types import *
 import backend.qr_code as qr
+from websocket_runner import listen_to_db
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
@@ -18,7 +19,9 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.pool = pool
 
-def valid_session_id(func)
+def valid_session_id(func):
+    def wrapper(*args, **kwargs):
+        pass
 
 
 def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
@@ -49,6 +52,7 @@ def close_conn_cursor(connection, cursor):
     cursor.close()
     app.pool.putconn(connection)
 
+# TODO email verification
 @app.route("/auth/login", methods=["POST"])
 def login():
     """
@@ -305,16 +309,17 @@ def guests():
     return response
 
 
-@app.route("/websocket")
 def websocket():
     """
     send data to devices
     """
 
+
+
 @app.route("/user")
 def user():
     """
-    return data to hosts and admins
+    return data to hosts and admins and tutors
     """
 
     # load data
@@ -362,12 +367,45 @@ def search():
     # load data
     data = request.get_json()
 
+    session_id = data.get("session_id", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"error": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # check permissions, since only hosts can see guests
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need at least role host"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    data = data.get("data", None)
+
     if data is None or not isinstance(data, dict):
         response = Response(
             response=json.dumps({"error": "The data must be a valid json object"}),
             status=400,
             mimetype="application/json")
         return response
+
+    # json format data: {"session_id: str, data: {"first_name": str or None, "last_name": str or None, "room": str or None, "residence": str or None, "email": str or None}}
 
     allowed_keys = ["first_name", "last_name", "room", "residence", "email"]
 
@@ -377,10 +415,6 @@ def search():
             status=400,
             mimetype="application/json")
         return response
-
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     keywords = ["first_name", "last_name", "room", "residence", "email", "user_role"]
 
     if "email" in data:

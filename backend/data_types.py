@@ -3,12 +3,14 @@ import re
 
 class UserRole(str, Enum):
     ADMIN = "admin"
+    TUTOR = "tutor"
     HOST = "host"
     USER = "user"
     EXTERN = "extern"
 
     _order = {
-        "admin": 3,
+        "admin": 4,
+        "tutor": 3,
         "host": 2,
         "user": 1,
         "extern": 0
