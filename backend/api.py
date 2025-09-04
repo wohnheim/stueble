@@ -6,6 +6,7 @@ import backend.hash_pwd as hp
 from backend.data_types import *
 import backend.qr_code as qr
 from websocket_runner import listen_to_db
+import re
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
@@ -53,7 +54,6 @@ def close_conn_cursor(connection, cursor):
     cursor.close()
     app.pool.putconn(connection)
 
-# TODO email verification
 @app.route("/auth/login", methods=["POST"])
 def login():
     """
@@ -650,3 +650,65 @@ def invite_friend():
         return  response
 
     return send_file(qr_code, mimetype="image/png")
+
+def reset_password():
+    """
+    reset password of a user
+    """
+
+    # load data
+    data = request.get_json()
+    email = data.get("email", None)
+
+    if email is None:
+        response = Response(
+            response=json.dumps({"error": "The email must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    # TODO check whether regex pattern is correct
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        response = Response(
+            response=json.dumps({"error": "The email is not valid"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check whether user with email exists
+    result = users.get_user(cursor=cursor, user_email=email, keywords=["id", "first_name", "last_name"], expect_single_answer=True)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+    if result["data"] is None:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "No user with the given email exists"}),
+            status=404,
+            mimetype="application/json")
+        return response
+
+    user_id = result["data"][0]
+    first_name = result["data"][1]
+    last_name = result["data"][2]
+
+    result = users.create_password_reset_code(connection=conn, cursor=cursor, user_id=user_id)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+    reset_token = result["data"]
+
+    email_text = f"""Hallo {first_name} {last_name},\nMit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}.\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+
+    # TODO send email with reset token

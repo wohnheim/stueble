@@ -84,7 +84,8 @@ CREATE TABLE IF NOT EXISTS configurations (
 INSERT INTO configurations (key, value) VALUES
 ('session_expiration_days', '30'),
 ('maximum_guests', '150'),
-('maximum_invites_per_user', '1');
+('maximum_invites_per_user', '1'),
+('reset_code_expiration_minutes', '60');
 
 CREATE TABLE IF NOT EXISTS allowed_users (
     id SERIAL PRIMARY KEY,
@@ -95,6 +96,12 @@ CREATE TABLE IF NOT EXISTS allowed_users (
     last_name TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS password_resets (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    reset_code TEXT GENERATED ALWAYS AS (encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
 
 -- check function for valid invited_by id in users
 CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
