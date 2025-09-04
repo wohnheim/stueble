@@ -113,8 +113,9 @@ def update_user(
 
 def get_user(
         cursor,
-        user_id: Annotated[int | None, "set EITHER user_id OR user_email"] = None,
-        user_email: Annotated[Email | None, "set EITHER user_id OR user_email"] = None,
+        user_id: Annotated[int | None, "set EITHER user_id OR user_email or user_name"] = None,
+        user_email: Annotated[Email | None, "set EITHER user_id OR user_email or user_name"] = None,
+        user_name: Annotated[str | None, "set EITHER user_id OR user_email or user_name"] = None,
         keywords: list[str] = ["*"],
         conditions: Annotated[dict, "Explicit with user_id, user_email, select_max_of_key, specific_where"] = {},
         expect_single_answer=True,
@@ -128,6 +129,7 @@ def get_user(
         cursor: cursor for the connection
         user_id (int | None): id of the user to be retrieved
         user_email (Email | None): email of the user to be retrieved
+        user_name (str | None): username of the user to be retrieved
         keywords (list[str]): list of fields to be retrieved, defaults to ["*"]
         conditions (dict): additional conditions for the query
         expect_single_answer (bool): whether to expect a single user or multiple users
@@ -143,11 +145,12 @@ def get_user(
         raise ValueError("Either expect_single_answer=True or order_by can be set.")
 
     # check, whether a where statement is set for sql query
-    if user_id is None and user_email is None and conditions == {} and specific_where == "":
-        raise ValueError("Either user_id, user_email, conditions or specific_where must be set.")
+    if user_id is None and user_email is None and user_name is None and conditions == {} and specific_where == "":
+        raise ValueError("Either user_id, user_email, user_name, conditions or specific_where must be set.")
     conditions_counter = 0
     if user_id is not None: conditions_counter += 1
     if user_email is not None: conditions_counter += 1
+    if user_name is not None: conditions_counter += 1
     if select_max_of_key != "": conditions_counter += 1
     if specific_where != "": conditions_counter += 1
     if conditions != {}: conditions_counter += 1
@@ -159,6 +162,8 @@ def get_user(
         conditions["id"] = user_id
     elif user_email is not None:
         conditions["email"] = user_email.email
+    elif user_name is not None:
+        conditions["user_name"] = user_name
     result = db.read_table(
         cursor=cursor,
         table_name="users",

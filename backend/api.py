@@ -962,6 +962,16 @@ def change_user_role():
             mimetype="application/json")
         return response
 
+    if user_email is not None:
+        try:
+            user_email = Email(user_email)
+        except ValueError:
+            response = Response(
+                response=json.dumps({"error": "The email is not valid"}),
+                status=400,
+                mimetype="application/json")
+            return response
+
     data = {"id": user_id} if user_id is not None else {"email": user_email}
     data["user_role"] = UserRole(new_role)
 
