@@ -814,6 +814,29 @@ def change_user_data():
             status=401,
             mimetype="application/json")
         return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role user or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    user_id = result["data"]["user_id"]
+
     data = {}
     if request.path == "/user/change_password":
         new_pwd = data.get("new_password", None)
@@ -846,12 +869,9 @@ def change_user_data():
             return response
         data["user_name"] = username
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id,
-                               keywords=list(data.keys()))
+    result = users.update_user(connection=conn, cursor=cursor, session_id=session_id,
+                               user_id=user_id, **data)
     close_conn_cursor(conn, cursor)
     if result["success"] is False and ("user_name" in data.keys()):
         error = result["error"]
@@ -870,4 +890,101 @@ def change_user_data():
     response = Response(
         status=204
     )
+    return response
+
+@app.route("/admin/change_user_role", methods=["POST"])
+def change_user_role():
+    """
+    change the user role of a user (only admin)
+    """
+
+    # load data, part 1
+    data = request.get_json()
+    session_id = data.get("session_id", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"error": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only hosts can add guests
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role admin"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    # load data, part 2
+    user_id = data.get("user_id", None)
+    user_email = data.get("user_email", None)
+    new_role = data.get("new_role", None)
+    if user_id is None and user_email is None:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "Either user_id or user_email must be specified, do not specify both."}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    if user_id is None and user_email is not None:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "Specify either user_id or email, but not both."}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    if new_role is None:
+        response = Response(
+            response=json.dumps({"error": "The new_role must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    if is_valid_role(new_role) is False or new_role == "admin":
+        response = Response(
+            response=json.dumps({"error": "The new_role must be a valid role (extern, user, host, tutor) and can't be admin"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    data = {"id": user_id} if user_id is not None else {"email": user_email}
+    data["user_role"] = UserRole(new_role)
+
+    result = users.update_user(
+        connection=conn,
+        cursor=cursor,
+        **data)
+
+    close_conn_cursor(conn, cursor)
+    if user["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    if result["data"] is None:
+        response = Response(
+            response=json.dumps({"error": "No user found with the given user_id / email"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    response = Response(
+        status=204)
     return response
