@@ -59,6 +59,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION remove_old_password_resets()
+RETURNS trigger AS $$
+BEGIN
+WITH config AS (reset_code_expiration_minutes AS expiration_time
+FROM configurations)
+DELETE FROM password_resets
+USING config
+WHERE created_at + (config.expiration_time || ' minute')::interval > NOW();
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
 CREATE TRIGGER event_change_user_trigger
 AFTER UPDATE OR DELETE ON users
 FOR EACH ROW EXECUTE FUNCTION event_change_user();
@@ -70,3 +83,7 @@ FOR EACH ROW EXECUTE FUNCTION event_add_user();
 CREATE TRIGGER event_guest_change_trigger
 AFTER INSERT ON events
 FOR EACH ROW EXECUTE FUNCTION event_guest_change();
+
+CREATE TRIGGER remove_old_password_resets_trigger
+    AFTER INSERT OR UPDATE OR DELETE OR READ ON password_resets
+    FOR EACH ROW EXECUTE FUNCTION remove_old_password_resets();

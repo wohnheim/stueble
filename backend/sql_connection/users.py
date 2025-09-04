@@ -138,7 +138,7 @@ def get_user(
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": user} otherwise
     """
 
-    # check, whether explicity of expect_single_answer and order_by is met
+    # check, whether explicitly of expect_single_answer and order_by is met
     if expect_single_answer and order_by != {}:
         raise ValueError("Either expect_single_answer=True or order_by can be set.")
 
@@ -216,4 +216,28 @@ def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
             return result
         return {"success": True, "data": []}
 
+    return result
+
+def create_password_reset_code(connection, cursor, user_id: int) -> dict:
+    """
+    creates a password reset code for a specific user
+
+    Parameters:
+        connection: connection to the db
+        cursor: cursor for the connection
+        user_id (int): id of the user
+    Returns:
+        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
+    """
+
+    result = db.insert_table(
+        connection=connection,
+        cursor=cursor,
+        table_name="password_resets",
+        arguments={"user_id": user_id},
+        returning_column="reset_code")
+
+    # maybe shouldn't be possible, but still left in
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "error occurred"}
     return result
