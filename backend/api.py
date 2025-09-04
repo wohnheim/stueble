@@ -796,3 +796,78 @@ def confirm_code():
         status=200,
         mimetype="application/json")
     return response
+
+@app.route("/user/change_password", methods=["POST"])
+@app.route("/user/change_username", methods=["POST"])
+def change_user_data():
+    """
+    changes user data when logged in \n
+    different from password reset, since user is logged in here
+    """
+
+    # load data
+    data = request.get_json()
+    session_id = data.get("session_id", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"error": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+    data = {}
+    if request.path == "/user/change_password":
+        new_pwd = data.get("new_password", None)
+        if new_pwd is None:
+            response = Response(
+                response=json.dumps({"error": "The new_password must be specified"}),
+                status=400,
+                mimetype="application/json")
+            return response
+        if new_pwd == "":
+            response = Response(
+                response=json.dumps({"error": "Password cannot be empty"}),
+                status=400,
+                mimetype="application/json")
+            return response
+        data["password_hash"] = hp.hash_pwd(new_pwd)
+    elif request.path == "/user/change_username":
+        username = data.get("user_name", None)
+        if username is None:
+            response = Response(
+                response=json.dumps({"error": f"Username must be specified"}),
+                status=400,
+                mimetype="application/json")
+            return response
+        if username == "":
+            response = Response(
+                response=json.dumps({"error": "Username cannot be empty"}),
+                status=400,
+                mimetype="application/json")
+            return response
+        data["user_name"] = username
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # get user id from session id
+    result = sessions.get_user(cursor=cursor, session_id=session_id,
+                               keywords=list(data.keys()))
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False and ("user_name" in data.keys()):
+        error = result["error"]
+        if f"Key (user_name)=({data['user_name']}) already exists." in error:
+            response = Response(
+                response=json.dumps({"error": "Username already exists"}),
+                status=400,
+                mimetype="application/json")
+            return response
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+    response = Response(
+        status=204
+    )
+    return response

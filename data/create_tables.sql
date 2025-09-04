@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
     personal_hash TEXT GENERATED ALWAYS AS (
         encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    user_name Text NOT NULL UNIQUE
+    user_name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS stueble_motto (
