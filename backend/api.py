@@ -538,6 +538,7 @@ def guest_change():
         status=204)
     return response
 
+@app.route("/user/invite_friend", methods=["POST"])
 def invite_friend():
     """
     invite a friend and share a qr-code
@@ -651,7 +652,8 @@ def invite_friend():
 
     return send_file(qr_code, mimetype="image/png")
 
-def reset_password():
+@app.route("/auth/reset_password", methods=["POST"])
+def reset_password_mail():
     """
     reset password of a user
     """
@@ -712,3 +714,85 @@ def reset_password():
     email_text = f"""Hallo {first_name} {last_name},\nMit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}.\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
     # TODO send email with reset token
+
+@app.route("/auth/reset_password_confirm", methods=["POST"])
+def confirm_code():
+    """
+    confirm the reset code and set a new password
+    """
+
+    # load data
+    data = request.get_json()
+    reset_token = data.get("reset_token", None)
+    new_password = data.get("new_password", None)
+
+    if reset_token is None or new_password is None:
+        response = Response(
+            response=json.dumps({"error": f"The {'reset_token' if reset_token is None else 'new_password' if new_password is None else 'reset_token and new_password'} must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    if new_password == "":
+        response = Response(
+            response=json.dumps({"error": "password cannot be empty"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check whether reset token exists
+    result = users.confirm_reset_code(cursor=cursor, reset_code=reset_token)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    user_id = result["data"]
+
+    # hash new password
+    hashed_password = hp.hash_pwd(new_password)
+
+    # set new password
+    result = users.update_user(connection=conn, cursor=cursor, user_id=user_id, password_hash=hashed_password)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    # remove all existing sessions of the user
+    result = sessions.remove_user_sessions(connection=conn, cursor=cursor, user_id=user_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    # create a new session
+    result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    session_id = result["data"]
+
+    # return 200
+    response = Response(
+        response=json.dumps({"session_id": session_id}),
+        status=200,
+        mimetype="application/json")
+    return response

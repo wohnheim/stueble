@@ -5,6 +5,9 @@ from typing import Annotated
 from datetime import datetime, timedelta
 import pytz
 
+from backend.sql_connection.common_functions import clean_single_data
+
+
 def create_session(connection, cursor, user_id: int) -> dict:
     """
     creates a session for a user in the table sessions
@@ -35,7 +38,9 @@ def create_session(connection, cursor, user_id: int) -> dict:
         table_name="sessions",
         arguments={"user_id": user_id, "expiration_date": expiration_date},
         returning_column="session_id")
-    return result
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "error occurred"}
+    return clean_single_data(result)
 
 def get_session(cursor, session_id: str) -> dict:
     """
@@ -98,6 +103,27 @@ def get_user(cursor, session_id: str, keywords: list[str]=["id, user_role"]) -> 
         conditions={"s.session_id": session_id})
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "no matching session and user found"}
-    if result["success"]:
-        result["data"] = UserRole(result["data"])
+    if result["success"] and len(keywords) == 1:
+        return clean_single_data(result["data"])
+    return result
+
+def remove_user_sessions(connection, cursor, user_id: int) -> dict:
+    """
+    removes all sessions of a user from the table sessions
+    Parameters:
+        connection: connection to the db
+        cursor: cursor for the connection
+        user_id (int): id of the user
+    Returns:
+        dict: {"success": bool, "data": data}, {"success": False, "error": e} if error occurred
+    """
+
+    result = db.remove_table(
+        connection=connection,
+        cursor=cursor,
+        table_name="sessions",
+        conditions={"user_id": user_id},
+        returning_column="session_id")
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "no sessions found"}
     return result

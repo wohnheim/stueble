@@ -93,7 +93,7 @@ def update_user(
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
     """
 
-    allowed_fields = ["user_role", "room", "residence", "first_name", "last_name", "email", "password_hash"]
+    allowed_fields = ["user_role", "room", "residence", "first_name", "last_name", "email", "password_hash", "user_name"]
     for k, v in kwargs:
         if k not in allowed_fields:
             raise ValueError(f"Field {k} is not allowed to be updated.")
@@ -241,3 +241,28 @@ def create_password_reset_code(connection, cursor, user_id: int) -> dict:
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "error occurred"}
     return result
+
+def confirm_reset_code(cursor, reset_code: str):
+    """
+    confirms a password reset code for a specific user
+
+    Parameters:
+        cursor: cursor for the connection
+        reset_code (str): reset code of the user
+    Returns:
+        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
+    """
+
+    result = db.read_table(
+        cursor=cursor,
+        table_name="password_resets",
+        keywords=["user_id"],
+        conditions={"reset_code": reset_code},
+        expect_single_answer=True
+    )
+
+    if result["success"] is False:
+        return result
+    if result["data"] is None:
+        return {"success": False, "error": "Reset code doesn't exist."}
+    return clean_single_data(result)
