@@ -22,7 +22,9 @@ DBNAME: stueble_data
 - https://www.saturn.de/de/product/_lenovo-b2b-lenovo-tab-lte-business-tablet-64-gb-101-zoll-luna-grey-2980027.html
 - Accountsperre einrichten
 - Superadmin erstellen (mit eigenem Login)
-- Benutzername
+- Benutzername, change username
 - Passwort zurücksetzen
 - Email, Room, Residence nicht für Hosts nicht einsehbar, bereitstellen, wer eingeladen hat
 - Email von Gästen nicht speichern
+- testing
+- update sql db
