@@ -109,7 +109,7 @@ def update_user(
                              conditions=conditions, returning_column="id")
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "User doesn't exist."}
-    return result
+    return clean_single_data(result)
 
 def get_user(
         cursor,
