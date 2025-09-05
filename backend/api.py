@@ -7,6 +7,7 @@ from backend.sql_connection import (
     motto,
     guest_events as guests,
     configs,
+    websocket,
     signup_validation as signup,
     stueble_codes as codes,
     database as db)
@@ -26,9 +27,6 @@ pool = db.create_pool()
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.pool = pool
-
-# Host-Clients, that receive guestlist-updates
-host_clients = set()
 
 def valid_session_id(func):
     def wrapper(*args, **kwargs):
@@ -1123,7 +1121,7 @@ def handle_connect():
     conn, cursor = get_conn_cursor()
 
     # check permissions
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -1133,10 +1131,42 @@ def handle_connect():
         return response
     if result["data"]["allowed"] is False:
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role user or above"}),
+            response=json.dumps({"error": "invalid permissions, need role host or above"}),
             status=403,
             mimetype="application/json")
         return response
 
-    if result["data"]["allowed"] is True:
-        host_clients.add(request.sid)
+    if result["data"]["allowed"] is False:
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role host or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    result = websocket.get_websocket_sids(cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    result = websocket.add_websocket_sid(
+        cursor=cursor,
+        connection=conn,
+        sid=request.sid,
+        user_id=result["data"]["user_id"],
+        session_id=session_id)
+
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    emit("connected", {"message": "connected to websocket", "sid": request.sid})
+
+    response = Response(
+        status=200)
+    return response
