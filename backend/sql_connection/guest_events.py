@@ -118,7 +118,7 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
 
     return {"success": True, "data": data}
 
-def guest_list(cursor, stueble_id: int | None) -> dict:
+def guest_list(cursor, stueble_id: int | None=None) -> dict:
     """
     returns list of all guests that are currently present
     Parameters:

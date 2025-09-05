@@ -510,7 +510,7 @@ def search():
             mimetype="application/json")
         return response
 
-    # json format data: {"session_id: str, data: {"first_name": str or None, "last_name": str or None, "room": str or None, "residence": str or None, "email": str or None}}
+    # json format data: {"session_id": str, data: {"first_name": str or None, "last_name": str or None, "room": str or None, "residence": str or None, "email": str or None}}
 
     allowed_keys = ["first_name", "last_name", "room", "residence", "email"]
 
