@@ -424,7 +424,7 @@ def websocket():
 @app.route("/user")
 def user():
     """
-    return data to hosts and admins and tutors
+    return data to user
     """
 
     # load data
@@ -457,7 +457,7 @@ def user():
             "room": data[2],
             "residence": data[3],
             "email": data[4],
-            "user_role": FrontendUserRole.EXTERN if data[5] == "extern" else FrontendUserRole.INTERN}
+            "user_role": UserRole(data[5])}
 
     response = Response(
         response=json.dumps(user),
@@ -522,11 +522,24 @@ def search():
         return response
     keywords = ["first_name", "last_name", "room", "residence", "email", "user_role"]
 
+    if any(key in data.keys() for key in ["room", "residence"]) and not all(key in data.keys() for key in ["room", "residence"]):
+        response = Response(
+            response=json.dumps({"error": "If room or residence is specified, both must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
     if "email" in data:
         result = db.read_table(
             cursor=cursor,
             keywords=keywords,
             conditions={"email": data["email"]},
+            expect_single_answer=True)
+    elif "room" in data:
+        result = db.read_table(
+            cursor=cursor,
+            keywords=keywords,
+            conditions={"room": data["room"], "residence": data["residence"]},
             expect_single_answer=True)
     else:
         conditions = {key: value for key, value in data.items() if value is not None}
@@ -545,14 +558,10 @@ def search():
         return response
 
     if result["data"] is None:
-        response = Response(
-            response=json.dumps({"error": "No user found with the given email"}),
-            status=404,
-            mimetype="application/json")
-        return response
+        result["data"] = []
 
     users = []
-    if "email" in data:
+    if "email" in result["data"]:
         data = result["data"]
         user = {"first_name": data[0],
                 "last_name": data[1],
