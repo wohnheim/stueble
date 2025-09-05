@@ -1,4 +1,3 @@
-import psycopg2.errors
 from flask import Flask, request, Response, send_file
 from flask_socketio import SocketIO, emit
 import json
@@ -14,7 +13,6 @@ from backend.sql_connection import (
 import backend.hash_pwd as hp
 from backend.data_types import *
 import backend.qr_code as qr
-from websocket_runner import listen_to_db
 import re
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
@@ -28,6 +26,9 @@ pool = db.create_pool()
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.pool = pool
+
+# Host-Clients, that receive guestlist-updates
+host_clients = set()
 
 def valid_session_id(func):
     def wrapper(*args, **kwargs):
@@ -392,7 +393,7 @@ def guests():
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role host"}),
+            response=json.dumps({"error": "invalid permissions, need role host or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -612,7 +613,7 @@ def guest_change():
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role host"}),
+            response=json.dumps({"error": "invalid permissions, need role host or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -678,7 +679,7 @@ def invite_friend():
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role user"}),
+            response=json.dumps({"error": "invalid permissions, need role user or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -1103,3 +1104,39 @@ def change_user_role():
     response = Response(
         status=204)
     return response
+
+@socketio.on("connect")
+def handle_connect():
+    """
+    handle a new websocket connection
+    """
+
+    session_id = request.data.get("session_id", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"error": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role user or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    if result["data"]["allowed"] is True:
+        host_clients.add(request.sid)

@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS stueble_codes (
     user_id INTEGER REFERENCES users(id) UNIQUE NOT NULL,
     code TEXT GENERATED ALWAYS AS (encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    date_of_time DATE NOT NULL REFERENCES stueble_motto(date_of_time),
+    date_of_time DATE NOT NULL REFERENCES stueble_motto(date_of_time) ON DELETE CASCADE,
     stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL, -- references the correct stueble event
     invited_by INTEGER REFERENCES users(id)
 );
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS stueble_codes (
 CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,
     expiration_date TIMESTAMPTZ NOT NULL, 
-    user_id INTEGER REFERENCES users(id) NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     session_id TEXT GENERATED ALWAYS AS (
         encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL
 );
@@ -99,8 +99,17 @@ CREATE TABLE IF NOT EXISTS allowed_users (
 
 CREATE TABLE IF NOT EXISTS password_resets (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     reset_code TEXT GENERATED ALWAYS AS (encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- saves the specific sids for a websocket connection for a user and their device
+CREATE TABLE IF NOT EXISTS websocket_sids (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    sid TEXT UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
