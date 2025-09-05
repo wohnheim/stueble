@@ -1170,3 +1170,36 @@ def handle_connect():
     response = Response(
         status=200)
     return response
+
+@app.route("/websocket_local", methods=["POST"])
+def websocket_change():
+    """
+    receive data from websocket_runner and send it to all connected clients
+    """
+
+    if request.remote_addr != "127.0.0.1":
+        response = Response(
+            response=json.dumps({"error": "Unauthorized, only local requests are allowed"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # load data
+    data = request.get_json()
+    first_name = data.get("first_name", None)
+    last_name = data.get("last_name", None)
+    personal_hash = data.get("personal_hash", None)
+    stueble_id = data.get("stueble_id", None)
+    event = data.get("event", None)
+    if first_name is None or last_name is None or event is None:
+        response = Response(
+            response=json.dumps({"error": f"first_name, last_name and event must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    emit("guest_list_update", {"payload": {"first_name": first_name, "last_name": last_name, "event": event}})
+
+    response = Response(
+        status=200)
+    return response

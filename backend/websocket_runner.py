@@ -1,13 +1,12 @@
 import select
 import json
+import psycopg2
+import requests
+import warnings
+
 import backend.sql_connection.database as db
 from backend.sql_connection import users
-import warnings
-from enum import Enum
-
-class Event_Notify(str, Enum):
-    ARRIVE = "ARRIVE"
-    LEAVE = "LEAVE"
+from backend.data_types import *
 
 def is_valid_event_notify(other):
     if isinstance(other, Event_Notify):
@@ -18,7 +17,7 @@ conn = db.connect()
 cursor = conn.cursor()
 
 cursor.execute("LISTEN guest_list_update;")
-def listen_to_db(connection, socketio):
+def listen_to_db(connection):
     """
     Listens to the database for notifications on the channel 'guest_list_update'.
     When a notification is received, it processes the payload and retrieves user information.
@@ -26,8 +25,8 @@ def listen_to_db(connection, socketio):
 
     Parameters:
         connection: psycopg2 connection object
-        socketio: SocketIO object to emit events to clients
     """
+    connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)  # autocommit mode
     while True:
         if select.select([connection], [], [], 0.5) == ([], [], []):
             continue
@@ -40,6 +39,7 @@ def listen_to_db(connection, socketio):
                 warnings.warn("Keys don't match")
                 continue
             event = data["event"] # only possible events are arrive and leave for notifications to be sent
+            event = Event_Notify(event)
             user_id = data["user_id"]
             stueble_id = data["stueble_id"]
             result = users.get_user(cursor=cursor, user_id=user_id, keywords=["first_name", "last_name", "personal_hash"])
@@ -47,9 +47,15 @@ def listen_to_db(connection, socketio):
                 # TODO catch this, e.g. by sending an error message to api.py
                 warnings.warn(f"Could not get user with id {user_id}")
                 continue
-            # NOTE only use personal_hash for the guest_list not publically available for hosts etc.
+            # NOTE only use personal_hash for the guest_list not publicly available for hosts etc.
             first_name, last_name, personal_hash = result["data"]
             data = {"first_name": first_name,
                     "last_name": last_name,
-                    "personal_hash": personal_hash}
-            socketio.emit("db_event", {"payload": data})
+                    "personal_hash": personal_hash,
+                    "stueble_id": stueble_id,
+                    "event": event}
+            response = requests.post("http://127.0.0.1:5000/websocket_local", json=data)
+            if response.status_code != 200:
+                warnings.warn(f"Could not send data to websocket server: {response.text}")
+                continue
+            # TODO handle error

@@ -118,30 +118,37 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
 
     return {"success": True, "data": data}
 
-def guest_list(cursor, stueble_id: int) -> dict:
+def guest_list(cursor, stueble_id: int | None) -> dict:
     """
     returns list of all guests that are currently present
     Parameters:
         cursor: cursor from connection
-        stueble_id (int): id for a specific stueble party
+        stueble_id (int | None): id for a specific stueble party, if None the current stueble party is used
     """
 
-    query = """
+    parameters = {}
+
+    if stueble_id is None:
+        stueble_info = """(SELECT stueble_id FROM stueble WHERE date_of_time = CURRENT_DATE OR date_of_time = (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time DESC LIMIT 1;)"""
+    else:
+        stueble_info = "%s"
+        parameters["variables"] = [stueble_id]
+
+    query = f"""
     SELECT  id, user_id, event_type, submitted FROM (
         SELECT 
             *, 
             ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY submitted DESC) as rn
         FROM events
-            WHERE stueble_id = %s) AS subquery
+            WHERE stueble_id = {stueble_info}) AS subquery
     ORDER BY user_id, submitted ASC;
     """
-
     result = db.custom_call(
         connection=None,
         cursor=cursor,
         query=query,
-        variables=[stueble_id],
-        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+        **parameters)
     if result["success"] is False:
         return result
 
