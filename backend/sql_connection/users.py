@@ -6,7 +6,7 @@ from backend.sql_connection.common_functions import clean_single_data
 
 
 def add_user(connection, cursor, user_role: UserRole, room: str | int, residence: Residence, first_name: str, last_name: str,
-             email: Email, password_hash: str, returning: str="") -> dict:
+             email: Email, password_hash: str, user_name: str, returning: str="") -> dict:
     """
     adds a user to the table users
 
@@ -20,6 +20,7 @@ def add_user(connection, cursor, user_role: UserRole, room: str | int, residence
         last_name (str): last name of the user
         email (Email): email of the user
         password_hash (str): password hash of the user
+        user_name (str): username of the user
         returning (str): which column to return
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
@@ -35,15 +36,16 @@ def add_user(connection, cursor, user_role: UserRole, room: str | int, residence
         cursor=cursor,
         table_name="users",
         arguments={"user_role": user_role.value, "room": room, "residence": residence.value, "first_name": first_name,
-                   "last_name": last_name, "email": email.email, "password_hash": password_hash},
+                   "last_name": last_name, "email": email.email, "password_hash": password_hash, "user_name": user_name},
         returning_column=returning)
     if returning != "" and result["success"]:
         return clean_single_data(result)
     return result
 
 
-def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER user_id OR user_email"] = None,
-                user_email: Annotated[Email | None, "set EITHER user_id OR user_email"] = None):
+def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name"] = None,
+                user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name"] = None,
+                user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name"] = None) -> dict:
     """
     removes a user from the table users \n
     actually not the whole user but just their password will be set to NULL
@@ -53,16 +55,19 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
         cursor: cursor for the connection
         user_id (int | None): id of the user to be removed
         user_email (Email | None): email of the user to be removed
+        user_name (str | None): username of the user to be removed
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
     """
-    if user_id is None and user_email is None:
-        return ValueError("Either user_id or user_email must be set.")
+    if user_id is None and user_email is None and user_name is None:
+        return ValueError("Either user_id or user_email or user_name must be set.")
     conditions = {}
     if user_id is not None:
         conditions["id"] = user_id
-    else:
+    elif user_email is not None:
         conditions["email"] = user_email.email
+    elif user_name is not None:
+        conditions["user_name"] = user_name
     result = db.update_table(connection=connection, cursor=cursor, table_name="users",
                              arguments={"password_hash": None}, conditions=conditions, returning_column="user_role")
     if result["success"] is False:
@@ -77,8 +82,9 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
 def update_user(
         connection,
         cursor,
-        user_id: Annotated[int | None, "set EITHER user_id OR user_email"] = None,
-        user_email: Annotated[Email | None, "set EITHER user_id OR user_email"] = None,
+        user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name"] = None,
+        user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name"] = None,
+        user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name"] = None,
         **kwargs) -> dict:
     """
     updates a user in the table users
@@ -88,6 +94,7 @@ def update_user(
         cursor: cursor for the connection
         user_id (int | None): id of the user to be updated
         user_email (Email | None): email of the user to be updated
+        user_name (str | None): username of the user to be updated
         **kwargs: fields to update
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
@@ -98,13 +105,15 @@ def update_user(
         if k not in allowed_fields:
             raise ValueError(f"Field {k} is not allowed to be updated.")
 
-    if user_id is None and user_email is None:
-        raise ValueError("Either user_id or user_email must be set.")
+    if user_id is None and user_email is None and user_name is None:
+        raise ValueError("Either user_id or user_email or user_name must be set.")
     conditions = {}
     if user_id is not None:
         conditions["id"] = user_id
-    else:
+    elif user_email is not None:
         conditions["email"] = user_email.email
+    else:
+        conditions["user_name"] = user_name
     result = db.update_table(connection=connection, cursor=cursor, table_name="users", arguments=kwargs,
                              conditions=conditions, returning_column="id")
     if result["success"] and result["data"] is None:

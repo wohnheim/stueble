@@ -2,7 +2,15 @@ import psycopg2.errors
 from flask import Flask, request, Response, send_file
 from flask_socketio import SocketIO, emit
 import json
-from backend.sql_connection import users, sessions, motto, guest_events as guests, configs, stueble_codes as codes, database as db
+from backend.sql_connection import (
+    users,
+    sessions,
+    motto,
+    guest_events as guests,
+    configs,
+    signup_validation as signup,
+    stueble_codes as codes,
+    database as db)
 import backend.hash_pwd as hp
 from backend.data_types import *
 import backend.qr_code as qr
@@ -149,18 +157,57 @@ def signup():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
+    # check whether user data is valid
     try:
-        pass
-    except psycopg2.errors.UniqueViolation:
-        close_conn_cursor(conn, cursor)
+        user_info["room"] = int(user_info["room"])
+    except ValueError:
         response = Response(
-            response=json.dumps({"error": "Email or username already exists"}),
+            response=json.dumps({"error": "Room must be a number"}),
             status=400,
             mimetype="application/json")
         return response
+
+    if not is_valid_residence(user_info["residence"]):
+        response = Response(
+            response=json.dumps({"error": "Invalid residence"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    try:
+        user_info["email"] = Email(email=user_info["email"])
+    except ValueError:
+        response = Response(
+            response=json.dumps({"error": "Invalid email format"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check whether user data is unique
+    result = signup.validate_user_data(**user_info)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=result["status"],
+            mimetype="application/json")
+        return response
+
+    # hash password
+    hashed_password = hp.hash_pwd(user_info["password"])
+    user_info["password_hash"] = hashed_password
+    del user_info["password"]
+
+    # add user to table
+    result = users.add_user(
+        connection=conn,
+        cursor=cursor,
+        user_role=UserRole.USER,
+
+    )
 
 @app.route("/auth/logout", methods=["POST"])
 def logout():
