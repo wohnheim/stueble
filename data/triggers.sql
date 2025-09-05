@@ -71,6 +71,12 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION update_websocket_sids()
+RETURNS trigger AS $$
+BEGIN
+DELETE FROM websocket_ids WHERE (SELECT user_role FROM users WHERE id = NEW.user_id) NOT IN ('admin', 'tutor', 'host');
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER event_change_user_trigger
 AFTER UPDATE OR DELETE ON users
@@ -85,5 +91,9 @@ AFTER INSERT ON events
 FOR EACH ROW EXECUTE FUNCTION event_guest_change();
 
 CREATE TRIGGER remove_old_password_resets_trigger
-    AFTER INSERT OR UPDATE OR DELETE OR READ ON password_resets
+    AFTER INSERT OR UPDATE OR DELETE OR SELECT ON password_resets
     FOR EACH ROW EXECUTE FUNCTION remove_old_password_resets();
+
+CREATE TRIGGER update_websocket_sids_trigger
+    AFTER INSERT OR UPDATE  OR SELECT ON users
+    FOR EACH ROW EXECUTE FUNCTION update_websocket_sids();
