@@ -66,18 +66,18 @@ DELETE FROM websocket_sids WHERE (SELECT user_role FROM users WHERE id = NEW.use
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER event_change_user_trigger
+CREATE OR REPLACE TRIGGER event_change_user_trigger
 AFTER UPDATE OR DELETE ON users
 FOR EACH ROW EXECUTE FUNCTION event_change_user();
 
-CREATE TRIGGER event_add_user_trigger
+CREATE OR REPLACE TRIGGER event_add_user_trigger
 AFTER INSERT ON users
 FOR EACH ROW EXECUTE FUNCTION event_add_user();
 
-CREATE TRIGGER event_guest_change_trigger
+CREATE OR REPLACE TRIGGER event_guest_change_trigger
 AFTER INSERT ON events
 FOR EACH ROW EXECUTE FUNCTION event_guest_change();
 
-CREATE TRIGGER update_websocket_sids_trigger
+CREATE OR REPLACE TRIGGER update_websocket_sids_trigger
     AFTER INSERT OR UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_websocket_sids();
