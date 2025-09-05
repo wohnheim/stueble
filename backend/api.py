@@ -1,3 +1,4 @@
+import psycopg2.errors
 from flask import Flask, request, Response, send_file
 from flask_socketio import SocketIO, emit
 import json
@@ -129,7 +130,37 @@ def signup():
     """
     create a new user
     """
+    # load data
+    data = request.get_json()
 
+    user_info = {}
+    user_info["room"] = data.get("room", None)
+    user_info["residence"] = data.get("residence", None)
+    user_info["first_name"] = data.get("first_name", None)
+    user_info["last_name"] = data.get("last_name", None)
+    user_info["email"] = data.get("email", None)
+    user_info["user_name"] = data.get("user_name", None)
+    user_info["password"] = data.get("password", None)
+
+    if any(e is None for e in user_info.values()):
+        response = Response(
+            response=json.dumps({"error": f"The following fields must be specified: {', '.join([key for key, value in user_info.items() if value is None])}"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    try:
+        pass
+    except psycopg2.errors.UniqueViolation:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "Email or username already exists"}),
+            status=400,
+            mimetype="application/json")
+        return response
 
 @app.route("/auth/logout", methods=["POST"])
 def logout():

@@ -29,10 +29,11 @@ CREATE TABLE IF NOT EXISTS users (
     user_name TEXT NOT NULL UNIQUE
 );
 
+-- table for stueble mottos
 CREATE TABLE IF NOT EXISTS stueble_motto (
     id SERIAL PRIMARY KEY, 
     motto TEXT NOT NULL,
-    date_of_time DATE NOT NULL UNIQUE,
+    date_of_time DATE NOT NULL UNIQUE CHECK (date_of_time > CURRENT_DATE),
     shared_apartment TEXT
 );
 
@@ -142,3 +143,6 @@ $$ LANGUAGE SQL;
 ALTER TABLE stueble_codes
     ADD CONSTRAINT stueble_codes_max_guests_check
     CHECK (stueble_max_guests(stueble_id));
+
+ALTER TABLE users
+ADD CONSTRAINT unique_room_residence UNIQUE (room, residence);

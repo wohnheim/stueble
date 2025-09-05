@@ -1,3 +1,5 @@
+# NOTE: shouldn't be needed
+
 from flask import request_tearing_down
 
 from backend.sql_connection import users, database as db
