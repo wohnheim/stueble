@@ -62,7 +62,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION update_websocket_sids()
 RETURNS trigger AS $$
 BEGIN
-DELETE FROM websocket_ids WHERE (SELECT user_role FROM users WHERE id = NEW.user_id) NOT IN ('admin', 'tutor', 'host');
+DELETE FROM websocket_sids WHERE (SELECT user_role FROM users WHERE id = NEW.user_id) NOT IN ('admin', 'tutor', 'host');
 END;
 $$ LANGUAGE plpgsql;
 
