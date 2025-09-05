@@ -60,3 +60,7 @@ class Email:
         if not isinstance(email, str) or not self.pattern.match(email):
             raise ValueError("Invalid email format")
         self.email = email
+
+class Event_Notify(str, Enum):
+    ARRIVE = "ARRIVE"
+    LEAVE = "LEAVE"

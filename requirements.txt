@@ -7,3 +7,4 @@ python-dotenv
 qrcode
 flask_socketio
 pillow
+requests

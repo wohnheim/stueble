@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS users (
     user_role USER_ROLE NOT NULL,
     room INTEGER CHECK ((user_role = 'extern' AND room IS NULL) OR (user_role != 'extern' AND room > 0)),
     residence RESIDENCE NULL CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence IS NOT NULL)),
-    first_name TEXT NOT NULL, 
-    last_name TEXT NOT NULL, 
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
     password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
     email VARCHAR(255) UNIQUE CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR password_hash is NULL),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- table for stueble mottos
 CREATE TABLE IF NOT EXISTS stueble_motto (
-    id SERIAL PRIMARY KEY, 
+    id SERIAL PRIMARY KEY,
     motto TEXT NOT NULL,
     date_of_time DATE NOT NULL UNIQUE CHECK (date_of_time > CURRENT_DATE),
     shared_apartment TEXT
@@ -39,10 +39,10 @@ CREATE TABLE IF NOT EXISTS stueble_motto (
 
 -- table for stueble codes
 CREATE TABLE IF NOT EXISTS stueble_codes (
-    id SERIAL PRIMARY KEY, 
+    id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) UNIQUE NOT NULL,
     code TEXT GENERATED ALWAYS AS (encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     date_of_time DATE NOT NULL REFERENCES stueble_motto(date_of_time) ON DELETE CASCADE,
     stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL, -- references the correct stueble event
     invited_by INTEGER REFERENCES users(id)
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS stueble_codes (
 -- table to save login sessions
 CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,
-    expiration_date TIMESTAMPTZ NOT NULL, 
+    expiration_date TIMESTAMPTZ NOT NULL,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     session_id TEXT GENERATED ALWAYS AS (
         encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 -- table to save user and host events
 CREATE TABLE IF NOT EXISTS events (
-    id SERIAL PRIMARY KEY, 
+    id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) NOT NULL,
     event_type EVENT_TYPE NOT NULL,
     submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -111,6 +111,17 @@ CREATE TABLE IF NOT EXISTS websocket_sids (
     session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE UNIQUE NOT NULL,
     sid TEXT UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- error table
+CREATE TABLE IF NOT EXISTS error_logs (
+    id SERIAL PRIMARY KEY,
+    error_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    raised_by INTEGER REFERENCES error_logs(id), -- self reference for errors raised by error handling
+    error_message TEXT NOT NULL,
+    stack_trace TEXT,
+    raised_python TEXT,
+    actions_taken BOOLEAN DEFAULT FALSE
 );
 
 -- check function for valid invited_by id in users
