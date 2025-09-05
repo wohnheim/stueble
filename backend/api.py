@@ -206,8 +206,35 @@ def signup():
         connection=conn,
         cursor=cursor,
         user_role=UserRole.USER,
+        returning="id",
+        **user_info)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
 
-    )
+    user_id = result["data"]
+
+    # create a new session
+    result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    session_id = result["data"]
+
+    # return 200
+    response = Response(
+        response=json.dumps({"session_id": session_id}),
+        status=200,
+        mimetype="application/json")
+    return response
 
 @app.route("/auth/logout", methods=["POST"])
 def logout():
