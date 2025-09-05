@@ -1,8 +1,4 @@
-# NOTE: shouldn't be needed
-
-from flask import request_tearing_down
-
-from backend.sql_connection import users, database as db
+from backend.sql_connection import database as db
 from backend.data_types import *
 
 def validate_user_data(cursor,
@@ -47,12 +43,12 @@ def validate_user_data(cursor,
     if not isinstance(email, Email):
         return {"success": False, "error": "Invalid email format, must be of type Email"}
 
-    query = """SELECT email, user_name FROM users WHERE email = %s OR user_name = %s;"""
+    query = """SELECT email, user_name, room, residence FROM users WHERE email = %s OR user_name = %s OR (room = %s AND residence = %s);"""
     result = db.custom_call(
         connection=None,
         cursor=cursor,
         query=query,
-        variables=[email.email, user_name],
+        variables=[email.email, user_name, room, residence.value],
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
     if result["success"] is False:
@@ -61,12 +57,14 @@ def validate_user_data(cursor,
 
     email_list = [row[0] for row in result["data"]]
     user_name_list = [row[1] for row in result["data"]]
+    room_residence_list = [(row[2], row[3]) for row in result["data"]]
+
     if len(result["data"]) != 0:
-        if email.email in email_list and user_name in user_name_list:
-            return {"success": False, "error": "Email and username already exist", "status": 400}
+        if (room, residence.value) in room_residence_list:
+            return {"success": False, "error": "For this apartment an account already exists.", "status": 400}
         if email.email in email_list:
-            return {"success": False, "error": "Email already exists", "status": 400}
+            return {"success": False, "error": "For this email an account already exists.", "status": 400}
         if user_name in user_name_list:
-            return {"success": False, "error": "Username already exists", "status": 400}
+            return {"success": False, "error": "Username already exists.", "status": 400}
 
     return {"success": True, "status": 200}
