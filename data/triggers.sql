@@ -59,18 +59,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION remove_old_password_resets()
-RETURNS trigger AS $$
-BEGIN
-WITH config AS (reset_code_expiration_minutes AS expiration_time
-FROM configurations)
-DELETE FROM password_resets
-USING config
-WHERE created_at + (config.expiration_time || ' minute')::interval > NOW();
-RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION update_websocket_sids()
 RETURNS trigger AS $$
 BEGIN
@@ -90,10 +78,6 @@ CREATE TRIGGER event_guest_change_trigger
 AFTER INSERT ON events
 FOR EACH ROW EXECUTE FUNCTION event_guest_change();
 
-CREATE TRIGGER remove_old_password_resets_trigger
-    AFTER INSERT OR UPDATE OR DELETE OR SELECT ON password_resets
-    FOR EACH ROW EXECUTE FUNCTION remove_old_password_resets();
-
 CREATE TRIGGER update_websocket_sids_trigger
-    AFTER INSERT OR UPDATE  OR SELECT ON users
+    AFTER INSERT OR UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_websocket_sids();
