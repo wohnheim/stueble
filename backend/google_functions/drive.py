@@ -5,7 +5,7 @@ from datetime import date
 
 from backend import export
 from backend.sql_connection import database as db
-from backend.google.google import login
+from backend.google_functions.google import login
 
 def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type: str):
     """
