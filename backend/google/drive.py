@@ -1,16 +1,19 @@
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaInMemoryUpload
+from datetime import date
 
 from backend import export
 from backend.sql_connection import database as db
 from backend.google.google import login
 
-def send_file_to_drive(file_name: str, file_data: str, mime_type: str):
+def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type: str):
     """
-    Upload a file to Google Drive.
+    Upload a file to a specific folder in Google Drive.
     Parameters:
         file_name (str): The name of the file to be uploaded.
-        file_data (str): The content of the file.
+        folder_name (str): The name of the folder where the file will be uploaded; The folder will be created.
+        content (str): The content of the file.
         mime_type (str): The MIME type of the file.
     Returns:
         dict: A dictionary containing the success status and the file ID or an error message.
@@ -18,18 +21,35 @@ def send_file_to_drive(file_name: str, file_data: str, mime_type: str):
     creds = login()
 
     try:
+        # create drive api client
         service = build("drive", "v3", credentials=creds)
+        folder_metadata = {
+            "name": folder_name,
+            "mimeType": "application/vnd.google-apps.folder",
+        }
 
-        # TODO: implement resumable file upload
+        folder = service.files().create(body=folder_metadata, fields="id").execute()
+
+        file_metadata = {
+            "name": file_name,
+            "parents": [folder.get("id")]
+        }
+
+        media = MediaInMemoryUpload(content.encode('utf-8'), mimetype=mime_type)
+        file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
+        return {"success": True, "data": {"folder_id": folder.get("id"), "file_id": file.get("id")}}
+
     except HttpError as error:
         return {"success": False, "error": error}
 
-def export_stueble_guests(cursor, stueble_id: int):
+def export_stueble_guests(cursor, stueble_id: int, date: date):
     """
     Export the guest list for a specific Stueble event.
     Parameters:
         cursor: Database cursor object.
         stueble_id (int): The ID of the Stueble event.
+        date (date): The date of the event.
     """
 
     keywords = ["id, user_id", "event_type", "submitted"]
@@ -52,3 +72,10 @@ def export_stueble_guests(cursor, stueble_id: int):
 
     csv = csv["data"]
 
+    upload = upload_file_folder(
+        file_name=f"guest_list_stueble_{stueble_id}__{date.day}_{date.month}_{date.year}.csv",
+        folder_name=f"stueble_{stueble_id}__{date.day}_{date.month}_{date.year}",
+        content=csv,
+        mime_type="text/csv")
+
+    return upload
