@@ -48,7 +48,7 @@ BEGIN
             )::text);
     END IF;
     FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
-    LOOPs
+    LOOP
         INSERT INTO events_affected_users (event_id, affected_user_id)
         VALUES (event_id, affected.id);
     END LOOP;
