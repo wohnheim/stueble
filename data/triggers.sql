@@ -39,7 +39,7 @@ DECLARE affected RECORD;
 BEGIN
     IF NEW.event_type = 'arrive' OR NEW.event_type = 'leave'
     THEN
-        IF (SELECT events.event_type FROM events WHERE (user_id = NEW.user_id) AND (stueble_id = NEW.stueble_id) ORDER BY submitted DESC LIMIT 1) = NEW.event_type
+        IF (SELECT event_type FROM events WHERE ((user_id = NEW.user_id) AND (stueble_id = NEW.stueble_id)) ORDER BY submitted DESC LIMIT 1) = NEW.event_type
             THEN
                 RAISE EXCEPTION 'Duplicate event: User % already has an event of type % for stueble %', NEW.user_id, NEW.event_type, NEW.stueble_id;
         END IF;
