@@ -39,9 +39,6 @@ DECLARE affected RECORD;
 BEGIN
     IF NEW.event_type = 'arrive' OR NEW.event_type = 'leave'
     THEN
-        INSERT INTO events (user_id, event_type, stueble_id)
-        VALUES (NEW.user_id, NEW.event_type, NEW.stueble_id)
-        RETURNING id INTO event_id;
         PERFORM pg_notify(
             'guest_list_update',
             json_build_object(
@@ -51,7 +48,7 @@ BEGIN
             )::text);
     END IF;
     FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
-    LOOP
+    LOOPs
         INSERT INTO events_affected_users (event_id, affected_user_id)
         VALUES (event_id, affected.id);
     END LOOP;

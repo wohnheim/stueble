@@ -1,5 +1,7 @@
 -- Description: create tables, types, check functions for database
 
+SET TIMEZONE TO 'Europe/Berlin';
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- enum for user_role in table users
