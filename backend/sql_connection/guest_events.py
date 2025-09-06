@@ -74,7 +74,8 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
 
     data["stueble_id"] = result["data"][-1]
 
-    # check if user is already present or absent
+    # last event already checked in insert using trigger
+    """# check if user is already present or absent
     result = db.read_table(
         cursor=cursor,
         table_name="events",
@@ -101,7 +102,7 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
     # make sure last_event isn't the same as the current event
     if last_event == event_type:
         return {"success": False, "error": f"Guest is already {'present' if event_type == EventType.ARRIVE else 'absent'}"}
-
+"""
     # add user to events
     result = db.insert_table(
         connection=connection,
