@@ -3,7 +3,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-def login():
+def authenticate():
     """
     Log in to the Gmail API using OAuth 2.0 credentials.
     """

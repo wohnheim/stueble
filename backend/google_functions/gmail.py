@@ -1,5 +1,5 @@
 from backend.data_types import Email
-from backend.google_functions.google import login
+from backend.google_functions.authentification import authenticte
 import os.path
 import base64
 from email.mime.text import MIMEText
@@ -29,7 +29,7 @@ def send_mail(recipient: Email, subject: str, body: str):
   """Shows basic usage of the Gmail API.
   Lists the user's Gmail labels.
   """
-  creds = login()
+  creds = authenticte()
 
   try:
     service = build("gmail", "v1", credentials=creds)

@@ -5,7 +5,7 @@ from datetime import date
 
 from backend import export
 from backend.sql_connection import database as db
-from backend.google_functions.google import login
+from backend.google_functions.authentification import authenticte
 
 def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type: str):
     """
@@ -18,7 +18,7 @@ def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type
     Returns:
         dict: A dictionary containing the success status and the file ID or an error message.
     """
-    creds = login()
+    creds = authenticte()
 
     try:
         # create drive api client
