@@ -18,7 +18,7 @@ def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type
     Returns:
         dict: A dictionary containing the success status and the file ID or an error message.
     """
-    creds = authenticte()
+    creds = authenticate()
 
     try:
         # create drive api client
