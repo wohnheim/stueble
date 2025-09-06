@@ -1,5 +1,5 @@
 from backend.data_types import Email
-from backend.google.google import login
+from backend.google_functions.google import login
 import os.path
 import base64
 from email.mime.text import MIMEText
