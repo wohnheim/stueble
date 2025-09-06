@@ -14,7 +14,7 @@ from backend.sql_connection import (
 import backend.hash_pwd as hp
 from backend.data_types import *
 import backend.qr_code as qr
-from backend import gmail
+from backend.google import gmail
 import re
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
