@@ -254,7 +254,7 @@ def remove_table(connection, cursor, table_name: str, conditions: dict, returnin
         connection.rollback()
         return {"success": False, "error": e}
 
-def custom_call(connection, cursor, query: str, variables: list | None=None, type_of_answer: ANSWER_TYPE):
+def custom_call(connection, cursor, query: str, type_of_answer: ANSWER_TYPE, variables: list | None=None):
     """
     send a custom query to the database
 
