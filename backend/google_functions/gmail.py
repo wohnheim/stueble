@@ -29,7 +29,7 @@ def send_mail(recipient: Email, subject: str, body: str):
   """Shows basic usage of the Gmail API.
   Lists the user's Gmail labels.
   """
-  creds = authenticte()
+  creds = authenticate()
 
   try:
     service = build("gmail", "v1", credentials=creds)
