@@ -34,7 +34,6 @@ simple-websocket
 pyparsing
 httplib2
 oauthlib
-psycopg2
 idna
 charset-normalizer
 bidict
