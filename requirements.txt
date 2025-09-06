@@ -8,3 +8,6 @@ qrcode
 flask_socketio
 pillow
 requests
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

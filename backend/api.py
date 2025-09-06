@@ -14,6 +14,7 @@ from backend.sql_connection import (
 import backend.hash_pwd as hp
 from backend.data_types import *
 import backend.qr_code as qr
+from backend import gmail
 import re
 
 # TODO make sure that change password doesn't allow an empty password, since that would delete the user
@@ -520,7 +521,7 @@ def search():
             status=400,
             mimetype="application/json")
         return response
-    keywords = ["first_name", "last_name", "room", "residence", "email", "user_role"]
+    keywords = ["first_name", "last_name", "email", "user_role"]
 
     if any(key in data.keys() for key in ["room", "residence"]) and not all(key in data.keys() for key in ["room", "residence"]):
         response = Response(
@@ -562,22 +563,26 @@ def search():
 
     users = []
     if "email" in result["data"]:
+        # showing only a part of the email
+        email = data[2]
+        email = email[:2] + "*" * (re.search("@", email).start() - 2) + email[re.search("@", email).start():]
+
         data = result["data"]
         user = {"first_name": data[0],
                 "last_name": data[1],
-                "room": data[2],
-                "residence": data[3],
-                "email": data[4],
-                "user_role": FrontendUserRole.EXTERN if data[5] == "extern" else FrontendUserRole.INTERN}
+                "email": email,
+                "user_role": FrontendUserRole.EXTERN if data[3] == "extern" else FrontendUserRole.INTERN}
         users.append(user)
     else:
         for entry in result["data"]:
+            # showing only a part of the email
+            email = entry[2]
+            email = email[:2] + "*" * (re.search("@", email).start() - 2) + email[re.search("@", email).start():]
+
             users.append({"first_name": entry[0],
                           "last_name": entry[1],
-                          "room": entry[2],
-                          "residence": entry[3],
-                          "email": entry[4],
-                          "user_role": FrontendUserRole.EXTERN if entry[5] == "extern" else FrontendUserRole.INTERN})
+                          "email": email,
+                          "user_role": FrontendUserRole.EXTERN if entry[3] == "extern" else FrontendUserRole.INTERN})
 
     response = Response(
         response=json.dumps({"users": users}),
@@ -774,27 +779,32 @@ def reset_password_mail():
     # load data
     data = request.get_json()
     email = data.get("email", None)
+    user_name = data.get("user_name", None)
 
-    if email is None:
+    if email is None and user_name is None:
         response = Response(
-            response=json.dumps({"error": "The email must be specified"}),
+            response=json.dumps({"error": "Either email or username must be specified"}),
             status=400,
             mimetype="application/json")
         return response
 
-    # TODO check whether regex pattern is correct
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-        response = Response(
-            response=json.dumps({"error": "The email is not valid"}),
-            status=400,
-            mimetype="application/json")
-        return response
+    if email is not None:
+        try:
+            email = Email(email=email)
+        except ValueError:
+            response = Response(
+                response=json.dumps({"error": "Invalid email format"}),
+                status=400,
+                mimetype="application/json")
+            return response
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
+    value = {"user_email": email} if email is not None else {"user_name": user_name}
+
     # check whether user with email exists
-    result = users.get_user(cursor=cursor, user_email=email, keywords=["id", "first_name", "last_name"], expect_single_answer=True)
+    result = users.get_user(cursor=cursor, keywords=["id", "first_name", "last_name", "email"], expect_single_answer=True, **value)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -813,6 +823,9 @@ def reset_password_mail():
     user_id = result["data"][0]
     first_name = result["data"][1]
     last_name = result["data"][2]
+    email = result["data"][3]
+
+    email = Email(email=email)
 
     result = users.create_password_reset_code(connection=conn, cursor=cursor, user_id=user_id)
     close_conn_cursor(conn, cursor)
@@ -824,9 +837,19 @@ def reset_password_mail():
         return response
     reset_token = result["data"]
 
-    email_text = f"""Hallo {first_name} {last_name},\nMit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}.\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+    subject = "Passwort zurücksetzen"
+    body = f"""Hallo {first_name} {last_name},\nMit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}.\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
-    # TODO send email with reset token
+    result = gmail.send_mail(recipient=email, subject=subject, body=body)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": result["error"]}),
+            status=500,
+            mimetype="application/json")
+        return response
+    response = Response(
+        status=204)
+    return response
 
 @app.route("/auth/reset_password_confirm", methods=["POST"])
 def confirm_code():
