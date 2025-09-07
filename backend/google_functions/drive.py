@@ -54,9 +54,10 @@ def export_stueble_guests(cursor, stueble_id: int):
 
     # TODO: only allow exports for past stuebles (earliest is 12 o clock noon next day)
 
-    keywords = ["id", "event_type", "submitted"]
+    keywords_events = ["id", "event_type", "submitted"]
+    keywords_users = ["first_name", "last_name", "email", "room", "residence"]
 
-    query = f"""SELECT {', '.join(['events.' + keyword for keyword in keywords])}, users.first_name, users.last_name, user.email, users.room, users.residence
+    query = f"""SELECT {', '.join(['events.' + keyword for keyword in keywords_events])}, {', '.join(['users.' + keyword for keyword in keywords_users])}
                 FROM (SELECT * FROM events WHERE stueble_id = %s) AS events
                 LEFT JOIN users ON events.user_id = users.id;
                 """
@@ -72,7 +73,7 @@ def export_stueble_guests(cursor, stueble_id: int):
         return {"success": False, "error": result["error"]}
 
     data = result["data"]
-    data = [{key: value for key, value in zip(keywords, row)} for row in data]
+    data = [{key: value for key, value in zip(keywords_events + keywords_users, row)} for row in data]
     csv = export.export_csv(data)
     if csv["success"] is False:
         return {"success": False, "error": csv["message"]}
