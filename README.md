@@ -27,4 +27,4 @@ DBNAME: stueble_data
 - Email, Room, Residence nicht für Hosts nicht einsehbar, bereitstellen, wer eingeladen hat
 - Email von Gästen nicht speichern
 - testing
-- update sql db
+- Add timelimit to host role

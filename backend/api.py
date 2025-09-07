@@ -17,7 +17,6 @@ import backend.qr_code as qr
 from backend.google_functions import gmail
 import re
 
-# TODO make sure that change password doesn't allow an empty password, since that would delete the user
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
 # TODO always close connection after last request
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
@@ -42,10 +41,13 @@ def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
         session_id (str): session id of the user
         required_role (UserRole): required role of the user
     Returns:
-        dict: {"success": bool, "data": True} if user has required role, {"success": bool, "data": False} if user doesn't have required role, {"success": False, "error": e} if error occurred
+        dict: {"success": bool, "data": {"allowed": bool, "user_id": int, "user_role": UserRole}, {"success": False, "error": e} if error occurred
     """
 
+    # get the user_id, user_role by session_id
     result = sessions.get_user(cursor=cursor, session_id=session_id)
+
+    # if error occurred, return error
     if result["success"] is False:
         return result
     user_id = result["data"][0]
@@ -55,11 +57,17 @@ def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
     return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role}}
 
 def get_conn_cursor():
+    """
+    gets a connection and a cursor from the connection pool
+    """
     conn = app.pool.getconn()
     cursor = conn.cursor()
     return conn, cursor
 
 def close_conn_cursor(connection, cursor):
+    """
+    closes the cursor and returns the connection to the pool
+    """
     cursor.close()
     app.pool.putconn(connection)
 
@@ -73,9 +81,21 @@ def login():
     data = request.get_json()
     email = data.get("email", None)
     password = data.get("password", None)
+
+    # password can't be empty
     if password == "":
         response = Response(
             response=json.dumps({"error": "password cannot be empty"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # if the email is in wrong format, return error
+    try:
+        email = Email(email)
+    except ValueError:
+        response = Response(
+            response=json.dumps({"error": "invalid email format"}),
             status=401,
             mimetype="application/json")
         return response
@@ -84,7 +104,7 @@ def login():
     if email is None or password is None:
         response = Response(
             response=json.dumps({"error": "specify email and password"}),
-            status=401,
+            status=400,
             mimetype="application/json")
         return response
     
@@ -99,7 +119,7 @@ def login():
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
-            status=401,
+            status=500,
             mimetype="application/json")
         return response
 
@@ -116,7 +136,8 @@ def login():
 
     # create a new session
     result = sessions.create_session(connection=conn, cursor=cursor, user_id=user[0])
-    close_conn_cursor(conn, cursor)
+
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"error": result["error"]}), 
@@ -141,6 +162,7 @@ def signup():
     # load data
     data = request.get_json()
 
+    # initialize user_info
     user_info = {}
     user_info["room"] = data.get("room", None)
     user_info["residence"] = data.get("residence", None)
@@ -150,6 +172,7 @@ def signup():
     user_info["user_name"] = data.get("user_name", None)
     user_info["password"] = data.get("password", None)
 
+    # if a value wasn't set, return error
     if any(e is None for e in user_info.values()):
         response = Response(
             response=json.dumps({"error": f"The following fields must be specified: {', '.join([key for key, value in user_info.items() if value is None])}"}),
@@ -157,7 +180,7 @@ def signup():
             mimetype="application/json")
         return response
 
-    # check whether user data is valid
+    # check, whether user data is valid
     try:
         user_info["room"] = int(user_info["room"])
     except ValueError:
@@ -167,6 +190,7 @@ def signup():
             mimetype="application/json")
         return response
 
+    # check, whether residence is valid
     if not is_valid_residence(user_info["residence"]):
         response = Response(
             response=json.dumps({"error": "Invalid residence"}),
@@ -174,6 +198,7 @@ def signup():
             mimetype="application/json")
         return response
 
+    # check, whether email is valid
     try:
         user_info["email"] = Email(email=user_info["email"])
     except ValueError:
@@ -208,6 +233,8 @@ def signup():
         user_role=UserRole.USER,
         returning="id",
         **user_info)
+
+    # if server error occurred, return error
     if result["success"] is False:
         response = Response(
             response=json.dumps({"error": result["error"]}),
@@ -219,7 +246,8 @@ def signup():
 
     # create a new session
     result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
-    close_conn_cursor(conn, cursor)
+
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"error": result["error"]}),
@@ -343,9 +371,30 @@ def get_motto():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
+    # if date is None, return all stuebles
+    if date is None:
+        result = db.read_table(
+            cursor=cursor,
+            table_name="motto",
+            keywords=["motto", "date_of_time"],
+            order_by=("date_of_time", 0), # descending
+            expect_single_answer=False)
+        close_conn_cursor(conn, cursor) # close conn, cursor
+        if result["success"] is False:
+            response = Response(
+                response=json.dumps({"error": result["error"]}),
+                status=500,
+                mimetype="application/json")
+            return response
+        response = Response(
+            response=json.dumps(result["data"]),
+            status=200,
+            mimetype="application/json")
+        return response
+
     # get motto from table
     result = motto.get_motto(cursor=cursor, date=date)
-    close_conn_cursor(conn, cursor)
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"error": result["error"]}),
@@ -358,8 +407,6 @@ def get_motto():
         status=200,
         mimetype="application/json")
     return response
-
-    # TODO add the option to see all mottos
 
 @app.route("/guests")
 def guests():
@@ -386,20 +433,20 @@ def guests():
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": result["error"]}),
-            status=401,
+            status=500,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": "invalid permissions, need role host or above"}),
-            status=403,
+            status=401,
             mimetype="application/json")
         return response
 
     # get guest list
     result = guests.guest_list(cursor=cursor)
-    close_conn_cursor(conn, cursor)
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"error": result["error"]}),
@@ -414,14 +461,6 @@ def guests():
     )
     return response
 
-
-def websocket():
-    """
-    send data to devices
-    """
-
-
-
 @app.route("/user")
 def user():
     """
@@ -434,7 +473,7 @@ def user():
     if session_id is None:
         response = Response(
             response=json.dumps({"error": "The session_id must be specified"}),
-            status=401,
+            status=400,
             mimetype="application/json")
         return response
 
@@ -453,6 +492,7 @@ def user():
 
     data = result["data"]
 
+    # initialize user
     user = {"first_name": data[0],
             "last_name": data[1],
             "room": data[2],
@@ -469,6 +509,7 @@ def user():
 @app.route("/host/search_guest")
 def search():
     """
+    search for a guest
     """
     # load data
     data = request.get_json()
