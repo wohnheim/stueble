@@ -1,6 +1,7 @@
 -- Description: create tables, types, check functions for database
 
 SET TIMEZONE TO 'Europe/Berlin';
+SET DateStyle TO ISO, DMY;
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
