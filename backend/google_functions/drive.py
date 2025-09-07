@@ -81,6 +81,7 @@ def export_stueble_guests(cursor, stueble_id: int):
     if result["success"] is False:
         return {"success": False, "error": result["error"]}
 
+    print(result["data"])
     date = datetime.datetime.strptime(result["data"], '%Y-%m-%d').date()
 
     upload = upload_file_folder(
