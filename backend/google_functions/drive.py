@@ -25,7 +25,7 @@ def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type
         service = build("drive", "v3", credentials=creds)
         folder_metadata = {
             "name": folder_name,
-            "mimeType": "application/vnd.google_functions-apps.folder",
+            "mimeType": "application/vnd.google-apps.folder",
         }
 
         folder = service.files().create(body=folder_metadata, fields="id").execute()
@@ -81,7 +81,9 @@ def export_stueble_guests(cursor, stueble_id: int):
     if result["success"] is False:
         return {"success": False, "error": result["error"]}
 
-    date = result["data"]
+    date = result["data"][0]
+    print(date)
+    print(type(date))
     print(date.day, date.month, date.year)
 
     upload = upload_file_folder(
