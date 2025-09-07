@@ -81,8 +81,8 @@ def export_stueble_guests(cursor, stueble_id: int):
     if result["success"] is False:
         return {"success": False, "error": result["error"]}
 
-    print(result["data"])
-    date = datetime.datetime.strptime(result["data"], '%Y-%m-%d').date()
+    date = result["data"]
+    print(date.day, date.month, date.year)
 
     upload = upload_file_folder(
         file_name=f"guest_list_stueble_{stueble_id}__{date.day}_{date.month}_{date.year}.csv",
