@@ -77,7 +77,7 @@ AFTER INSERT ON users
 FOR EACH ROW EXECUTE FUNCTION event_add_user();
 
 CREATE OR REPLACE TRIGGER event_guest_change_trigger
-AFTER INSERT ON events
+BEFORE INSERT ON events
 FOR EACH ROW EXECUTE FUNCTION event_guest_change();
 
 CREATE OR REPLACE TRIGGER update_websocket_sids_trigger
