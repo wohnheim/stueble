@@ -55,14 +55,19 @@ def export_stueble_guests(cursor, stueble_id: int):
     # TODO: do not export user_id but rather the data about the user
     # TODO: only allow exports for past stuebles (earliest is 12 o clock noon next day)
 
-    keywords = ["id", "user_id", "event_type", "submitted"]
+    keywords = ["id", "event_type", "submitted"]
 
-    result = db.read_table(
+    query = f"""SELECT {', '.join(['events.' + keyword for keyword in keywords])}, users.first_name, users.last_name, user.email, users.room, users.residence
+                FROM (SELECT * FROM events WHERE stueble_id = %s) AS events
+                LEFT JOIN users ON events.user_id = users.id;
+                """
+
+    result = db.custom_call(
+        connection=None,
         cursor=cursor,
-        table_name="events",
-        keywords=keywords,
-        conditions={"stueble_id": stueble_id},
-        expect_single_answer=False)
+        query=query,
+        variables=[stueble_id],
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
     if result["success"] is False:
         return {"success": False, "error": result["error"]}
