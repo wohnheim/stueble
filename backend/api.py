@@ -509,7 +509,8 @@ def user():
 @app.route("/host/search_guest")
 def search():
     """
-    search for a guest
+    search for a guest \n
+    allowed keys for searching are first_name, last_name, email, (room, residence)
     """
     # load data
     data = request.get_json()
@@ -518,7 +519,7 @@ def search():
     if session_id is None:
         response = Response(
             response=json.dumps({"error": "The session_id must be specified"}),
-            status=401,
+            status=400,
             mimetype="application/json")
         return response
 
@@ -539,10 +540,11 @@ def search():
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": "invalid permissions, need at least role host"}),
-            status=403,
+            status=401,
             mimetype="application/json")
         return response
 
+    # load data
     data = data.get("data", None)
 
     if data is None or not isinstance(data, dict):
@@ -554,8 +556,10 @@ def search():
 
     # json format data: {"session_id": str, data: {"first_name": str or None, "last_name": str or None, "room": str or None, "residence": str or None, "email": str or None}}
 
+    # allowed keys to search for a user
     allowed_keys = ["first_name", "last_name", "room", "residence", "email"]
 
+    # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
         response = Response(
             response=json.dumps({"error": f"Only the following keys are allowed: {', '.join(allowed_keys)}"}),
@@ -564,6 +568,7 @@ def search():
         return response
     keywords = ["first_name", "last_name", "email", "user_role"]
 
+    # if only either room or residence but not both were specified, return error
     if any(key in data.keys() for key in ["room", "residence"]) and not all(key in data.keys() for key in ["room", "residence"]):
         response = Response(
             response=json.dumps({"error": "If room or residence is specified, both must be specified"}),
@@ -571,18 +576,23 @@ def search():
             mimetype="application/json")
         return response
 
+    # search email
     if "email" in data:
         result = db.read_table(
             cursor=cursor,
             keywords=keywords,
             conditions={"email": data["email"]},
             expect_single_answer=True)
+
+    # search room and residence
     elif "room" in data:
         result = db.read_table(
             cursor=cursor,
             keywords=keywords,
             conditions={"room": data["room"], "residence": data["residence"]},
             expect_single_answer=True)
+
+    # search first_name and/or last_name
     else:
         conditions = {key: value for key, value in data.items() if value is not None}
         result = db.read_table(
@@ -591,7 +601,7 @@ def search():
             keywords=keywords,
             expect_single_answer=False)
 
-    close_conn_cursor(conn, cursor)
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"error": result["error"]}),
@@ -599,6 +609,7 @@ def search():
             mimetype="application/json")
         return response
 
+    # if data is None, set it to empty list
     if result["data"] is None:
         result["data"] = []
 
@@ -1182,7 +1193,8 @@ def handle_connect():
     handle a new websocket connection
     """
 
-    session_id = request.data.get("session_id", None)
+    data = request.get_json()
+    session_id = data.get("session_id", None)
     if session_id is None:
         response = Response(
             response=json.dumps({"error": "The session_id must be specified"}),
