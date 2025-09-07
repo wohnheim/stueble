@@ -52,7 +52,7 @@ def export_stueble_guests(cursor, stueble_id: int):
         date (date): The date of the event.
     """
 
-    keywords = ["id, user_id", "event_type", "submitted"]
+    keywords = ["id", "user_id", "event_type", "submitted"]
 
     result = db.read_table(
         cursor=cursor,
