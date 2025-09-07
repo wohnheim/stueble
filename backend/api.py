@@ -1099,7 +1099,7 @@ def change_user_role():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    # check permissions, since only hosts can add guests
+    # check permissions, since only admins can change user role
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
