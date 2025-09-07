@@ -8,3 +8,4 @@ __pycache__
 do_not_track
 .venv
 .env
+.idea
