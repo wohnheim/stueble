@@ -2,6 +2,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaInMemoryUpload
 import datetime
+from zoneinfo import ZoneInfo
 
 from backend import export
 from backend.sql_connection import database as db
@@ -52,8 +53,20 @@ def export_stueble_guests(cursor, stueble_id: int):
         date (date): The date of the event.
     """
 
-    # TODO: only allow exports for past stuebles (earliest is 12 o clock noon next day)
+    default_tz = ZoneInfo("Europe/Berlin")
 
+    result = db.read_table(
+        cursor=cursor,
+        table_name="stueble_motto",
+        keywords=["date_of_time"],
+        conditions={"id": stueble_id},
+        expect_single_answer=True)
+
+    if result["success"] is False:
+        return {"success": False, "error": result["error"]}
+    date = result["data"][0]
+    if date > (datetime.datetime.now(default_tz).date() - datetime.timedelta(days=1)) or (date == (datetime.datetime.now(default_tz).date() - datetime.timedelta(days=1)) and (datetime.datetime.now(default_tz).hour < 11)):
+        return {"success": False, "error": "Can only export guest lists for past stueble events (e.g. if stueble was on 01.01.2000 then guest list can be exported earliest at 02.01.2000 11:00)."}
     keywords_events = ["id", "event_type", "submitted"]
     keywords_users = ["first_name", "last_name", "email", "room", "residence"]
 
