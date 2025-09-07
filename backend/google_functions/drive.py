@@ -1,7 +1,7 @@
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaInMemoryUpload
-from datetime import date
+import datetime
 
 from backend import export
 from backend.sql_connection import database as db
@@ -43,7 +43,7 @@ def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type
     except HttpError as error:
         return {"success": False, "error": error}
 
-def export_stueble_guests(cursor, stueble_id: int, date: date):
+def export_stueble_guests(cursor, stueble_id: int):
     """
     Export the guest list for a specific Stueble event.
     Parameters:
@@ -71,6 +71,17 @@ def export_stueble_guests(cursor, stueble_id: int, date: date):
         return {"success": False, "error": csv["message"]}
 
     csv = csv["data"]
+
+    result = db.read_table(
+        cursor=cursor,
+        table_name="stueble_motto",
+        keywords=["date_of_time"],
+        conditions={"id": stueble_id},
+        expect_single_answer=True)
+    if result["success"] is False:
+        return {"success": False, "error": result["error"]}
+
+    date = datetime.datetime.strptime(result["data"], '%Y-%m-%d').date()
 
     upload = upload_file_folder(
         file_name=f"guest_list_stueble_{stueble_id}__{date.day}_{date.month}_{date.year}.csv",
