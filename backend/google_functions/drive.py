@@ -52,6 +52,9 @@ def export_stueble_guests(cursor, stueble_id: int):
         date (date): The date of the event.
     """
 
+    # TODO: do not export user_id but rather the data about the user
+    # only allow exports for past stuebles (earliest is 12 o clock noon next day)
+
     keywords = ["id", "user_id", "event_type", "submitted"]
 
     result = db.read_table(
