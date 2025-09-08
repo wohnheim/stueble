@@ -68,6 +68,16 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION check_user_role()
+RETURNS trigger AS $$
+BEGIN
+IF (SELECT user_role FROM users WHERE id = NEW.user_id) == 'admin'
+THEN
+    RAISE EXCEPTION 'Invalid user role: %', NEW.user_role;
+END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER event_change_user_delete_trigger
 AFTER DELETE ON users
 FOR EACH ROW EXECUTE FUNCTION event_change_user();
@@ -91,3 +101,6 @@ CREATE OR REPLACE TRIGGER update_websocket_sids_trigger
     AFTER INSERT OR UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_websocket_sids();
 
+CREATE OR REPLACE TRIGGER check_user_role_stueble_codes_trigger
+    BEFORE INSERT OR UPDATE ON stueble_codes
+    FOR EACH ROW EXECUTE FUNCTION check_user_role();
