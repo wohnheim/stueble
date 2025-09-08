@@ -158,11 +158,17 @@ def get_user(
         raise ValueError("Either user_id, user_email, user_name, conditions or specific_where must be set.")
     conditions_counter = 0
     if user_id is not None: conditions_counter += 1
+    print(conditions_counter)
     if user_email is not None: conditions_counter += 1
+    print(conditions_counter)
     if user_name is not None: conditions_counter += 1
+    print(conditions_counter)
     if select_max_of_key != "": conditions_counter += 1
+    print(conditions_counter)
     if specific_where != "": conditions_counter += 1
+    print(conditions_counter)
     if conditions != {}: conditions_counter += 1
+    print(conditions_counter)
     if conditions_counter > 1:
         raise ValueError(
             "user_id, user_email, select_max_of_key, specific_where and conditions are explicit. Therefore just one of them can be set.")
