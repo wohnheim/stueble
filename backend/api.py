@@ -211,7 +211,7 @@ def signup():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    user_info["user_role"] = UserRole.USER
+    user_info["user_role"] = UserRole.USER.value
 
     check_info = user_info.copy()
     del check_info["password"]
