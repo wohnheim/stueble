@@ -211,6 +211,8 @@ def signup():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
+    check_info = user_info.copy()
+    del check_info["password"]
     # check whether user data is unique
     result = signup_val.validate_user_data(**user_info)
     if result["success"] is False:
