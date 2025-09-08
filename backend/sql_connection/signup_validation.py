@@ -34,7 +34,7 @@ def validate_user_data(cursor,
     except ValueError:
         return {"success": False, "error": "Room must be a number"}
 
-    if not is_valid_residence(residence):
+    if not isinstance(residence, Residence):
         return {"success": False, "error": "Invalid residence"}
 
     if not first_name or not last_name:
