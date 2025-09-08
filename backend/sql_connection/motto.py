@@ -15,7 +15,7 @@ def get_motto(cursor, date: date | None=None) -> dict:
         result = db.read_table(
             cursor=cursor,
             keywords=["motto", "date_of_time"],
-            table_name="motto",
+            table_name="stueble_motto",
             conditions={"date_of_time": date},
             expect_single_answer=True)
     else:
