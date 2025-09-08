@@ -325,7 +325,8 @@ def delete():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id"])
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_role"])
+
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -334,8 +335,16 @@ def delete():
             mimetype="application/json")
         return response
 
+    if result["data"][1] == UserRole.ADMIN.value:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "Admins cannot be deleted"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
     # set user_id
-    user_id = result["data"]
+    user_id = result["data"][0]
 
     # remove user from table
     result = users.remove_user(connection=conn, cursor=cursor, user_id=user_id)
