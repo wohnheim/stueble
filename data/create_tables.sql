@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS events_affected_users (
     id SERIAL PRIMARY KEY,
     event_id INTEGER REFERENCES events(id) NOT NULL,
     affected_user_id INTEGER REFERENCES users(id) NOT NULL,
-    submitted TIMESTAMPTZ
+    submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- table to save configuration settings
