@@ -185,9 +185,6 @@ def get_user(
 
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "User doesn't exist."}
-
-    if expect_single_answer:
-        return clean_single_data(result)
     return result
 
 def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
