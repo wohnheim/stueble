@@ -437,7 +437,7 @@ def get_motto():
         mimetype="application/json")
     return response
 
-@app.route("/guests")
+@app.route("/guests", methods=["POST"])
 def guests():
     """
     returns list of all guests
