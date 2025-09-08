@@ -80,6 +80,7 @@ def login():
     # load data
     data = request.get_json()
     email = data.get("email", None)
+    user_name = data.get("user_name", None)
     password = data.get("password", None)
 
     # password can't be empty
@@ -90,20 +91,32 @@ def login():
             mimetype="application/json")
         return response
 
-    # if the email is in wrong format, return error
-    try:
-        email = Email(email)
-    except ValueError:
+    if (user_name is None and email is None) or (user_name is not None and email is not None):
         response = Response(
-            response=json.dumps({"error": "invalid email format"}),
-            status=401,
+            response=json.dumps({"error": "specify either email or user_name, but not both"}),
+            status=400,
             mimetype="application/json")
         return response
 
+    value = {}
+
+    # if the email is in wrong format, return error
+    if email is not None:
+        try:
+            email = Email(email)
+            value = {"email": email}
+        except ValueError:
+            response = Response(
+                response=json.dumps({"error": "invalid email format"}),
+                status=401,
+                mimetype="application/json")
+            return response
+    else:
+        value = {"user_name": user_name}
     # if data is not valid return error
-    if email is None or password is None:
+    if password is None:
         response = Response(
-            response=json.dumps({"error": "specify email and password"}),
+            response=json.dumps({"error": "specify password"}),
             status=400,
             mimetype="application/json")
         return response
@@ -112,7 +125,7 @@ def login():
     conn, cursor = get_conn_cursor()
 
     # get user data from table
-    result = users.get_user(cursor=cursor, user_email=email, keywords=["id", "password_hash", "user_role"], expect_single_answer=True)
+    result = users.get_user(cursor=cursor, keywords=["id", "password_hash", "user_role"], expect_single_answer=True, **value)
 
     # return error
     if result["success"] is False:
