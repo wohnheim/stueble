@@ -52,7 +52,7 @@ def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
         return result
     user_id = result["data"][0]
     user_role = result["data"][1]
-    print(user_role)
+    user_role = UserRole(user_role)
     if user_role >= required_role:
         return {"success": True, "data": {"allowed": True, "user_id": user_id, "user_role": user_role}}
     return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role}}
