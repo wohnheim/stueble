@@ -50,12 +50,12 @@ BEGIN
             'user_id', NEW.user_id,
             'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
             )::text);
+        FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
+        LOOP
+            INSERT INTO events_affected_users (event_id, affected_user_id)
+            VALUES (event_id, affected.id);
+        END LOOP;
     END IF;
-    FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
-    LOOP
-        INSERT INTO events_affected_users (event_id, affected_user_id)
-        VALUES (event_id, affected.id);
-    END LOOP;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
