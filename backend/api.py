@@ -413,6 +413,7 @@ def get_motto():
                 status=500,
                 mimetype="application/json")
             return response
+        print(result["data"])
         response = Response(
             response=json.dumps(result["data"]),
             status=200,
