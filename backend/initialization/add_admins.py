@@ -6,8 +6,7 @@ result = db.insert_table(
     connection=conn,
     cursor=cursor,
     table_name="users",
-    arguments=["user_role", "room", "residence", "first_name", "last_name", "email", "user_name", "password_hash"],
-    variables=["admin", 0, "altbau", "Altbau", "Admin", "tutorenhes@gmail.com", "admin altbau", "tutorenhes2025"],
+    arguments={"user_role":"admin",  "room": 0, "residence": "altbau", "first_name": "Altbau", "last_name": "Admin", "email": "tutorenhes@gmail.com", "user_name": "admin altbau", "password_hash": "tutorenhes2025"},
     returning_column="id")
 if result["success"] is False:
     raise result["error"]
@@ -16,8 +15,7 @@ result = db.insert_table(
     connection=conn,
     cursor=cursor,
     table_name="users",
-    arguments=["user_role", "room", "residence", "first_name", "last_name", "email", "user_name", "password_hash"],
-    variables=["admin", 0, "hirte", "Hirte", "Admin", "tutorenhirte@gmail.com", "admin hirte", "tutorenhirte2025"],
+    arguments={"user_role":"admin",  "room": 0, "residence": "hirte", "first_name": "Hirte", "last_name": "Admin", "email": "tutorenhirte@gmail.com", "user_name": "admin hirte", "password_hash": "tutorenhirte2025"},
     returning_column="id")
 
 if result["success"] is False:
