@@ -97,7 +97,7 @@ def get_user(cursor, session_id: str, keywords: list[str]=["id, user_role"]) -> 
     allowed_keywords = ["id", "user_role", "first_name", "last_name", "email", "room", "residence"]
     result = db.read_table(
         cursor=cursor,
-        keywords=["u" + i for i in keywords],
+        keywords=["u." + i for i in keywords],
         table_name="sessions s JOIN users u ON s.user_id = u.id",
         expect_single_answer=True,
         conditions={"s.session_id": session_id})
