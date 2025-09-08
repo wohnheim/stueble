@@ -8,7 +8,7 @@ from backend.sql_connection import (
     guest_events as guests,
     configs,
     websocket,
-    signup_validation as signup,
+    signup_validation as signup_val,
     stueble_codes as codes,
     database as db)
 import backend.hash_pwd as hp
@@ -212,7 +212,7 @@ def signup():
     conn, cursor = get_conn_cursor()
 
     # check whether user data is unique
-    result = signup.validate_user_data(**user_info)
+    result = signup_val.validate_user_data(**user_info)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
