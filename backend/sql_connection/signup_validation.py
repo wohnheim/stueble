@@ -27,7 +27,7 @@ def validate_user_data(cursor,
               'success' is True if all validations pass, otherwise False with an appropriate error message.
               'status' is 200 for success, 400 for client errors, and 500 for server errors.
     """
-    if not is_valid_role(user_role) or (user_role.value == "admin"):
+    if not isinstance(user_role, UserRole) or (user_role.value == "admin"):
         return {"success": False, "error": "Invalid user role, admin not allowed"}
     try:
         room = int(room)
