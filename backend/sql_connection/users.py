@@ -150,7 +150,7 @@ def get_user(
     """
 
     # check, whether explicitly of expect_single_answer and order_by is met
-    if expect_single_answer and order_by != {}:
+    if expect_single_answer and order_by != ():
         raise ValueError("Either expect_single_answer=True or order_by can be set.")
 
     # check, whether a where statement is set for sql query
