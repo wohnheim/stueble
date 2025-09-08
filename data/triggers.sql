@@ -71,7 +71,9 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER event_change_user_trigger
 AFTER UPDATE OR DELETE ON users
 FOR EACH ROW
-WHEN (OLD.* IS DISTINCT FROM NEW.* AND ((OLD.last_updated IS DISTINCT FROM NEW.last_updated) IS FALSE))
+WHEN (
+    TG_OP = 'DELETE'
+    OR (TG_OP = 'UPDATE' AND (OLD.* IS DISTINCT FROM NEW.* AND ((OLD.last_updated IS DISTINCT FROM NEW.last_updated) IS FALSE)))
 EXECUTE FUNCTION event_change_user();
 
 CREATE OR REPLACE TRIGGER event_add_user_trigger
