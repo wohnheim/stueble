@@ -384,6 +384,7 @@ def delete():
         status=204)
     return response
 
+# NOTE: this endpoint is public, since the motto is also shown on the website without logging in
 @app.route("/motto", methods=["GET"])
 def get_motto():
     """
@@ -401,7 +402,7 @@ def get_motto():
     if date is None:
         result = db.read_table(
             cursor=cursor,
-            table_name="motto",
+            table_name="stueble_motto",
             keywords=["motto", "date_of_time"],
             order_by=("date_of_time", 0), # descending
             expect_single_answer=False)
