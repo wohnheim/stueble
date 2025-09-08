@@ -60,7 +60,7 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
     """
     if user_id is None and user_email is None and user_name is None:
-        return ValueError("Either user_id or user_email or user_name must be set.")
+        return {"success": False, "error": ValueError("Either user_id or user_email or user_name must be set.")}
     conditions = {}
     if user_id is not None:
         conditions["id"] = user_id
