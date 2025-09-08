@@ -358,6 +358,7 @@ def delete():
 
     # set user_id
     user_id = result["data"][0]
+    print(user_id)
 
     # remove user from table
     result = users.remove_user(connection=conn, cursor=cursor, user_id=user_id)
