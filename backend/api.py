@@ -413,9 +413,9 @@ def get_motto():
                 status=500,
                 mimetype="application/json")
             return response
-        print(result["data"])
+        data = [{"motto": entry[0], "date": entry[1].isoformat()} for entry in result["data"]]
         response = Response(
-            response=json.dumps(result["data"]),
+            response=json.dumps(data),
             status=200,
             mimetype="application/json")
         return response
@@ -430,8 +430,9 @@ def get_motto():
             mimetype="application/json")
         return response
 
+    data = {"motto": result["data"][0], "date": result["data"][1].isoformat()} if result["data"] is not None else {}
     response = Response(
-        response=json.dumps(result["data"]),
+        response=json.dumps(data),
         status=200,
         mimetype="application/json")
     return response
