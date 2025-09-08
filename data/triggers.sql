@@ -39,6 +39,14 @@ DECLARE affected RECORD;
 BEGIN
     IF NEW.event_type = 'arrive' OR NEW.event_type = 'leave'
     THEN
+        IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
+        THEN
+            RAISE EXCEPTION 'Admins are not allowed to arrive / leave stueble';
+        END IF;
+        IF (SELECT user_id FROM stueble_codes WHERE stueble_id = NEW.stueble_id AND user_id = NEW.user_id) IS NULL
+        THEN
+            RAISE EXCEPTION 'User has no stueble code to stueble %', NEW.stueble_id;
+        END IF;
         IF (SELECT event_type FROM events WHERE ((user_id = NEW.user_id) AND (stueble_id = NEW.stueble_id)) ORDER BY submitted DESC LIMIT 1) = NEW.event_type
             THEN
                 RAISE EXCEPTION 'Duplicate event: User % already has an event of type % for stueble %', NEW.user_id, NEW.event_type, NEW.stueble_id;
