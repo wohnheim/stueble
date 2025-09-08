@@ -5,7 +5,7 @@ from backend.sql_connection import (
     users,
     sessions,
     motto,
-    guest_events as guests,
+    guest_events,
     configs,
     websocket,
     signup_validation as signup_val,
@@ -475,7 +475,7 @@ def guests():
         return response
 
     # get guest list
-    result = guests.guest_list(cursor=cursor)
+    result = guest_events.guest_list(cursor=cursor)
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
@@ -724,7 +724,7 @@ def guest_change():
         return response
 
     # change guest status to arrive / leave
-    result = guests.change_guest(connection=conn, cursor=cursor, stueble_code=guest_stueble_code, event_type=event_type)
+    result = guest_events.change_guest(connection=conn, cursor=cursor, stueble_code=guest_stueble_code, event_type=event_type)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
