@@ -7,7 +7,7 @@ result = db.insert_table(
     cursor=cursor,
     table_name="users",
     arguments=["user_role", "room", "residence", "first_name", "last_name", "email", "user_name", "password_hash"],
-    values=["admin", 0, "altbau", "Altbau", "Admin", "tutorenhes@gmail.com", "admin altbau", "tutorenhes2025"],
+    variables=["admin", 0, "altbau", "Altbau", "Admin", "tutorenhes@gmail.com", "admin altbau", "tutorenhes2025"],
     returning_column="id")
 if result["success"] is False:
     raise result["error"]
@@ -17,7 +17,7 @@ result = db.insert_table(
     cursor=cursor,
     table_name="users",
     arguments=["user_role", "room", "residence", "first_name", "last_name", "email", "user_name", "password_hash"],
-    values=["admin", 0, "hirte", "Hirte", "Admin", "tutorenhirte@gmail.com", "admin hirte", "tutorenhirte2025"],
+    variables=["admin", 0, "hirte", "Hirte", "Admin", "tutorenhirte@gmail.com", "admin hirte", "tutorenhirte2025"],
     returning_column="id")
 
 if result["success"] is False:
