@@ -211,12 +211,11 @@ def signup():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    user_info["user_role"] = UserRole.USER.value
-
     check_info = user_info.copy()
+    user_role = UserRole.USER
     del check_info["password"]
     # check whether user data is unique
-    result = signup_val.validate_user_data(cursor=cursor, **check_info)
+    result = signup_val.validate_user_data(cursor=cursor, user_role=user_role, **check_info)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -234,7 +233,7 @@ def signup():
     result = users.add_user(
         connection=conn,
         cursor=cursor,
-        user_role=UserRole.USER,
+        user_role=user_role,
         returning="id",
         **user_info)
 
