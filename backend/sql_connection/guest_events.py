@@ -130,7 +130,7 @@ def guest_list(cursor, stueble_id: int | None=None) -> dict:
     parameters = {}
 
     if stueble_id is None:
-        stueble_info = """(SELECT stueble_id FROM stueble WHERE date_of_time = CURRENT_DATE OR date_of_time = (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time DESC LIMIT 1;)"""
+        stueble_info = """(SELECT stueble_id FROM stueble WHERE date_of_time = CURRENT_DATE OR date_of_time = (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time DESC LIMIT 1)"""
     else:
         stueble_info = "%s"
         parameters["variables"] = [stueble_id]
