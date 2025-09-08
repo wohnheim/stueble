@@ -211,11 +211,12 @@ def signup():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    check_info = user_info.copy()
     user_role = UserRole.USER
+    user_info["user_role"] = user_role
+    check_info = user_info.copy()
     del check_info["password"]
     # check whether user data is unique
-    result = signup_val.validate_user_data(cursor=cursor, user_role=user_role, **check_info)
+    result = signup_val.validate_user_data(cursor=cursor, **check_info)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
