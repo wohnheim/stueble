@@ -71,7 +71,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION check_user_role()
 RETURNS trigger AS $$
 BEGIN
-IF (SELECT user_role FROM users WHERE id = NEW.user_id) == 'admin'
+IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
 THEN
     RAISE EXCEPTION 'Invalid user role: %', NEW.user_role;
 END IF;
