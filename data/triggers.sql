@@ -17,7 +17,7 @@ BEGIN
     IF NEW.password_hash IS NULL
     THEN
         INSERT INTO events (user_id, event_type)
-        VALUES (NEW.id, 'delete')
+        VALUES (NEW.id, 'remove')
         RETURNING id INTO event_id;
     ELSE
         INSERT INTO events (user_id, event_type)
@@ -63,7 +63,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION update_websocket_sids()
 RETURNS trigger AS $$
 BEGIN
-DELETE FROM websocket_sids WHERE (SELECT user_role FROM users WHERE id = NEW.id) NOT IN ('admin', 'tutor', 'host');
+DELETE FROM websocket_sids WHERE user_id = NEW.id AND ((SELECT user_role FROM users WHERE id = NEW.id) NOT IN ('admin', 'tutor', 'host'));
 RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

@@ -153,11 +153,11 @@ def login():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}), 
-            status=500, 
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
             mimetype="application/json")
         return response
-    
+
     session_id = result["data"]
 
     # return 200
@@ -312,7 +312,7 @@ def logout():
             status=401,
             mimetype="application/json")
         return response
-    
+
     # return 204
     response = Response(
         status=204)
@@ -358,7 +358,6 @@ def delete():
 
     # set user_id
     user_id = result["data"][0]
-    print(user_id)
 
     # remove user from table
     result = users.remove_user(connection=conn, cursor=cursor, user_id=user_id)
