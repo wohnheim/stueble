@@ -19,7 +19,25 @@ class UserRole(str, Enum):
     def __lt__(self, other):
         if isinstance(other, UserRole):
             members = list(self.__class__)
-            return members.index(self) < members.index(other)
+            return members.index(other) < members.index(self)
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, UserRole):
+            members = list(self.__class__)
+            return members.index(other) > members.index(self)
+        return NotImplemented
+
+    def __le__(self, other):
+        if isinstance(other, UserRole):
+            members = list(self.__class__)
+            return members.index(other) <= members.index(self)
+        return NotImplemented
+
+    def __ge__(self, other):
+        if isinstance(other, UserRole):
+            members = list(self.__class__)
+            return members.index(other) >= members.index(self)
         return NotImplemented
 
     def __eq__(self, other):
