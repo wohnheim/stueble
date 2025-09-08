@@ -131,7 +131,7 @@ def login():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -153,7 +153,7 @@ def login():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}), 
+            response=json.dumps({"error": str(result["error"])}), 
             status=500, 
             mimetype="application/json")
         return response
@@ -234,7 +234,7 @@ def signup():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=result["status"],
             mimetype="application/json")
         return response
@@ -254,7 +254,7 @@ def signup():
     # if server error occurred, return error
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -267,7 +267,7 @@ def signup():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -308,7 +308,7 @@ def logout():
     # if nothing could be removed, return error
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -343,7 +343,7 @@ def delete():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -364,7 +364,7 @@ def delete():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -374,7 +374,7 @@ def delete():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -408,7 +408,7 @@ def get_motto():
         close_conn_cursor(conn, cursor) # close conn, cursor
         if result["success"] is False:
             response = Response(
-                response=json.dumps({"error": result["error"]}),
+                response=json.dumps({"error": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
             return response
@@ -423,7 +423,7 @@ def get_motto():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -458,7 +458,7 @@ def guests():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -475,7 +475,7 @@ def guests():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -511,7 +511,7 @@ def user():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -558,7 +558,7 @@ def search():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -630,7 +630,7 @@ def search():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -696,7 +696,7 @@ def guest_change():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -724,7 +724,7 @@ def guest_change():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -762,7 +762,7 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -780,7 +780,7 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -792,7 +792,7 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -803,7 +803,7 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json"
         )
@@ -829,7 +829,7 @@ def invite_friend():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -886,7 +886,7 @@ def reset_password_mail():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -909,7 +909,7 @@ def reset_password_mail():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -921,7 +921,7 @@ def reset_password_mail():
     result = gmail.send_mail(recipient=email, subject=subject, body=body)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -962,7 +962,7 @@ def confirm_code():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -977,7 +977,7 @@ def confirm_code():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -987,7 +987,7 @@ def confirm_code():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -997,7 +997,7 @@ def confirm_code():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1037,7 +1037,7 @@ def change_user_data():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -1097,7 +1097,7 @@ def change_user_data():
             return response
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -1130,7 +1130,7 @@ def change_user_role():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -1197,7 +1197,7 @@ def change_user_role():
     close_conn_cursor(conn, cursor)
     if user["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1236,7 +1236,7 @@ def handle_connect():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -1257,7 +1257,7 @@ def handle_connect():
     result = websocket.get_websocket_sids(cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1271,7 +1271,7 @@ def handle_connect():
 
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": result["error"]}),
+            response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
