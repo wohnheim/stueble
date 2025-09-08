@@ -644,7 +644,7 @@ def search():
     return response
 
 @app.route("/host/add_guest", methods=["POST"])
-@app.route("host/remove_guest", methods=["POST"])
+@app.route("/host/remove_guest", methods=["POST"])
 def guest_change():
     """
     add / remove a guest to the guest_list of present people
