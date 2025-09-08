@@ -113,7 +113,6 @@ def login():
 
     # get user data from table
     result = users.get_user(cursor=cursor, user_email=email, keywords=["id", "password_hash", "user_role"], expect_single_answer=True)
-    print(result)
 
     # return error
     if result["success"] is False:
