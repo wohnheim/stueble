@@ -46,7 +46,6 @@ CREATE TABLE IF NOT EXISTS stueble_codes (
     user_id INTEGER REFERENCES users(id) UNIQUE NOT NULL,
     code TEXT GENERATED ALWAYS AS (encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    date_of_time DATE NOT NULL REFERENCES stueble_motto(date_of_time) ON DELETE CASCADE,
     stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL, -- references the correct stueble event
     invited_by INTEGER REFERENCES users(id)
 );

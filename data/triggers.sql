@@ -90,3 +90,4 @@ FOR EACH ROW EXECUTE FUNCTION event_guest_change();
 CREATE OR REPLACE TRIGGER update_websocket_sids_trigger
     AFTER INSERT OR UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_websocket_sids();
+
