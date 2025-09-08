@@ -1,7 +1,7 @@
 import backend.sql_connection.database as db
-from datetime import datetime
+from datetime import datetime, date
 
-def get_motto(cursor, date: datetime.date | None=None) -> dict:
+def get_motto(cursor, date: date | None=None) -> dict:
     """
     gets the motto from the table motto
     Parameters:
@@ -30,7 +30,7 @@ def get_motto(cursor, date: datetime.date | None=None) -> dict:
         return {"success": False, "error": "no motto found"}
     return result
 
-def get_info(cursor, date: datetime.date | None=None) -> dict:
+def get_info(cursor, date: date | None=None) -> dict:
     """
     gets the info from the table motto for a party at a specific date
     Parameters:
