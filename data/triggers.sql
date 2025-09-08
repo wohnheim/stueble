@@ -60,7 +60,7 @@ BEGIN
         FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
         LOOP
             INSERT INTO events_affected_users (event_id, affected_user_id)
-            VALUES (NEW.event_id, affected.id);
+            VALUES (NEW.id, affected.id);
         END LOOP;
     END IF;
     RETURN NEW;
