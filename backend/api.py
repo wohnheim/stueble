@@ -213,6 +213,7 @@ def signup():
 
     user_role = UserRole.USER
     user_info["user_role"] = user_role
+    user_info["residence"] = Residence(user_info["residence"])
     check_info = user_info.copy()
     del check_info["password"]
     # check whether user data is unique
