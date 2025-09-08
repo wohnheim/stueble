@@ -75,6 +75,7 @@ IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
 THEN
     RAISE EXCEPTION 'Admins are not allowed to have stueble codes';
 END IF;
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
