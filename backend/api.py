@@ -235,7 +235,6 @@ def signup():
     result = users.add_user(
         connection=conn,
         cursor=cursor,
-        user_role=user_role,
         returning="id",
         **user_info)
 
