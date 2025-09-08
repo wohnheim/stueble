@@ -491,7 +491,7 @@ def guests():
     )
     return response
 
-@app.route("/user")
+@app.route("/user", methods=["GET"])
 def user():
     """
     return data to user
@@ -536,7 +536,7 @@ def user():
         mimetype="application/json")
     return response
 
-@app.route("/host/search_guest")
+@app.route("/host/search_guest", methods=["POST"])
 def search():
     """
     search for a guest \n
