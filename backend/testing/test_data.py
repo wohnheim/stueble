@@ -43,7 +43,7 @@ print(result)"""
 
 # print(match_pwd("TestPassword123", "$2b$12$sUtWqHFTKxWr2P7M6L4tMeiL4pqoykIo4pbshkSqFY97gP6er8sny"))
 
-result = users.remove_user(connection=connection,
+"""result = users.remove_user(connection=connection,
                cursor=cursor,
                user_id=1)
-print(result)
+print(result)"""

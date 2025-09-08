@@ -1288,3 +1288,6 @@ def websocket_change():
     response = Response(
         status=200)
     return response
+
+if __name__ == "__main__":
+    socketio.run(app)
