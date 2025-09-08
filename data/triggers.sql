@@ -73,7 +73,7 @@ RETURNS trigger AS $$
 BEGIN
 IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
 THEN
-    RAISE EXCEPTION 'Invalid user role: %', NEW.user_role;
+    RAISE EXCEPTION 'Admins are not allowed to have stueble codes';
 END IF;
 END;
 $$ LANGUAGE plpgsql;
