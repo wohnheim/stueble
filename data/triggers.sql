@@ -34,7 +34,6 @@ $$ LANGUAGE plpgsql;
 -- when a guest arrives or leaves, notify all hosts with an event using websocket
 CREATE OR REPLACE FUNCTION event_guest_change()
 RETURNS TRIGGER AS $$
-DECLARE event_id INTEGER;
 DECLARE affected RECORD;
 BEGIN
     IF NEW.event_type = 'arrive' OR NEW.event_type = 'leave'
@@ -61,7 +60,7 @@ BEGIN
         FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
         LOOP
             INSERT INTO events_affected_users (event_id, affected_user_id)
-            VALUES (event_id, affected.id);
+            VALUES (NEW.event_id, affected.id);
         END LOOP;
     END IF;
     RETURN NEW;
