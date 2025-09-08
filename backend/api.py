@@ -610,6 +610,7 @@ def search():
     if "email" in data:
         result = db.read_table(
             cursor=cursor,
+            table_name="users",
             keywords=keywords,
             conditions={"email": data["email"]},
             expect_single_answer=True)
@@ -618,6 +619,7 @@ def search():
     elif "room" in data:
         result = db.read_table(
             cursor=cursor,
+            table_name="users",
             keywords=keywords,
             conditions={"room": data["room"], "residence": data["residence"]},
             expect_single_answer=True)
@@ -627,6 +629,7 @@ def search():
         conditions = {key: value for key, value in data.items() if value is not None}
         result = db.read_table(
             cursor=cursor,
+            table_name="users",
             conditions=conditions,
             keywords=keywords,
             expect_single_answer=False)
