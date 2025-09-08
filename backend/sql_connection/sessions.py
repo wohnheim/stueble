@@ -104,7 +104,7 @@ def get_user(cursor, session_id: str, keywords: list[str]=["id, user_role"]) -> 
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "no matching session and user found"}
     if result["success"] and len(keywords) == 1:
-        return clean_single_data(result["data"])
+        return clean_single_data(result)
     return result
 
 def remove_user_sessions(connection, cursor, user_id: int) -> dict:
