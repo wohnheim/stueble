@@ -83,17 +83,17 @@ def remove_session(connection, cursor, session_id: str) -> dict:
         return {"success": False, "error": "no session found"}
     return result
 
-def get_user(cursor, session_id: str, keywords: list[str]=["id", "user_role"]) -> dict:
+def get_user(cursor, session_id: str, keywords: tuple[str] | list[str]=("id", "user_role",)) -> dict:
     """
     gets the user role of a user from the table users via the sessions table
     Parameters:
         cursor: cursor for the connection
         session_id (str): id of the user
-        keywords (list[str]): list of keywords to be returned
+        keywords (tuple[str] | list[str]): list of keywords to be returned
     Returns:
         dict: {"success": bool, "data": user_role}, {"success": False, "error": e} if error occurred
     """
-
+    keywords = list(keywords)
     allowed_keywords = ["id", "user_role", "first_name", "last_name", "email", "room", "residence"]
     result = db.read_table(
         cursor=cursor,

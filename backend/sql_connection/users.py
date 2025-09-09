@@ -125,8 +125,8 @@ def get_user(
         user_id: Annotated[int | None, "set EITHER user_id OR user_email or user_name"] = None,
         user_email: Annotated[Email | None, "set EITHER user_id OR user_email or user_name"] = None,
         user_name: Annotated[str | None, "set EITHER user_id OR user_email or user_name"] = None,
-        keywords: list[str] = ["*"],
-        conditions: Annotated[dict, "Explicit with user_id, user_email, select_max_of_key, specific_where"] = {},
+        keywords: tuple[str] | list[str] = ("*",),
+        conditions: Annotated[dict | None, "Explicit with user_id, user_email, select_max_of_key, specific_where"] = None,
         expect_single_answer=True,
         select_max_of_key: Annotated[str, "Explicit with user_id, user_email, conditions, specific_where"] = "",
         specific_where: Annotated[str, "Explicit with user_id, user_email, select_max_of_key, conditions"] = "",
@@ -139,8 +139,8 @@ def get_user(
         user_id (int | None): id of the user to be retrieved
         user_email (Email | None): email of the user to be retrieved
         user_name (str | None): username of the user to be retrieved
-        keywords (list[str]): list of fields to be retrieved, defaults to ["*"]
-        conditions (dict): additional conditions for the query
+        keywords (tuple[str] | list[str]): list of fields to be retrieved, defaults to ["*"]
+        conditions (dict | None): additional conditions for the query
         expect_single_answer (bool): whether to expect a single user or multiple users
         select_max_of_key (str): if set, will select the max of this key
         specific_where (str): if set, will add this specific where clause
@@ -148,7 +148,9 @@ def get_user(
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": user} otherwise
     """
-
+    keywords = list(keywords)
+    if conditions is None:
+        conditions = {}
     # check, whether explicitly of expect_single_answer and order_by is met
     if expect_single_answer and order_by != ():
         raise ValueError("Either expect_single_answer=True or order_by can be set.")
@@ -158,17 +160,11 @@ def get_user(
         raise ValueError("Either user_id, user_email, user_name, conditions or specific_where must be set.")
     conditions_counter = 0
     if user_id is not None: conditions_counter += 1
-    print(conditions_counter)
     if user_email is not None: conditions_counter += 1
-    print(conditions_counter)
     if user_name is not None: conditions_counter += 1
-    print(conditions_counter)
     if select_max_of_key != "": conditions_counter += 1
-    print(conditions_counter)
     if specific_where != "": conditions_counter += 1
-    print(conditions_counter)
-    if conditions != {}: conditions_counter += 1
-    print(conditions_counter)
+    if conditions is not None: conditions_counter += 1
     if conditions_counter > 1:
         return {"success": False, "error": ValueError(
             "user_id, user_email, select_max_of_key, specific_where and conditions are explicit. Therefore just one of them can be set.")}
