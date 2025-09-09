@@ -43,7 +43,7 @@ def get_info(cursor, date: date | None=None) -> dict:
     if date is not None:
         parameters["conditions"] = {"date_of_time": date}
     else:
-        parameters["specific_where"] = "(SELECT date_of_time FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1)"
+        parameters["specific_where"] = "date_of_time = (SELECT date_of_time FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1)"
     result = db.read_table(
         cursor=cursor,
         table_name="stueble_motto",
