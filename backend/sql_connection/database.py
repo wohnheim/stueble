@@ -100,9 +100,9 @@ def create_pool(max_connections : int = 20):
 
 # TODO can't return success: False right now
 # TODO for arguments as list might not be completely implemented
-# @catch_exception
+@catch_exception
 def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",), conditions: dict | None=None,
-               expect_single_answer=False, select_max_of_key: str="", specific_where: str="", order_by: tuple=(),
+               expect_single_answer=False, select_max_of_key: str="", specific_where: str="", order_by: tuple | None=None,
                connection=None) -> dict:
     """
     read_table \n
@@ -115,7 +115,7 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
         expect_single_answer (bool): specify whether one or more answers are to be received, therefore it changes, whether list or single object will be returned
         select_max_of_key (bool): conditions must be empty, otherwise it won't be used
         specific_where (str): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string)
-        order_by (tuple): (key to order by, 0: descending / 1: ascending) by default no ordering, if specified and second value is invalid, then set to DESC
+        order_by (tuple | None): (key to order by, 0: descending / 1: ascending) by default no ordering, if specified and second value is invalid, then set to DESC
         connection (connection): is added to make using the wrapper full_pack easier
     Returns:
         dict: {"success": bool, data: value}
@@ -126,7 +126,7 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
     query = f"""SELECT {', '.join(keywords)} FROM {table_name}"""
     if len(conditions) > 0:
         query += f" WHERE {' AND '.join([f'{key} = %s' for index, key in enumerate(conditions.keys())])}"
-        if order_by != ():
+        if order_by is not None:
             query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
         cursor.execute(query, tuple(conditions.values()))
         if expect_single_answer:
@@ -146,7 +146,7 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
     return {"success": True, "data": [i if i is None else list(i) for i in cursor.fetchall()]}
 
 # NOTE arguments is either of type dict or of type list
-# @catch_exception
+@catch_exception
 def insert_table(connection, cursor, table_name: str, arguments: dict | None = None, returning_column: str = ""):
     """
     insert data into table
@@ -299,7 +299,7 @@ def custom_call(connection, cursor, query: str, type_of_answer: ANSWER_TYPE, var
         return {"success": False, "error": e}
 
 # TODO can only return success True right now
-# @catch_exception
+@catch_exception
 def get_time(cursor, connection=None):
     """
     returns the current berlin time
