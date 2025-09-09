@@ -649,9 +649,10 @@ def search():
     users = []
     if "email" in data or "room" in data:
 
+        email_key = "email" in data
         data = result["data"]
 
-        if "email" not in data:
+        if not email_key:
             # showing only a part of the email
             email = data[2]
             email = email[:2] + "*" * (re.search("@", email).start() - 2) + email[re.search("@", email).start():]
