@@ -72,6 +72,7 @@ def close_conn_cursor(connection, cursor):
     cursor.close()
     app.pool.putconn(connection)
 
+# TODO: decide, whether to handle deleted accounts with password reset or signup
 @app.route("/auth/login", methods=["POST"])
 def login():
     """
@@ -139,6 +140,14 @@ def login():
 
     # check password
     user = result["data"]
+
+    if user[1] is None:
+        response = Response(
+            response=json.dumps({"error": "account was deleted, can be reactivated by resetting password using email"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
     # if passwords don't match return error
     if not hp.match_pwd(password, user[1]):
         close_conn_cursor(conn, cursor)
@@ -536,6 +545,7 @@ def user():
         mimetype="application/json")
     return response
 
+# TODO: add stueble_code search
 @app.route("/host/search_guest", methods=["POST"])
 def search():
     """
