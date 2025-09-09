@@ -1008,12 +1008,13 @@ def confirm_code():
     # remove all existing sessions of the user
     result = sessions.remove_user_sessions(connection=conn, cursor=cursor, user_id=user_id)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"error": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
+        if result["error"] != "no sessions found":
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"error": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
 
     # create a new session
     result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
