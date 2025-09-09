@@ -1,7 +1,6 @@
 -- when a guest arrives or leaves, notify all hosts with an event using websocket
 CREATE OR REPLACE FUNCTION event_guest_change()
 RETURNS TRIGGER AS $$
-DECLARE affected RECORD;
 DECLARE inviter_role user_role;
 BEGIN
         -- check, whether admins are trying to arrive / leave
