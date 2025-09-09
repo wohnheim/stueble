@@ -211,7 +211,8 @@ def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
         connection=None,
         cursor=cursor,
         query=query,
-        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+        variables=[user_id, stueble_id]
     )
 
     if result["success"] is True and result["data"] is None:
