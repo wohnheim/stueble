@@ -10,7 +10,7 @@ CREATE TYPE USER_ROLE AS ENUM ('admin', 'tutor', 'host', 'user', 'extern');
 
 -- enum for event_type in table events
 -- arrive, leave will be handled by python, add, remove, modify by triggers
-CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave', 'modify');
+CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave');
 
 -- enum for residence in table users
 CREATE TYPE RESIDENCE AS ENUM('altbau', 'neubau', 'anbau', 'hirte');
@@ -26,8 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
     email VARCHAR(255) UNIQUE CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR password_hash is NULL),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    personal_hash TEXT GENERATED ALWAYS AS (
-        encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
+    uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_name TEXT NOT NULL UNIQUE
 );
@@ -40,32 +39,22 @@ CREATE TABLE IF NOT EXISTS stueble_motto (
     shared_apartment TEXT
 );
 
--- table for stueble codes
-CREATE TABLE IF NOT EXISTS stueble_codes (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) UNIQUE NOT NULL,
-    code TEXT GENERATED ALWAYS AS (encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL, -- references the correct stueble event
-    invited_by INTEGER REFERENCES users(id)
-);
-
 -- table to save login sessions
 CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,
     expiration_date TIMESTAMPTZ NOT NULL,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    session_id TEXT GENERATED ALWAYS AS (
-        encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL
+    session_id UUID NOT NULL UNIQUE
 );
 
 -- table to save user and host events
 CREATE TABLE IF NOT EXISTS events (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) NOT NULL,
+    invited_by INTEGER REFERENCES users(id),
     event_type EVENT_TYPE NOT NULL,
     submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    stueble_id INTEGER REFERENCES stueble_motto(id) CHECK ((event_type IN ('arrive', 'leave') AND stueble_id IS NOT NULL) OR (event_type NOT IN ('arrive', 'leave') AND stueble_id IS NULL))
+    stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS events_affected_users (
@@ -102,7 +91,7 @@ CREATE TABLE IF NOT EXISTS allowed_users (
 CREATE TABLE IF NOT EXISTS password_resets (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    reset_code TEXT GENERATED ALWAYS AS (encode(digest(id::text, 'sha256'), 'hex')) STORED UNIQUE NOT NULL,
+    reset_code UUID UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -1,63 +1,114 @@
-
--- when a new user is created, add an event
-CREATE OR REPLACE FUNCTION event_add_user()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO events (user_id, event_type)
-    VALUES (NEW.id, 'add');
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- when a user is modified or deleted, add an event
-CREATE OR REPLACE FUNCTION event_change_user()
-RETURNS TRIGGER AS $$
-DECLARE event_id INTEGER;
-BEGIN
-    IF NEW.password_hash IS NULL
-    THEN
-        INSERT INTO events (user_id, event_type)
-        VALUES (NEW.id, 'remove')
-        RETURNING id INTO event_id;
-    ELSE
-        INSERT INTO events (user_id, event_type)
-        VALUES (NEW.id, 'modify')
-        RETURNING id INTO event_id;
-    END IF;
-    INSERT INTO events_affected_users (event_id, affected_user_id)
-    VALUES (event_id, NEW.id);
-    UPDATE users SET last_updated = CURRENT_TIMESTAMP WHERE id = NEW.id;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 -- when a guest arrives or leaves, notify all hosts with an event using websocket
 CREATE OR REPLACE FUNCTION event_guest_change()
 RETURNS TRIGGER AS $$
 DECLARE affected RECORD;
+DECLARE inviter_role user_role;
 BEGIN
-    IF NEW.event_type = 'arrive' OR NEW.event_type = 'leave'
-    THEN
+        -- check, whether admins are trying to arrive / leave
         IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
         THEN
             RAISE EXCEPTION 'Admins are not allowed to arrive / leave stueble';
         END IF;
-        IF (SELECT user_id FROM stueble_codes WHERE stueble_id = NEW.stueble_id AND user_id = NEW.user_id) IS NULL
+
+        -- check, whether the user is allowed to arrive / leave
+        IF NEW.event_type in ('arrive', 'leave')
         THEN
-            RAISE EXCEPTION 'User has no stueble code to stueble %', NEW.stueble_id;
-        END IF;
-        IF (SELECT event_type FROM events WHERE ((user_id = NEW.user_id) AND (stueble_id = NEW.stueble_id)) ORDER BY submitted DESC LIMIT 1) = NEW.event_type
+            -- if user is arriving, check if not already arrived
+            IF NEW.event_type = 'arrive'
             THEN
-                RAISE EXCEPTION 'Duplicate event: User % already has an event of type % for stueble %', NEW.user_id, NEW.event_type, NEW.stueble_id;
-        END IF;
-        PERFORM pg_notify(
-            'guest_list_update',
-            json_build_object(
-            'event', NEW.event_type,
-            'user_id', NEW.user_id,
-            'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
-            )::text);
-    END IF;
+
+                -- check, whether user already arrived
+                IF (SELECT event_type
+                    FROM events
+                    WHERE stueble_id = NEW.stueble_id
+                      AND user_id = NEW.user_id
+                      AND event_type in ('arrive', 'leave')
+                    ORDER BY submitted DESC
+                    LIMIT 1) == 'arrive'
+                THEN
+                    RAISE EXCEPTION 'User % is already marked as arrived for stueble %', NEW.user_id, NEW.stueble_id;
+                END IF;
+
+                -- check, whether user is registered for the stueble
+                IF (SELECT event_type
+                        FROM events
+                        WHERE stueble_id = NEW.stueble_id
+                          AND user_id = NEW.user_id
+                          AND event_type in ('add', 'remove')
+                        ORDER BY submitted DESC
+                        LIMIT 1) != 'add'
+                    THEN
+                        RAISE EXCEPTION 'User is not registered for stueble %', NEW.stueble_id;
+                    END IF;
+
+            -- if user is leaving, check if not already left and whether they arrived first
+            ELSE
+                IF (SELECT event_type
+                    FROM events
+                    WHERE stueble_id = NEW.stueble_id
+                      AND user_id = NEW.user_id
+                      AND event_type in ('arrive', 'leave')
+                    ORDER BY submitted DESC
+                    LIMIT 1) != 'arrive'
+                THEN
+                    RAISE EXCEPTION 'User % is not marked as arrived yet for stueble %', NEW.user_id, NEW.stueble_id;
+                END IF;
+            END IF;
+
+            -- check, whether the user can be added / removed
+            ELSE
+
+                -- check whether add is valid
+                IF NEW.event_type = 'add'
+                THEN
+                    -- check, whether user is extern and needs to be invited
+                    IF NEW.invited_by IS NULL AND (SELECT user_role FROM users WHERE id = NEW.user_id) = 'extern'
+                    THEN
+                        RAISE EXCEPTION 'Externs need to be invited';
+                    END IF;
+
+                    -- set inviter_role
+                    inviter_role := (SELECT user_role
+                                     FROM users
+                                     WHERE id = NEW.invited_by);
+
+                    -- if user is being added, check, whether inviter role is allowed
+                    IF NEW.invited_by IS NOT NULL AND inviter_role in ('extern', 'admin')
+                    THEN
+                        RAISE EXCEPTION 'Externs and admins are not allowed to invite users';
+                    END IF;
+                    IF (SELECT event_type
+                        FROM events
+                        WHERE stueble_id = NEW.stueble_id
+                          AND user_id = NEW.user_id
+                          AND event_type in ('add', 'remove')
+                        ORDER BY submitted DESC
+                        LIMIT 1) == 'add'
+                    THEN
+                        RAISE EXCEPTION 'User cannot be added to stueble % since already added to stueble %', NEW.stueble_id;
+                    END IF;
+
+                -- check whether remove is valid
+                ELSE
+                    IF (SELECT event_type
+                        FROM events
+                        WHERE stueble_id = NEW.stueble_id
+                          AND user_id = NEW.user_id
+                          AND event_type in ('add', 'remove')
+                        ORDER BY submitted DESC
+                        LIMIT 1) != 'add'
+                    THEN
+                        RAISE EXCEPTION 'User cannot be removed from stueble % since not registered for stueble % yet', NEW.stueble_id;
+                    END IF;
+                END IF;
+            END IF;
+            PERFORM pg_notify(
+                    'guest_list_update',
+                    json_build_object(
+                            'event', NEW.event_type,
+                            'user_id', NEW.user_id,
+                            'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
+                    )::text);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -97,20 +148,39 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER event_change_user_delete_trigger
-AFTER DELETE ON users
-FOR EACH ROW EXECUTE FUNCTION event_change_user();
+CREATE OR REPLACE FUNCTION set_uuid_hash()
+RETURNS trigger AS $$
+BEGIN
+    NEW.uuid := gen_random_uuid();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION set_session_id()
+RETURNS trigger AS $$
+BEGIN
+    IF OLD.session_id IS NULL
+    THEN
+        NEW.session_id := gen_random_uuid();
+    ELSE
+        NEW.session_id := OLD.session_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER event_change_user_trigger
-AFTER UPDATE ON users
-FOR EACH ROW
-WHEN (OLD.* IS DISTINCT FROM NEW.* AND ((OLD.last_updated IS DISTINCT FROM NEW.last_updated) IS FALSE))
-EXECUTE FUNCTION event_change_user();
-
-CREATE OR REPLACE TRIGGER event_add_user_trigger
-AFTER INSERT ON users
-FOR EACH ROW EXECUTE FUNCTION event_add_user();
+CREATE OR REPLACE FUNCTION set_reset_code()
+RETURNS trigger AS $$
+BEGIN
+    IF OLD.reset_code IS NULL
+    THEN
+        NEW.reset_code := gen_random_uuid();
+    ELSE
+        NEW.reset_code := OLD.reset_code;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER event_guest_change_trigger
 BEFORE INSERT ON events
@@ -124,6 +194,14 @@ CREATE OR REPLACE TRIGGER update_websocket_sids_trigger
     AFTER INSERT OR UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_websocket_sids();
 
-CREATE OR REPLACE TRIGGER check_user_role_stueble_codes_trigger
-    BEFORE INSERT OR UPDATE ON stueble_codes
-    FOR EACH ROW EXECUTE FUNCTION check_user_role();
+CREATE OR REPLACE TRIGGER set_uuid_hash_trigger
+    BEFORE INSERT OR UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION set_uuid_hash();
+
+CREATE OR REPLACE TRIGGER set_session_id_trigger
+    BEFORE INSERT OR UPDATE ON sessions
+    FOR EACH ROW EXECUTE FUNCTION set_session_id();
+
+CREATE OR REPLACE TRIGGER set_reset_code_trigger
+    BEFORE INSERT ON password_resets
+    FOR EACH ROW EXECUTE FUNCTION set_reset_code();

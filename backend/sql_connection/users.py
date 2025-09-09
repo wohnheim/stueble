@@ -5,8 +5,17 @@ from typing import Annotated
 from backend.sql_connection.common_functions import clean_single_data
 
 
-def add_user(connection, cursor, user_role: UserRole, room: str | int, residence: Residence, first_name: str, last_name: str,
-             email: Email, password_hash: str, user_name: str, returning: str="") -> dict:
+def add_user(connection,
+             cursor,
+             user_role: UserRole,
+             first_name: str,
+             last_name: str,
+             returning: str="",
+             room: str | int | None=None,
+             residence: Residence | None=None,
+             email: Email | None=None,
+             password_hash: str | None=None,
+             user_name: str | None=None) -> dict:
     """
     adds a user to the table users
 
@@ -14,29 +23,40 @@ def add_user(connection, cursor, user_role: UserRole, room: str | int, residence
         connection: connection to the db
         cursor: cursor for the connection
         user_role (UserRole): available roles for the user
-        room (str | int): room of the user
-        residence (Residence): residence of the user
         first_name (str): first name of the user
         last_name (str): last name of the user
-        email (Email): email of the user
-        password_hash (str): password hash of the user
-        user_name (str): username of the user
         returning (str): which column to return
+        room (str | int | None): room of the user
+        residence (Residence | None): residence of the user
+        email (Email | None): email of the user
+        password_hash (str | None): password hash of the user
+        user_name (str | None): username of the user
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
     """
+    values_set = any(i is None for i in [room, residence, email, password_hash, user_name])
+    values_not_set = any(i is not None for i in [room, residence, email, password_hash, user_name])
 
-    try:
-        room = int(room)
-    except ValueError:
-        return {"success": False, "error": "Room must be an integer, provided as str | int."}
+    if (values_set and user_role != UserRole.EXTERN) or (UserRole.EXTERN and values_not_set):
+        if user_role != UserRole.EXTERN:
+            return {"success": False, "error": ValueError("For user_role other than extern, room, residence, email, password_hash and user_name must be set. For user_role extern, these values must not be specified.")}
+    arguments = {"user_role": user_role.value, "first_name": first_name, "last_name": last_name}
+    if user_role != UserRole.EXTERN:
+        try:
+            room = int(room)
+        except ValueError:
+            return {"success": False, "error": "Room must be an integer, provided as str | int."}
+        arguments["room"] = room
+        arguments["residence"] = residence.value
+        arguments["email"] = email.email
+        arguments["password_hash"] = password_hash
+        arguments["user_name"] = user_name
 
     result = db.insert_table(
         connection=connection,
         cursor=cursor,
         table_name="users",
-        arguments={"user_role": user_role.value, "room": room, "residence": residence.value, "first_name": first_name,
-                   "last_name": last_name, "email": email.email, "password_hash": password_hash, "user_name": user_name},
+        arguments=arguments,
         returning_column=returning)
     if returning != "" and result["success"]:
         return clean_single_data(result)
