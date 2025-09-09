@@ -10,7 +10,7 @@ def add_guest(connection, cursor, user_id: int, stueble_id: int) -> dict:
         user_id (int): id of the user
         stueble_id (int): id of the stueble party
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
+        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
     """
 
     result = db.insert_table(

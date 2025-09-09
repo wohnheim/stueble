@@ -101,7 +101,7 @@ def create_pool(max_connections : int = 20):
 # TODO can't return success: False right now
 # TODO for arguments as list might not be completely implemented
 @catch_exception
-def read_table(cursor, table_name: str, keywords: list=["*"], conditions: dict={},
+def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",), conditions: dict | None=None,
                expect_single_answer=False, select_max_of_key: str="", specific_where: str="", order_by: tuple=(),
                connection=None) -> dict:
     """
@@ -110,7 +110,7 @@ def read_table(cursor, table_name: str, keywords: list=["*"], conditions: dict={
     
     Parameters:
         cursor (from): conn to db
-        keywords (list): columns, that should be selected, if empty, get all
+        keywords (tuple[str] | list[str]): columns, that should be selected, if empty, get all
         conditions (dict): under which conditions (key: column, value: value) values should be selected, if empty, no conditions
         expect_single_answer (bool): specify whether one or more answers are to be received, therefore it changes, whether list or single object will be returned
         select_max_of_key (bool): conditions must be empty, otherwise it won't be used
@@ -120,7 +120,9 @@ def read_table(cursor, table_name: str, keywords: list=["*"], conditions: dict={
     Returns:
         dict: {"success": bool, data: value}
     """
-
+    keywords = list(keywords)
+    if conditions is None:
+        conditions = {}
     query = f"""SELECT {', '.join(keywords)} FROM {table_name}"""
     if len(conditions) > 0:
         query += f" WHERE {' AND '.join([f'{key} = %s' for index, key in enumerate(conditions.keys())])}"
@@ -145,7 +147,7 @@ def read_table(cursor, table_name: str, keywords: list=["*"], conditions: dict={
 
 # NOTE arguments is either of type dict or of type list
 @catch_exception
-def insert_table(connection, cursor, table_name: str, arguments: dict = {}, returning_column: str = ""):
+def insert_table(connection, cursor, table_name: str, arguments: dict | None = None, returning_column: str = ""):
     """
     insert data into table
 
@@ -153,11 +155,13 @@ def insert_table(connection, cursor, table_name: str, arguments: dict = {}, retu
         connection (connection):  conn to db
         cursor (cursor): cursor for interaction with db
         table_name (str): table to insert into, if empty set all
-        arguments (list): values that should be entered (key: column, value: value), if empty, no conditions, if arguments is of type list, then list has to contain all values that have to be entered
+        arguments (dict | None): values that should be entered (key: column, value: value), if empty, no conditions, if arguments is of type list, then list has to contain all values that have to be entered
         returning_column (int): returns the column
     Returns:
         dict: {"success": bool, "data": id} by default, {"success": bool} if returning is False, {"success": False, "error": e} if error occurred
     """
+    if arguments is None:
+        arguments = {}
     try:
         vals = []
         if type(arguments) == list:
@@ -181,7 +185,7 @@ def insert_table(connection, cursor, table_name: str, arguments: dict = {}, retu
         return {"success": False, "error": e}
 
 # for specific_where conditions must be empty, otherwise conditions will be ignored IMPORTANT what is being ignored differs from the other functions
-def update_table(connection, cursor, table_name: str, arguments: dict={}, conditions: dict={},
+def update_table(connection, cursor, table_name: str, arguments: dict | None=None, conditions: dict | None=None,
                  specific_where: str = "", specific_set: str = "", returning_column: str = ""):
     """
     updates values in a table \n
@@ -191,8 +195,8 @@ def update_table(connection, cursor, table_name: str, arguments: dict={}, condit
         connection (connection):  conn to db
         cursor (cursor): cursor to interact with db
         table_name (str): table to insert into, if empty set all
-        arguments (dict): values that should be entered (key: column, value: value)
-        conditions (dict): specify to insert into the correct row
+        arguments (dict | None): values that should be entered (key: column, value: value)
+        conditions (dict | None): specify to insert into the correct row
         specific_where (str): conditions must be empty, otherwise conditions will be ignored, specifies where should be set, IMPORTANT what is being ignored differs from the other functions
         specific_set (str): arguments must be empty, otherwise arguments will be ignored, specifies what should be set
         returning_column (str): returns the specified column, returns just a single column
@@ -202,6 +206,8 @@ def update_table(connection, cursor, table_name: str, arguments: dict={}, condit
 
     if arguments is None:
         arguments = {}
+    if conditions is None:
+        conditions = {}
     try:
         query = f"""UPDATE {table_name}"""
         if specific_set != "":
