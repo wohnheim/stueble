@@ -253,7 +253,7 @@ def create_password_reset_code(connection, cursor, user_id: int) -> dict:
     # maybe shouldn't be possible, but still left in
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "error occurred"}
-    return result
+    return clean_single_data(result)
 
 def confirm_reset_code(cursor, reset_code: str):
     """
