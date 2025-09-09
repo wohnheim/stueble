@@ -130,7 +130,7 @@ def get_user(
         expect_single_answer=True,
         select_max_of_key: Annotated[str, "Explicit with user_id, user_email, conditions, specific_where"] = "",
         specific_where: Annotated[str, "Explicit with user_id, user_email, select_max_of_key, conditions"] = "",
-        order_by: Annotated[tuple, "Explicit with expect_single_answer=True"] = ()) -> dict:
+        order_by: Annotated[tuple, "Explicit with expect_single_answer=True"] = None) -> dict:
     """
     retrieves a user from the table users
 
@@ -152,7 +152,7 @@ def get_user(
     if conditions is None:
         conditions = {}
     # check, whether explicitly of expect_single_answer and order_by is met
-    if expect_single_answer and order_by != ():
+    if expect_single_answer and order_by is not None:
         return {"success": False, "error": ValueError("Either expect_single_answer=True or order_by can be set.")}
 
     # check, whether a where statement is set for sql query
@@ -175,6 +175,9 @@ def get_user(
         conditions["email"] = user_email.email
     elif user_name is not None:
         conditions["user_name"] = user_name
+    if order_by is None:
+        order_by = ()
+
     result = db.read_table(
         cursor=cursor,
         table_name="users",
