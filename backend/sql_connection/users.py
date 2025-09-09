@@ -175,8 +175,9 @@ def get_user(
         conditions["email"] = user_email.email
     elif user_name is not None:
         conditions["user_name"] = user_name
-    if order_by is None:
-        order_by = ()
+    value = {}
+    if order_by is not None:
+        value["order_by"] = order_by
 
     result = db.read_table(
         cursor=cursor,
@@ -186,7 +187,7 @@ def get_user(
         conditions=conditions,
         select_max_of_key=select_max_of_key,
         specific_where=specific_where,
-        order_by=order_by)
+        **value)
 
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "User doesn't exist."}
