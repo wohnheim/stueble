@@ -22,3 +22,5 @@ result = db.insert_table(
 
 if result["success"] is False:
     raise result["error"]
+
+print("Admin users added.")

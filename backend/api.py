@@ -478,7 +478,6 @@ def guests():
             mimetype="application/json")
         return response
 
-    # TODO change parameters, clean dict
     # get guest list
     result = guest_events.guest_list(cursor=cursor)
     close_conn_cursor(conn, cursor) # close conn, cursor
@@ -697,10 +696,10 @@ def guest_change():
     # load data
     data = request.get_json()
     session_id = request.cookies.get("SID", None)
-    uuid = data.get("uuid", None)
+    user_uuid = data.get("uuid", None)
     present = data.get("present", None)
 
-    if session_id is None or uuid is None or present is None:
+    if session_id is None or user_uuid is None or present is None:
         response = Response(
             response=json.dumps({"error": f"The session_id, uuid, present must be specified"}),
             status=401,
@@ -729,9 +728,8 @@ def guest_change():
 
     event_type = EventType.ARRIVE if present else EventType.LEAVE
 
-    # TODO: change to events
     # change guest status to arrive / leave
-    result = guest_events.change_guest(connection=conn, cursor=cursor, stueble_code=guest_stueble_code, event_type=event_type)
+    result = guest_events.change_guest(connection=conn, cursor=cursor, user_uuid=user_uuid, event_type=event_type)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -802,7 +800,8 @@ def invite_friend():
 
     stueble_id = result["data"][0]
 
-    result = users.get_invited_friends(cursor=cursor, user_id=user_id, stueble_id=stueble_id)
+    # already handled by trigger
+    """result = users.get_invited_friends(cursor=cursor, user_id=user_id, stueble_id=stueble_id)
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -833,7 +832,7 @@ def invite_friend():
             status=403,
             mimetype="application/json"
         )
-        return response
+        return response"""
 
     result = users.add_user(
         connection=conn,
@@ -939,7 +938,7 @@ def reset_password_mail():
     reset_token = result["data"]
 
     subject = "Passwort zurücksetzen"
-    body = f"""Hallo {first_name} {last_name},\nMit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+    body = f"""Hallo {first_name} {last_name},\n\nmit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
     result = gmail.send_mail(recipient=email, subject=subject, body=body)
     if result["success"] is False:

@@ -1,4 +1,9 @@
+from backend.sql_connection import database as db
+
 import bcrypt
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 
 def hash_pwd(password: str) -> str:
     password = password.encode()
@@ -9,3 +14,71 @@ def match_pwd(password: str, hashed: str) -> bool:
     password = password.encode()
     hashed = hashed.encode()
     return bcrypt.checkpw(password, hashed)
+
+def create_signature(cursor, message: str) -> dict:
+    """
+    Create a digital signature for a given message using RSA private key.
+
+    Parameters:
+        cursor: Database cursor to read the private key.
+        message (str): The message to be signed.
+    Returns:
+        dict: {"success": bool, "data": signature or error message}
+    """
+
+    result = db.read_table(
+        cursor=cursor,
+        table_name="configurations",
+        columns=["private_key"],
+        expect_single_answer=True)
+
+    if result["success"] is False:
+        return result
+
+    if result["data"] is None:
+        return {"success": False, "data": "Private key not found in configurations."}
+
+    private_key_pem = result["data"][0]
+
+    private_key = serialization.load_pem_private_key(
+        private_key_pem.encode(),
+        password=None)
+
+    message = message.encode()
+    signature = private_key.sign(
+        message,
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256())
+    return {"success": True, "data": signature}
+
+def verify_signature(public_key_pem: str, message: str, signature: bytes) -> bool:
+    """
+    Verify a digital signature using the provided RSA public key.
+
+    Parameters:
+        public_key_pem (str): The PEM-encoded public key.
+        message (str): The original message that was signed.
+        signature (bytes): The digital signature to verify.
+    Returns:
+        bool: True if the signature is valid, False otherwise.
+    """
+
+    public_key = serialization.load_pem_public_key(public_key_pem.encode())
+    message = message.encode()
+    try:
+        public_key.verify(
+            signature,
+            message,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return True
+    except Exception as e:
+        print(f"Signature verification failed: {e}")
+        return False
