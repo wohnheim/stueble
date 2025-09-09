@@ -37,7 +37,7 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
               WHERE sc.code = %s 
                 AND (sm.date_of_time = CURRENT_DATE 
                 OR sm.date_of_time = (CURRENT_DATE - INTERVAL '1 day'))
-              ))
+              )
         guest
         LEFT JOIN users inviter ON guest.invited_by = inviter.id;
     """
