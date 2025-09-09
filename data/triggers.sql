@@ -78,6 +78,8 @@ BEGIN
             THEN
                 RAISE EXCEPTION 'Externs and admins are not allowed to invite users';
             END IF;
+
+            -- check, whether user is already added
             IF (SELECT event_type
                 FROM events
                 WHERE stueble_id = NEW.stueble_id
@@ -110,7 +112,6 @@ BEGIN
                                      WHERE (event_type in ('add', 'remove') AND invited_by = NEW.invited_by AND
                                             stueble_id = NEW.stueble_id) = 'add'
                                      ORDER BY user_id, submitted DESC)
-
                 SELECT COUNT(*)
                 INTO inviter_users
                 FROM last_events
@@ -134,8 +135,19 @@ BEGIN
             THEN
                 RAISE EXCEPTION 'User cannot be removed from stueble % since not registered for stueble % yet', NEW.stueble_id;
             END IF;
-        END IF;
 
+            -- remove invitees of the removed user if user is not extern
+            IF (SELECT user_role FROM users WHERE id = NEW.user_id) != 'extern'
+            THEN
+                INSERT INTO events (user_id, stueble_id, event_type, invited_by)
+                (SELECT user_id, NEW.stueble_id, 'remove', NEW.user_id
+                FROM (SELECT DISTINCT ON (user_id) user_id, event_type
+                      FROM events
+                      WHERE event_type in ('add', 'remove') AND invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
+                      ORDER BY user_id, submitted DESC) AS last_events
+                WHERE event_type = 'add');
+            END IF;
+        END IF;
     END IF;
     PERFORM pg_notify(
             'guest_list_update',
@@ -145,9 +157,8 @@ BEGIN
                     'stueble_id',
                     NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
             )::text);
-
-        RETURN NEW;
-    END;
+    RETURN NEW;
+END;
 $$ LANGUAGE plpgsql;
 
 
@@ -220,9 +231,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION add_invited_by()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.invited_by IS NULL AND NEW.event_type != 'add' AND (SELECT user_role FROM users WHERE id = NEW.user_id) == 'extern'
+    THEN
+        NEW.invited_by := (SELECT invited_by FROM events WHERE user_id = NEW.user_id AND stueble_id = NEW.stueble_id AND event_type = 'add' ORDER BY submitted DESC LIMIT 1);
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER event_guest_change_trigger
-BEFORE INSERT ON events
+BEFORE INSERT OR UPDATE ON events
 FOR EACH ROW EXECUTE FUNCTION event_guest_change();
+
+CREATE OR REPLACE TRIGGER event_add_invited_by_trigger
+AFTER INSERT OR UPDATE ON events
+FOR EACH ROW EXECUTE FUNCTION add_invited_by();
 
 CREATE OR REPLACE TRIGGER event_guest_change_two_trigger
 AFTER INSERT ON events

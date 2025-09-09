@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS stueble_motto (
     id SERIAL PRIMARY KEY,
     motto TEXT NOT NULL,
     date_of_time DATE NOT NULL UNIQUE CHECK (date_of_time > CURRENT_DATE),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     shared_apartment TEXT
 );
 
