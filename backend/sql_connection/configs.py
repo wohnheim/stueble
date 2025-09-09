@@ -1,4 +1,6 @@
 import backend.sql_connection.database as db
+from backend.sql_connection.common_functions import clean_single_data
+
 
 def get_configuration(cursor, key: str) -> dict:
     """
@@ -18,4 +20,4 @@ def get_configuration(cursor, key: str) -> dict:
         conditions={"key": key})
     if result["success"] and result["data"] is None:
         return {"success": False, "error": f"no configuration for {key} found"}
-    return result
+    return clean_single_data(result)
