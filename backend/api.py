@@ -647,19 +647,19 @@ def search():
         result["data"] = []
 
     users = []
-    if "email" in result["data"]:
+    data = result["data"]
+    if "email" in data:
         # showing only a part of the email
         email = data[2]
         email = email[:2] + "*" * (re.search("@", email).start() - 2) + email[re.search("@", email).start():]
 
-        data = result["data"]
         user = {"first_name": data[0],
                 "last_name": data[1],
                 "email": email,
                 "user_role": FrontendUserRole.EXTERN if data[3] == "extern" else FrontendUserRole.INTERN}
         users.append(user)
     else:
-        for entry in result["data"]:
+        for entry in data:
             # showing only a part of the email
             email = entry[2]
             email = email[:2] + "*" * (re.search("@", email).start() - 2) + email[re.search("@", email).start():]
