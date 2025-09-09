@@ -39,13 +39,17 @@ def get_info(cursor, date: date | None=None) -> dict:
     Returns:
         dict: {"success": bool, "data": (info, author)}, {"success": False, "error": e} if error occurred
     """
-
+    parameters = {}
+    if date is not None:
+        parameters["conditions"] = {"date_of_time": date}
+    else:
+        parameters["specific_where"] = "(SELECT date_of_time FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1)"
     result = db.read_table(
         cursor=cursor,
         table_name="stueble_motto",
         keywords=["id", "motto"],
-        conditions={"date_of_time": date if date is not None else """(SELECT date_of_time FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1)"""},
-        expect_single_answer=True
+        expect_single_answer=True,
+        **parameters
     )
 
     if result["success"] and result["data"] is None:
