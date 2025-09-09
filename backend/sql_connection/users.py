@@ -101,12 +101,12 @@ def update_user(
     """
 
     allowed_fields = ["user_role", "room", "residence", "first_name", "last_name", "email", "password_hash", "user_name"]
-    for k, v in kwargs:
+    for k, v in kwargs.items():
         if k not in allowed_fields:
-            raise ValueError(f"Field {k} is not allowed to be updated.")
+            return {"success": False, "error": ValueError(f"Field {k} is not allowed to be updated.")}
 
     if user_id is None and user_email is None and user_name is None:
-        raise ValueError("Either user_id or user_email or user_name must be set.")
+        return {"success": False, "error": ValueError("Either user_id or user_email or user_name must be set.")}
     conditions = {}
     if user_id is not None:
         conditions["id"] = user_id
@@ -153,11 +153,11 @@ def get_user(
         conditions = {}
     # check, whether explicitly of expect_single_answer and order_by is met
     if expect_single_answer and order_by != ():
-        raise ValueError("Either expect_single_answer=True or order_by can be set.")
+        return {"success": False, "error": ValueError("Either expect_single_answer=True or order_by can be set.")}
 
     # check, whether a where statement is set for sql query
     if user_id is None and user_email is None and user_name is None and conditions == {} and specific_where == "":
-        raise ValueError("Either user_id, user_email, user_name, conditions or specific_where must be set.")
+        return {"success": False, "error": ValueError("Either user_id, user_email, user_name, conditions or specific_where must be set.")}
     conditions_counter = 0
     if user_id is not None: conditions_counter += 1
     if user_email is not None: conditions_counter += 1
