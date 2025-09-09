@@ -44,7 +44,7 @@ def get_info(cursor, date: date | None=None) -> dict:
         cursor=cursor,
         table_name="stueble_motto",
         keywords=["id", "motto"],
-        conditions={"date_of_time": date if date is not None else """SELECT date_of_time FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""},
+        conditions={"date_of_time": date if date is not None else """(SELECT date_of_time FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1)"""},
         expect_single_answer=True
     )
 
