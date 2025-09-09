@@ -51,6 +51,8 @@ def change_guest(connection, cursor, stueble_code: str, event_type: EventType) -
 
     if result["success"] is False:
         return result
+    if result["data"] is None:
+        return {"success": False, "error": "Guest not found"}
 
     guest_id, guest_first_name, guest_last_name, guest_user_role, guest_invited_by, inviter_id, inviter_first_name, inviter_last_name, inviter_user_role = result["data"]
     if guest_id is None:
