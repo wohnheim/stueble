@@ -115,40 +115,9 @@ CREATE TABLE IF NOT EXISTS error_logs (
     actions_taken BOOLEAN DEFAULT FALSE
 );
 
--- check function for valid invited_by id in users
-CREATE FUNCTION is_valid_invited_by_id(INTEGER) RETURNS boolean AS $$
-    SELECT COALESCE((SELECT invited_by IS NULL FROM stueble_codes WHERE user_id = $1 LIMIT 1), false) AND
-           (
-               (SELECT COUNT(*)
-                FROM stueble_codes
-                WHERE invited_by = $1)
-                <  -- really smaller since one is added
-               (SELECT
-                    CAST(value AS INTEGER)
-                FROM configurations
-                WHERE key = 'maximum_guests_per_user')
-           );
-$$ LANGUAGE SQL;
-
 CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
     SELECT submitted FROM events WHERE id = $1 LIMIT 1;
 $$ LANGUAGE SQL;
-
-
-CREATE FUNCTION stueble_max_guests(INTEGER) RETURNS boolean AS $$
-    SELECT
-        (COUNT(*))
-        < -- really smaller since one is added
-        (SELECT CAST (value AS INTEGER)
-        FROM configurations
-        WHERE key = 'maximum_guests')
-    FROM stueble_codes
-    WHERE stueble_id = $1;
-$$ LANGUAGE SQL;
-
-ALTER TABLE stueble_codes
-    ADD CONSTRAINT stueble_codes_max_guests_check
-    CHECK (stueble_max_guests(stueble_id));
 
 ALTER TABLE users
 ADD CONSTRAINT unique_room_residence UNIQUE (room, residence);

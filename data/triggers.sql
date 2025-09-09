@@ -1,127 +1,155 @@
 -- when a guest arrives or leaves, notify all hosts with an event using websocket
 CREATE OR REPLACE FUNCTION event_guest_change()
 RETURNS TRIGGER AS $$
-DECLARE inviter_role user_role;
+DECLARE
+    inviter_role          user_role;
+    DECLARE inviter_users INTEGER;
 BEGIN
-        -- check, whether admins are trying to arrive / leave
-        IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
-        THEN
-            RAISE EXCEPTION 'Admins are not allowed to arrive / leave stueble';
-        END IF;
+    -- check, whether admins are trying to arrive / leave
+    IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
+    THEN
+        RAISE EXCEPTION 'Admins are not allowed to arrive / leave stueble';
+    END IF;
 
-        -- check, whether the user is allowed to arrive / leave
-        IF NEW.event_type in ('arrive', 'leave')
+    -- check, whether the user is allowed to arrive / leave
+    IF NEW.event_type in ('arrive', 'leave')
+    THEN
+        -- if user is arriving, check if not already arrived
+        IF NEW.event_type = 'arrive'
         THEN
-            -- if user is arriving, check if not already arrived
-            IF NEW.event_type = 'arrive'
+
+            -- check, whether user already arrived
+            IF (SELECT event_type
+                FROM events
+                WHERE stueble_id = NEW.stueble_id
+                  AND user_id = NEW.user_id
+                  AND event_type in ('arrive', 'leave', 'remove') -- remove, since when the user is removed all past arrived have to be ignored
+                ORDER BY submitted DESC
+                LIMIT 1) == 'arrive'
             THEN
+                RAISE EXCEPTION 'User % is already marked as arrived for stueble %', NEW.user_id, NEW.stueble_id;
+            END IF;
 
-                -- check, whether user already arrived
-                IF (SELECT event_type
-                    FROM events
-                    WHERE stueble_id = NEW.stueble_id
-                      AND user_id = NEW.user_id
-                      AND event_type in ('arrive', 'leave', 'remove') -- remove, since when the user is removed all past arrived have to be ignored
-                    ORDER BY submitted DESC
-                    LIMIT 1) == 'arrive'
-                THEN
-                    RAISE EXCEPTION 'User % is already marked as arrived for stueble %', NEW.user_id, NEW.stueble_id;
-                END IF;
-
-                -- check, whether user is registered for the stueble
-                IF (SELECT event_type
-                        FROM events
-                        WHERE stueble_id = NEW.stueble_id
-                          AND user_id = NEW.user_id
-                          AND event_type in ('add', 'remove')
-                        ORDER BY submitted DESC
-                        LIMIT 1) != 'add'
-                    THEN
-                        RAISE EXCEPTION 'User is not registered for stueble %', NEW.stueble_id;
-                    END IF;
+            -- check, whether user is registered for the stueble
+            IF (SELECT event_type
+                FROM events
+                WHERE stueble_id = NEW.stueble_id
+                  AND user_id = NEW.user_id
+                  AND event_type in ('add', 'remove')
+                ORDER BY submitted DESC
+                LIMIT 1) != 'add'
+            THEN
+                RAISE EXCEPTION 'User is not registered for stueble %', NEW.stueble_id;
+            END IF;
 
             -- if user is leaving, check if not already left and whether they arrived first
-            ELSE
-                IF (SELECT event_type
-                    FROM events
-                    WHERE stueble_id = NEW.stueble_id
-                      AND user_id = NEW.user_id
-                      AND event_type in ('arrive', 'leave')
-                    ORDER BY submitted DESC
-                    LIMIT 1) != 'arrive'
+        ELSE
+            IF (SELECT event_type
+                FROM events
+                WHERE stueble_id = NEW.stueble_id
+                  AND user_id = NEW.user_id
+                  AND event_type in ('arrive', 'leave')
+                ORDER BY submitted DESC
+                LIMIT 1) != 'arrive'
+            THEN
+                RAISE EXCEPTION 'User % is not marked as arrived yet for stueble %', NEW.user_id, NEW.stueble_id;
+            END IF;
+        END IF;
+
+        -- check, whether the user can be added / removed
+    ELSE
+
+        -- check whether add is valid
+        IF NEW.event_type = 'add'
+        THEN
+            -- check, whether user is extern and needs to be invited
+            IF NEW.invited_by IS NULL AND (SELECT user_role FROM users WHERE id = NEW.user_id) = 'extern'
+            THEN
+                RAISE EXCEPTION 'Externs need to be invited';
+            END IF;
+
+            -- set inviter_role
+            inviter_role := (SELECT user_role
+                             FROM users
+                             WHERE id = NEW.invited_by);
+
+            -- if user is being added, check, whether inviter role is allowed
+            IF NEW.invited_by IS NOT NULL AND inviter_role in ('extern', 'admin')
+            THEN
+                RAISE EXCEPTION 'Externs and admins are not allowed to invite users';
+            END IF;
+            IF (SELECT event_type
+                FROM events
+                WHERE stueble_id = NEW.stueble_id
+                  AND user_id = NEW.user_id
+                  AND event_type in ('add', 'remove')
+                ORDER BY submitted DESC
+                LIMIT 1) == 'add'
+            THEN
+                RAISE EXCEPTION 'User cannot be added to stueble % since already added to stueble %', NEW.stueble_id;
+            END IF;
+
+            -- check, whether maximum capacity of guests is already reached
+            IF (SELECT COUNT(*)
+                FROM (SELECT DISTINCT ON (user_id) event_type
+                      FROM events
+                      WHERE (event_type in ('add', 'remove') AND stueble_id = NEW.stueble_id) = 'add'
+                      ORDER BY user_id, submitted DESC) as last_events
+                WHERE event_type = 'add') >=
+               (SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_stueble')
+            THEN
+                RAISE EXCEPTION 'Maximum capacity of guests for stueble % already reached', NEW.stueble_id;
+            END IF;
+
+
+            -- check, whether max_number of guests for inviter is already exceeded
+            IF NEW.invited_by IS NOT NULL
+            THEN
+                WITH last_events AS (SELECT DISTINCT ON (user_id) event_type
+                                     FROM events
+                                     WHERE (event_type in ('add', 'remove') AND invited_by = NEW.invited_by AND
+                                            stueble_id = NEW.stueble_id) = 'add'
+                                     ORDER BY user_id, submitted DESC)
+
+                SELECT COUNT(*)
+                INTO inviter_users
+                FROM last_events
+                WHERE event_type = 'add';
+                IF inviter_users >=
+                   (SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_user')
                 THEN
-                    RAISE EXCEPTION 'User % is not marked as arrived yet for stueble %', NEW.user_id, NEW.stueble_id;
+                    RAISE EXCEPTION 'Inviter % has already reached the maximum number of guests', NEW.invited_by;
                 END IF;
             END IF;
 
-            -- check, whether the user can be added / removed
-            ELSE
-
-                -- check whether add is valid
-                IF NEW.event_type = 'add'
-                THEN
-                    -- check, whether user is extern and needs to be invited
-                    IF NEW.invited_by IS NULL AND (SELECT user_role FROM users WHERE id = NEW.user_id) = 'extern'
-                    THEN
-                        RAISE EXCEPTION 'Externs need to be invited';
-                    END IF;
-
-                    -- set inviter_role
-                    inviter_role := (SELECT user_role
-                                     FROM users
-                                     WHERE id = NEW.invited_by);
-
-                    -- if user is being added, check, whether inviter role is allowed
-                    IF NEW.invited_by IS NOT NULL AND inviter_role in ('extern', 'admin')
-                    THEN
-                        RAISE EXCEPTION 'Externs and admins are not allowed to invite users';
-                    END IF;
-                    IF (SELECT event_type
-                        FROM events
-                        WHERE stueble_id = NEW.stueble_id
-                          AND user_id = NEW.user_id
-                          AND event_type in ('add', 'remove')
-                        ORDER BY submitted DESC
-                        LIMIT 1) == 'add'
-                    THEN
-                        RAISE EXCEPTION 'User cannot be added to stueble % since already added to stueble %', NEW.stueble_id;
-                    END IF;
-
-                    -- check, whether max_number of guests for inviter is already exceeded
-                    IF NEW.invited_by IS NOT NULL AND
-                       (SELECT DISTINCT ON (user_id) *
-                           ORDER BY user_id, submitted DESC
-                        FROM events
-                        WHERE (event_type in ('add', 'remove') AND invited_by = NEW.invited_by))
-                       (SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_user')
-                    THEN
-                        RAISE EXCEPTION 'Inviter % has already reached the maximum number of guests for stueble %', NEW.invited_by, NEW.stueble_id;
-                    END IF;
-
-                -- check whether remove is valid
-                ELSE
-                    IF (SELECT event_type
-                        FROM events
-                        WHERE stueble_id = NEW.stueble_id
-                          AND user_id = NEW.user_id
-                          AND event_type in ('add', 'remove')
-                        ORDER BY submitted DESC
-                        LIMIT 1) != 'add'
-                    THEN
-                        RAISE EXCEPTION 'User cannot be removed from stueble % since not registered for stueble % yet', NEW.stueble_id;
-                    END IF;
-                END IF;
+            -- check whether remove is valid
+        ELSE
+            IF (SELECT event_type
+                FROM events
+                WHERE stueble_id = NEW.stueble_id
+                  AND user_id = NEW.user_id
+                  AND event_type in ('add', 'remove')
+                ORDER BY submitted DESC
+                LIMIT 1) != 'add'
+            THEN
+                RAISE EXCEPTION 'User cannot be removed from stueble % since not registered for stueble % yet', NEW.stueble_id;
             END IF;
-            PERFORM pg_notify(
-                    'guest_list_update',
-                    json_build_object(
-                            'event', NEW.event_type,
-                            'user_id', NEW.user_id,
-                            'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
-                    )::text);
-    RETURN NEW;
-END;
+        END IF;
+
+    END IF;
+    PERFORM pg_notify(
+            'guest_list_update',
+            json_build_object(
+                    'event', NEW.event_type,
+                    'user_id', NEW.user_id,
+                    'stueble_id',
+                    NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
+            )::text);
+
+        RETURN NEW;
+    END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION add_to_affected_users()
 RETURNS trigger AS $$
