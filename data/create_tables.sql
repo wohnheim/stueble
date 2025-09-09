@@ -134,11 +134,6 @@ CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
     SELECT submitted FROM events WHERE id = $1 LIMIT 1;
 $$ LANGUAGE SQL;
 
--- CHECK-Constraint for valid invited_by id in stueble_codes
-ALTER TABLE stueble_codes
-    ADD CONSTRAINT stueble_codes_invited_by_check
-    CHECK (invited_by IS NULL OR (id != invited_by AND is_valid_invited_by_id(invited_by)));
-
 
 CREATE FUNCTION stueble_max_guests(INTEGER) RETURNS boolean AS $$
     SELECT

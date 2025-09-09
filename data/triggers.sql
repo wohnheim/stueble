@@ -21,7 +21,7 @@ BEGIN
                     FROM events
                     WHERE stueble_id = NEW.stueble_id
                       AND user_id = NEW.user_id
-                      AND event_type in ('arrive', 'leave')
+                      AND event_type in ('arrive', 'leave', 'remove') -- remove, since when the user is removed all past arrived have to be ignored
                     ORDER BY submitted DESC
                     LIMIT 1) == 'arrive'
                 THEN
@@ -85,6 +85,17 @@ BEGIN
                         LIMIT 1) == 'add'
                     THEN
                         RAISE EXCEPTION 'User cannot be added to stueble % since already added to stueble %', NEW.stueble_id;
+                    END IF;
+
+                    -- check, whether max_number of guests for inviter is already exceeded
+                    IF NEW.invited_by IS NOT NULL AND
+                       (SELECT DISTINCT ON (user_id) *
+                           ORDER BY user_id, submitted DESC
+                        FROM events
+                        WHERE (event_type in ('add', 'remove') AND invited_by = NEW.invited_by))
+                       (SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_user')
+                    THEN
+                        RAISE EXCEPTION 'Inviter % has already reached the maximum number of guests for stueble %', NEW.invited_by, NEW.stueble_id;
                     END IF;
 
                 -- check whether remove is valid
