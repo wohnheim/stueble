@@ -49,6 +49,7 @@ def get_info(cursor, date: date | None=None) -> dict:
         table_name="stueble_motto",
         keywords=["id", "motto"],
         expect_single_answer=True,
+        order_by=("date_of_time", "ASC"),
         **parameters
     )
 
