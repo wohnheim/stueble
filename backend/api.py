@@ -647,6 +647,7 @@ def search():
         result["data"] = []
 
     users = []
+    print(result["data"])
     for entry in result["data"]:
         # showing only a part of the email
         email = entry[2]
