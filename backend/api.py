@@ -939,7 +939,7 @@ def reset_password_mail():
     reset_token = result["data"]
 
     subject = "Passwort zurücksetzen"
-    body = f"""Hallo {first_name} {last_name},\nMit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}.\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+    body = f"""Hallo {first_name} {last_name},\nMit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
     result = gmail.send_mail(recipient=email, subject=subject, body=body)
     if result["success"] is False:

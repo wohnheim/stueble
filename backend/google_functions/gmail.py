@@ -47,6 +47,3 @@ def send_mail(recipient: Email, subject: str, body: str):
     return {"success": True}
   except HttpError as error:
     return {"success": False, "error": error}
-
-if __name__ == "__main__":
-  send_mail(Email("lpwgfs@gmail.com"), "Test Subject", "This is a test email body.")
