@@ -187,12 +187,12 @@ def signup():
 
     # initialize user_info
     user_info = {}
-    user_info["roomNumber"] = data.get("room", None)
+    user_info["room"] = data.get("roomNumber", None)
     user_info["residence"] = data.get("residence", None)
-    user_info["firstName"] = data.get("first_name", None)
-    user_info["lastName"] = data.get("last_name", None)
+    user_info["first_name"] = data.get("firstName", None)
+    user_info["last_name"] = data.get("lastName", None)
     user_info["email"] = data.get("email", None)
-    user_info["userName"] = data.get("user_name", None)
+    user_info["user_name"] = data.get("userName", None)
     user_info["password"] = data.get("password", None)
 
     # if a value wasn't set, return error
@@ -1057,7 +1057,7 @@ def change_user_data():
 
     data = {}
     if request.path == "/user/change_password":
-        new_pwd = data.get("new_password", None)
+        new_pwd = data.get("newPassword", None)
         if new_pwd is None:
             response = Response(
                 response=json.dumps({"error": "The new_password must be specified"}),
@@ -1072,7 +1072,7 @@ def change_user_data():
             return response
         data["password_hash"] = hp.hash_pwd(new_pwd)
     elif request.path == "/user/change_username":
-        username = data.get("user_name", None)
+        username = data.get("userName", None)
         if username is None:
             response = Response(
                 response=json.dumps({"error": f"Username must be specified"}),
@@ -1281,10 +1281,10 @@ def websocket_change():
 
     # load data
     data = request.get_json()
-    first_name = data.get("first_name", None)
-    last_name = data.get("last_name", None)
-    personal_hash = data.get("personal_hash", None)
-    stueble_id = data.get("stueble_id", None)
+    first_name = data.get("firstName", None)
+    last_name = data.get("lastName", None)
+    personal_hash = data.get("personalHash", None)
+    stueble_id = data.get("stuebleId", None)
     event = data.get("event", None)
     if first_name is None or last_name is None or event is None:
         response = Response(
