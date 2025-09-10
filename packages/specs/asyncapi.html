@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>WebSocket-API der Stüble-Webseite</title>
+    <!-- Embed elements Elements via Web Component -->
+    <script src="https://unpkg.com/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+    <script src="https://unpkg.com/@asyncapi/web-component/lib/asyncapi-web-component.js" defer></script>
+  </head>
+  <body>
+    <asyncapi-component
+      schemaUrl="./asyncapi.yaml"
+      cssImportPath="https://unpkg.com/@asyncapi/react-component/styles/default.min.css">
+    </asyncapi-component>
+  </body>
+</html>
