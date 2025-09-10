@@ -697,10 +697,10 @@ def guest_change():
     # load data
     data = request.get_json()
     session_id = request.cookies.get("SID", None)
-    uuid = data.get("uuid", None)
+    user_uuid = data.get("uuid", None)
     present = data.get("present", None)
 
-    if session_id is None or uuid is None or present is None:
+    if session_id is None or user_uuid is None or present is None:
         response = Response(
             response=json.dumps({"error": f"The session_id, uuid, present must be specified"}),
             status=401,
