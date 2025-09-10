@@ -35,18 +35,12 @@ def add_user(connection,
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
     """
     values_set = any(i is None for i in [room, residence, email, password_hash, user_name, first_name, last_name])
-    values_not_set = any(i is not None for i in [room, residence, email, password_hash, user_name, first_name, last_name])
-    print(values_set)
-    print(room)
-    print(residence)
-    print(email)
-    print(password_hash)
-    print(user_name)
-    print(first_name)
-    print(last_name)
-    if (values_set and user_role != UserRole.EXTERN) or (UserRole.EXTERN and values_not_set):
+    values_not_set = any(i is not None for i in [room, residence, email, password_hash, user_name])
+
+    if (values_set and user_role != UserRole.EXTERN) or (user_role == UserRole.EXTERN and values_not_set):
         if user_role != UserRole.EXTERN:
             return {"success": False, "error": ValueError("For user_role other than extern, room, residence, email, password_hash and user_name must be set. For user_role extern, these values must not be specified.")}
+
     arguments = {"user_role": user_role.value, "first_name": first_name, "last_name": last_name}
     if user_role != UserRole.EXTERN:
         try:
