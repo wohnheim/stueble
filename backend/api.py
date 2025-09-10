@@ -100,7 +100,19 @@ def login():
             mimetype="application/json")
         return response
 
-    value = {"user_email": name} if "@" in name else {"user_name": name}
+    value = dict()
+    if "@" in name:
+        try:
+            name = Email(email=name)
+        except ValueError:
+            response = Response(
+                response=json.dumps({"error": "Invalid email format"}),
+                status=400,
+                mimetype="application/json")
+            return response
+        value = {"user_email": name}
+    else:
+        value = {"user_name": name}
 
     # if data is not valid return error
     if password is None:
