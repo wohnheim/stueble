@@ -22,7 +22,7 @@ def change_guest(connection, cursor, user_uuid: uuid.UUID, event_type: EventType
         keywords=["id", "user_role"],
         table_name="users",
         expect_single_answer=True,
-        conditions={"uuid": str(user_uuid)})
+        conditions={"user_uuid": str(user_uuid)})
 
     if result["success"] is False:
         return result
@@ -122,7 +122,7 @@ def guest_list(cursor, stueble_id: int | None=None) -> dict:
         parameters["variables"] = [stueble_id]
 
     query = f"""
-    SELECT u.id, u.first_name, u.last_name, u.user_role, event_type, submitted, u.uuid, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY submitted DESC) as rn
+    SELECT u.id, u.first_name, u.last_name, u.user_role, event_type, submitted, u.user_uuid, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY submitted DESC) as rn
     FROM events
     LEFT JOIN users u ON events.user_id = u.id
     WHERE stueble_id = {stueble_info} and event_type in ('arrive', 'leave')
