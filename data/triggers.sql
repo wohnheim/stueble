@@ -1,6 +1,6 @@
 -- when a guest arrives or leaves, notify all hosts with an event using websocket
 CREATE OR REPLACE FUNCTION event_guest_change()
-RETURNS TRIGGER AS $$
+RETURNS trigger AS $$
 DECLARE
     inviter_role          user_role;
     DECLARE inviter_users INTEGER;
@@ -23,7 +23,7 @@ BEGIN
                 FROM events
                 WHERE stueble_id = NEW.stueble_id
                   AND user_id = NEW.user_id
-                  AND event_type in ('arrive', 'leave', 'remove') -- remove, since when the user is removed all past arrived have to be ignored
+                  AND event_type in ('arrive', 'leave', 'remove') -- remove, since when the user is removed, all past arrived have to be ignored
                 ORDER BY submitted DESC
                 LIMIT 1) == 'arrive'
             THEN
