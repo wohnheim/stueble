@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    user_name TEXT NOT NULL CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL))
+    user_name TEXT CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL))
 );
 
 -- table for stueble mottos
