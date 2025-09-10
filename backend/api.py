@@ -9,13 +9,13 @@ from backend.sql_connection import (
     configs,
     websocket,
     signup_validation as signup_val,
-    stueble_codes as codes,
+    events as codes,
     database as db)
 import backend.hash_pwd as hp
 from backend.data_types import *
-import backend.qr_code as qr
 from backend.google_functions import gmail
 import re
+from datetime import timedelta, date
 
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
 # TODO always close connection after last request
@@ -82,7 +82,7 @@ def login():
     # load data
     data = request.get_json()
     # TODO: make user_name and email one parameter user
-    name = date.get("user, None")
+    name = data.get("user", None)
     password = data.get("password", None)
 
     # password can't be empty
@@ -478,7 +478,6 @@ def guests():
             mimetype="application/json")
         return response
 
-    # TODO change parameters, clean dict
     # get guest list
     result = guest_events.guest_list(cursor=cursor)
     close_conn_cursor(conn, cursor) # close conn, cursor
@@ -729,9 +728,8 @@ def guest_change():
 
     event_type = EventType.ARRIVE if present else EventType.LEAVE
 
-    # TODO: change to events
     # change guest status to arrive / leave
-    result = guest_events.change_guest(connection=conn, cursor=cursor, stueble_code=guest_stueble_code, event_type=event_type)
+    result = guest_events.change_guest(connection=conn, cursor=cursor, user_uuid=user_uuid, event_type=event_type)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -802,46 +800,13 @@ def invite_friend():
 
     stueble_id = result["data"][0]
 
-    result = users.get_invited_friends(cursor=cursor, user_id=user_id, stueble_id=stueble_id)
-
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"error": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    friends = result["data"]
-
-    result = configs.get_configuration(cursor=cursor, key="maximum_invites_per_user")
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"error": str(result["error"])}),
-            status=500,
-            mimetype="application/json"
-        )
-        return response
-
-    max_invites = int(result["data"])
-
-    if len(friends) >= max_invites:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"error": "maximum number of invites already reached"}),
-            status=403,
-            mimetype="application/json"
-        )
-        return response
-
     result = users.add_user(
         connection=conn,
         cursor=cursor,
         user_role=UserRole.EXTERN,
         first_name=invitee_first_name,
         last_name=invitee_last_name,
-        returning="id")
+        returning="id, user_uuid")
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -851,7 +816,8 @@ def invite_friend():
             mimetype="application/json")
         return response
 
-    invitee_id = result["data"]
+    invitee_id = result["data"][0]
+    invitee_uuid = result["data"][1]
 
     result = codes.add_guest(
         connection=conn,
@@ -862,26 +828,40 @@ def invite_friend():
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
+        status_code = 500
+        if "; code: " in str(result["error"]):
+            status_code = int(str(result["error"]).split("; code: ")[1])
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=status_code,
+            mimetype="application/json")
+        return response
+
+    timestamp = result["data"].isoformat()
+
+    result = configs.get_configuration(
+        cursor=cursor,
+        key="qr_code_expiration_minutes")
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"error": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
+    expiration_minutes = int(result["data"])
 
-    code = result["data"]
+    expiration_date = timestamp + timedelta(minutes=expiration_minutes)
 
-    # TODO: send code instead of qr-code
-    try:
-        qr_code = qr.generate(code=code)
-    except Exception as e:
-        response = Response(
-            response=json.dumps({"error": e}),
-            status=500,
-            mimetype="application/json"
-        )
-        return  response
+    signature = hp.create_signature(cursor=cursor, message=f"{invitee_uuid}{expiration_date}")
+    data = {"expiration_date": expiration_date, "uuid": invitee_uuid, "signature": signature}
 
-    return send_file(qr_code, mimetype="image/png")
+    response = Response(
+        response=json.dumps(data),
+        status=200,
+        mimetype="application/json")
+    return response
 
 @app.route("/auth/reset_password", methods=["POST"])
 def reset_password_mail():
@@ -939,7 +919,7 @@ def reset_password_mail():
     reset_token = result["data"]
 
     subject = "Passwort zurücksetzen"
-    body = f"""Hallo {first_name} {last_name},\nMit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+    body = f"""Hallo {first_name} {last_name},\n\nmit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
     result = gmail.send_mail(recipient=email, subject=subject, body=body)
     if result["success"] is False:
