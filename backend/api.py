@@ -169,10 +169,9 @@ def login():
 
     session_id = result["data"]
 
-    # return 200
+    # return 204
     response = Response(
-        status=200,
-        mimetype="application/json")
+        status=204)
 
     response.set_cookie("SID",
                         session_id,
@@ -296,11 +295,15 @@ def signup():
 
     session_id = result["data"]
 
-    # return 200
+    # return 204
     response = Response(
-        response=json.dumps({"session_id": session_id}),
-        status=200,
-        mimetype="application/json")
+        status=204)
+
+    response.set_cookie("SID",
+                        session_id,
+                        httponly=True,
+                        secure=True,
+                        samesite='Lax')
     return response
 
 @app.route("/auth/logout", methods=["POST"])
@@ -1022,11 +1025,15 @@ def confirm_code():
 
     session_id = result["data"]
 
-    # return 200
+    # return 204
     response = Response(
-        response=json.dumps({"session_id": session_id}),
-        status=200,
-        mimetype="application/json")
+        status=204)
+
+    response.set_cookie("SID",
+                        session_id,
+                        httponly=True,
+                        secure=True,
+                        samesite='Lax')
     return response
 
 @app.route("/user/change_password", methods=["POST"])
