@@ -100,7 +100,7 @@ def login():
             mimetype="application/json")
         return response
 
-    value = {"email": name} if "@" in name else {"user_name": name}
+    value = {"user_email": name} if "@" in name else {"user_name": name}
 
     # if data is not valid return error
     if password is None:
