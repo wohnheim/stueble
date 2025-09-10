@@ -1,9 +1,13 @@
 from backend.sql_connection import database as db
 from backend import hash_pwd
+import os
+
+pwd_hes = os.getenv("ADMIN_PASSWORD_HES")
+pwd_hirte = os.getenv("ADMIN_PASSWORD_HIRTE")
 
 conn, cursor = db.connect()
-password_hes = hash_pwd.hash_pwd("tutorenhes2025")
-password_hirte = hash_pwd.hash_pwd("tutorenhirte2025")
+password_hes = hash_pwd.hash_pwd(pwd_hes)
+password_hirte = hash_pwd.hash_pwd(pwd_hirte)
 result = db.insert_table(
     connection=conn,
     cursor=cursor,
