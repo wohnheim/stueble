@@ -8,7 +8,7 @@ BEGIN
     -- check, whether admins are trying to arrive / leave
     IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
     THEN
-        RAISE EXCEPTION 'Admins are not allowed to arrive / leave stueble';
+        RAISE EXCEPTION 'Admins are not allowed to arrive / leave stueble; code: 400';
     END IF;
 
     -- check, whether the user is allowed to arrive / leave
@@ -27,7 +27,7 @@ BEGIN
                 ORDER BY submitted DESC
                 LIMIT 1) == 'arrive'
             THEN
-                RAISE EXCEPTION 'User % is already marked as arrived for stueble %', NEW.user_id, NEW.stueble_id;
+                RAISE EXCEPTION 'User % is already marked as arrived for stueble %; code: 400', NEW.user_id, NEW.stueble_id;
             END IF;
 
             -- check, whether user is registered for the stueble
@@ -39,7 +39,7 @@ BEGIN
                 ORDER BY submitted DESC
                 LIMIT 1) != 'add'
             THEN
-                RAISE EXCEPTION 'User is not registered for stueble %', NEW.stueble_id;
+                RAISE EXCEPTION 'User is not registered for stueble %; code: 400', NEW.stueble_id;
             END IF;
 
             -- if user is leaving, check if not already left and whether they arrived first
@@ -52,7 +52,7 @@ BEGIN
                 ORDER BY submitted DESC
                 LIMIT 1) != 'arrive'
             THEN
-                RAISE EXCEPTION 'User % is not marked as arrived yet for stueble %', NEW.user_id, NEW.stueble_id;
+                RAISE EXCEPTION 'User % is not marked as arrived yet for stueble %; code: 400', NEW.user_id, NEW.stueble_id;
             END IF;
         END IF;
 
@@ -65,7 +65,7 @@ BEGIN
             -- check, whether user is extern and needs to be invited
             IF NEW.invited_by IS NULL AND (SELECT user_role FROM users WHERE id = NEW.user_id) = 'extern'
             THEN
-                RAISE EXCEPTION 'Externs need to be invited';
+                RAISE EXCEPTION 'Externs need to be invited; code: 400';
             END IF;
 
             -- set inviter_role
@@ -76,7 +76,7 @@ BEGIN
             -- if user is being added, check, whether inviter role is allowed
             IF NEW.invited_by IS NOT NULL AND inviter_role in ('extern', 'admin')
             THEN
-                RAISE EXCEPTION 'Externs and admins are not allowed to invite users';
+                RAISE EXCEPTION 'Externs and admins are not allowed to invite users; code: 400';
             END IF;
 
             -- check, whether user is already added
@@ -88,7 +88,7 @@ BEGIN
                 ORDER BY submitted DESC
                 LIMIT 1) == 'add'
             THEN
-                RAISE EXCEPTION 'User cannot be added to stueble % since already added to stueble %', NEW.stueble_id;
+                RAISE EXCEPTION 'User cannot be added to stueble % since already added to stueble %; code: 400', NEW.stueble_id;
             END IF;
 
             -- check, whether maximum capacity of guests is already reached
@@ -100,7 +100,7 @@ BEGIN
                 WHERE event_type = 'add') >=
                (SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_stueble')
             THEN
-                RAISE EXCEPTION 'Maximum capacity of guests for stueble % already reached', NEW.stueble_id;
+                RAISE EXCEPTION 'Maximum capacity of guests for stueble % already reached; code: 400', NEW.stueble_id;
             END IF;
 
 
@@ -119,7 +119,7 @@ BEGIN
                 IF inviter_users >=
                    (SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_user')
                 THEN
-                    RAISE EXCEPTION 'Inviter % has already reached the maximum number of guests', NEW.invited_by;
+                    RAISE EXCEPTION 'Inviter % has already reached the maximum number of guests; code: 400', NEW.invited_by;
                 END IF;
             END IF;
 
@@ -133,7 +133,7 @@ BEGIN
                 ORDER BY submitted DESC
                 LIMIT 1) != 'add'
             THEN
-                RAISE EXCEPTION 'User cannot be removed from stueble % since not registered for stueble % yet', NEW.stueble_id;
+                RAISE EXCEPTION 'User cannot be removed from stueble % since not registered for stueble % yet; code: 400', NEW.stueble_id;
             END IF;
 
             -- remove invitees of the removed user if user is not extern
@@ -200,7 +200,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION set_uuid_hash()
 RETURNS trigger AS $$
 BEGIN
-    NEW.uuid := gen_random_uuid();
+    NEW.user_uuid := gen_random_uuid();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

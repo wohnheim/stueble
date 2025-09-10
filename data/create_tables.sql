@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
     email VARCHAR(255) UNIQUE CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR password_hash is NULL),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
+    user_uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_name TEXT NOT NULL UNIQUE
 );
@@ -78,7 +78,8 @@ INSERT INTO configurations (key, value) VALUES
 ('session_expiration_days', '30'),
 ('maximum_guests', '150'),
 ('maximum_invites_per_user', '1'),
-('reset_code_expiration_minutes', '60');
+('reset_code_expiration_minutes', '60'),
+('qr_code_expiration_minutes', '10');
 
 CREATE TABLE IF NOT EXISTS allowed_users (
     id SERIAL PRIMARY KEY,
