@@ -30,7 +30,7 @@ conn, cursor = db.connect()
 result = db.insert_table(
     connection=conn,
     cursor=cursor,
-    table="configurations",
+    table_name="configurations",
     arguments={"private_key": pem_private, "public_key": pem_public})
 
 if result["success"] is False:
