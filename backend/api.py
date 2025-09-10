@@ -829,10 +829,12 @@ def invite_friend():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         status_code = 500
+        error = str(result["error"])
         if "; code: " in str(result["error"]):
-            status_code = int(str(result["error"]).split("; code: ")[1])
+            error, status_code = str(result["error"]).split("; code: ")
+            status_code = int(status_code)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"error": error}),
             status=status_code,
             mimetype="application/json")
         return response
