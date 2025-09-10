@@ -36,11 +36,11 @@ result = db.insert_table(
 if result["success"] is False:
     raise result["error"]
 
-   result = db.insert_table(
-    connection=conn,
-    cursor=cursor,
-    table_name="configurations",
-    arguments={"key": "public_key":, "value": pem_public})
+result = db.insert_table(
+connection=conn,
+cursor=cursor,
+table_name="configurations",
+arguments={"key": "public_key", "value": pem_public})
 
 if result["success"] is False:
     raise result["error"]
