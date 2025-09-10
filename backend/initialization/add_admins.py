@@ -5,6 +5,11 @@ import os
 pwd_hes = os.getenv("ADMIN_PASSWORD_HES")
 pwd_hirte = os.getenv("ADMIN_PASSWORD_HIRTE")
 
+if not pwd_hes:
+    raise Exception("Please set pwd_hes")
+if not pwd_hirte:
+    raise Exception("Please set pwd_hirte")
+
 conn, cursor = db.connect()
 password_hes = hash_pwd.hash_pwd(pwd_hes)
 password_hirte = hash_pwd.hash_pwd(pwd_hirte)
