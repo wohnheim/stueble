@@ -459,6 +459,7 @@ def get_motto():
         mimetype="application/json")
     return response
 
+# NOTE: if no stueble is happening today or yesterday, an empty list is returned
 @app.route("/guests", methods=["GET"])
 def guests():
     """
@@ -554,7 +555,9 @@ def user():
         mimetype="application/json")
     return response
 
+# DEPRECATED: this function isn't used
 # TODO: add stueble_code search
+@DeprecationWarning
 @app.route("/host/search_guest", methods=["POST"])
 def search():
     """
