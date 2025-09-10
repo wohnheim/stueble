@@ -57,7 +57,7 @@ BEGIN
             END IF;
         END IF;
 
-        -- check, whether the user can be added / removed
+    -- check, whether the user can be added / removed
     ELSE
 
         -- check whether add is valid
@@ -153,14 +153,13 @@ BEGIN
                       ORDER BY user_id, submitted DESC) AS last_events
                 WHERE event_type = 'add');
             END IF;
+
+            -- creates a bigger id; shouldn't be problematic since removal by user is banned during stueble
+            INSERT INTO events (user_id, stueble_id, event_type)
+            VALUES (NEW.user_id, NEW.stueble_id, 'leave');
         END IF;
     END IF;
 
-    -- check, whether invited_by is specified, though event_type is not 'add'
-    IF NEW.event_type != 'add' AND NEW.invited_by IS NOT NULL
-    THEN
-        RAISE EXCEPTION 'invited_by can only be specified for event_type add; code: 500';
-    END IF;
     PERFORM pg_notify(
             'guest_list_update',
             json_build_object(
@@ -246,21 +245,37 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION add_invited_by()
 RETURNS trigger AS $$
 BEGIN
+
+    -- check, whether invited_by is specified, though event_type is not 'add'
+    IF NEW.event_type != 'add' AND NEW.invited_by IS NOT NULL
+    THEN
+        RAISE EXCEPTION 'invited_by can only be specified for event_type add; code: 500';
+    END IF;
+
     IF NEW.invited_by IS NULL AND NEW.event_type != 'add' AND (SELECT user_role FROM users WHERE id = NEW.user_id) = 'extern'
     THEN
-        NEW.invited_by := (SELECT invited_by FROM events WHERE user_id = NEW.user_id AND stueble_id = NEW.stueble_id AND event_type = 'add' ORDER BY submitted DESC LIMIT 1);
+        NEW.invited_by := (SELECT invited_by
+                           FROM events
+                           WHERE user_id = NEW.user_id
+                             AND stueble_id = NEW.stueble_id
+                             AND event_type = 'add'
+                           ORDER BY submitted DESC
+                           LIMIT 1);
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+-- NOTE: DO NOT RENAME THE TRIGGERS, SINCE THEIR ALPHABETICAL ORDER SPECIFIES THE ORDER OF EXECUTION
+CREATE OR REPLACE TRIGGER event_add_invited_by_trigger
+BEFORE INSERT OR UPDATE ON events
+FOR EACH ROW EXECUTE FUNCTION add_invited_by();
+
+-- NOTE: DO NOT RENAME THE TRIGGERS, SINCE THEIR ALPHABETICAL ORDER SPECIFIES THE ORDER OF EXECUTION
 CREATE OR REPLACE TRIGGER event_guest_change_trigger
 BEFORE INSERT OR UPDATE ON events
-FOR EACH ROW EXECUTE FUNCTION event_guest_change();
-
-CREATE OR REPLACE TRIGGER event_add_invited_by_trigger
-AFTER INSERT OR UPDATE ON events
-FOR EACH ROW EXECUTE FUNCTION add_invited_by();
+FOR EACH ROW
+EXECUTE FUNCTION event_guest_change();
 
 CREATE OR REPLACE TRIGGER event_guest_change_two_trigger
 AFTER INSERT OR UPDATE ON events
