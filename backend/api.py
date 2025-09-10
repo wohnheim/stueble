@@ -100,7 +100,7 @@ def login():
             mimetype="application/json")
         return response
 
-    value = dict()
+    value = {}
     if "@" in name:
         try:
             name = Email(email=name)
@@ -899,7 +899,7 @@ def reset_password_mail():
             mimetype="application/json")
         return response
 
-    value = dict()
+    value = {}
     if "@" in name:
         try:
             name = Email(email=name)
@@ -1188,7 +1188,7 @@ def change_user_role():
             mimetype="application/json")
         return response
 
-    value = dict()
+    value = {}
     if "@" in name:
         try:
             name = Email(email=name)
