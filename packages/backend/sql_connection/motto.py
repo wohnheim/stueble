@@ -1,5 +1,5 @@
-import backend.sql_connection.database as db
-from datetime import datetime, date
+from packages import backend as db
+from datetime import date
 
 def get_motto(cursor, date: date | None=None) -> dict:
     """

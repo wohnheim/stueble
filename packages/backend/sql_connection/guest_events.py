@@ -1,9 +1,9 @@
 import uuid
 
-import backend.sql_connection.database as db
-from backend.data_types import EventType
+from packages import backend as db
+from packages.backend.data_types import EventType
 from collections import defaultdict
-from backend.data_types import FrontendUserRole
+from packages.backend.data_types import FrontendUserRole
 
 def change_guest(connection, cursor, user_uuid: uuid.UUID, event_type: EventType) -> dict:
     """

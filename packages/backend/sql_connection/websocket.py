@@ -1,4 +1,5 @@
-import backend.sql_connection.database as db
+from packages import backend as db
+
 
 def get_websocket_sids(cursor):
     """

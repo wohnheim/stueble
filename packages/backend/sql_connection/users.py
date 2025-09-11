@@ -1,8 +1,7 @@
-from backend.data_types import *
-import backend.sql_connection.database as db
+from packages import backend as db
 from typing import Annotated
 
-from backend.sql_connection.common_functions import clean_single_data
+from packages.backend.sql_connection.common_functions import clean_single_data
 
 
 def add_user(connection,
