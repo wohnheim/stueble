@@ -1,6 +1,6 @@
 import uuid
 
-from packages import backend as db
+from packages.backend.sql_connection import database as db
 from packages.backend.data_types import EventType
 from collections import defaultdict
 from packages.backend.data_types import FrontendUserRole
@@ -122,7 +122,7 @@ def guest_list(cursor, stueble_id: int | None=None) -> dict:
         parameters["variables"] = [stueble_id]
 
     query = f"""
-    SELECT u.id, u.first_name, u.last_name, u.user_role, event_type, submitted, u.user_uuid, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY submitted DESC) as rn
+    SELECT u.id, u.first_name, u.last_name, u.user_role, event_type, submitted, u.user_uuid, u.verified, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY submitted DESC) as rn
     FROM events
     LEFT JOIN users u ON events.user_id = u.id
     WHERE stueble_id = {stueble_info} and event_type in ('arrive', 'leave')
@@ -148,5 +148,7 @@ def guest_list(cursor, stueble_id: int | None=None) -> dict:
 
     # data in clean dict format
     data_dict = {key: [{"status": item[4], "time": item[5]} for item in value] for key, value in groups.items()}
+
+    finished_data = {}
 
     return {"success": True, "data": list(data_dict.values())}

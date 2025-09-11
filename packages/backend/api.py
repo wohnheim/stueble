@@ -1,3 +1,5 @@
+import datetime
+
 from flask import Flask, request, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import json
@@ -13,7 +15,7 @@ from packages.backend.sql_connection import (
     events as codes,
     database as db)
 from packages.backend.sql_connection import signup_validation as signup_val
-from packages import backend as hp
+from packages.backend import hash_pwd as hp
 from packages.backend.google_functions import gmail
 import re
 from datetime import timedelta
@@ -184,6 +186,7 @@ def login():
                         samesite='Lax')
     return response
 
+# TODO handle deleted accounts like signup
 @app.route("/auth/signup", methods=["POST"])
 def signup():
     """
@@ -861,25 +864,15 @@ def invite_friend():
             mimetype="application/json")
         return response
 
-    timestamp = result["data"].isoformat()
+    timestamp = int(datetime.datetime.now().timestamp())
 
-    result = configs.get_configuration(
-        cursor=cursor,
-        key="qr_code_expiration_minutes")
+    signature = hp.create_signature(cursor=cursor, message=json.dumps({"id": invitee_uuid,
+                                                            "timestamp": timestamp}))
 
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"error": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-    expiration_minutes = int(result["data"])
-
-    expiration_date = timestamp + timedelta(minutes=expiration_minutes)
-
-    signature = hp.create_signature(cursor=cursor, message=f"{invitee_uuid}{expiration_date}")
-    data = {"expiration_date": expiration_date, "uuid": invitee_uuid, "signature": signature}
+    data = {"data":
+                {"id": invitee_uuid,
+                 "timestamp": timestamp},
+            "signature": signature}
 
     response = Response(
         response=json.dumps(data),
@@ -1257,15 +1250,13 @@ def handle_connect():
 
     session_id = request.cookies.get("SID", None)
     if session_id is None:
-        emit("status",
-             {
-                 "event": "status",
+        emit("error",
+             msgpack.packb({
+                 "event": "error",
                  "data": {
-                     "authorized": False,
-                     "capabilities": [],
-                     "status_code": 401,
-                     "error": "The session_id must be specified"}
-             })
+                     "code": "401",
+                     "message": "missing SID cookie"}
+             }, use_bin_type=True))
         return
 
     # get connection and cursor
@@ -1273,66 +1264,76 @@ def handle_connect():
 
     # check permissions
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+
     close_conn_cursor(conn, cursor)
-    if result["success"] is False:
+    if result["success"] is False and result["error"] == "no matching session and user found":
         emit("status",
-             {
+             msgpack.packb({
                  "event": "status",
+                 "data": {"code": "200",
+                          "capabilities": [],
+                          "authorized": False}}, use_bin_type=True))
+
+    if result["success"] is False:
+        emit("error",
+             msgpack.packb({
+                 "event": "error",
                  "data": {
-                     "authorized": False,
-                     "capabilities": [],
-                     "status_code": 500,
-                     "error": str(result["error"])}
-             })
+                     "code": "500",
+                     "message": str(result["error"])}
+             }, use_bin_type=True))
         return
+
+    capabilities = [i.value for i in get_leq_roles(result["data"]["role"]) if i.value in ["host", "tutor", "admin"]]
+
     if result["data"]["allowed"] is False:
         emit("status",
-             {
-                 "event": "status",
+             msgpack.packb({
+                 "event": "error",
                  "data": {
-                     "authorized": False,
-                     "capabilities": [],
-                     "status_code": 401,
-                     "error": "invalid permissions, need role host or above"}
-             })
+                     "code": "200",
+                     "capabilities": capabilities,
+                     "authorized": True}
+             }, use_bin_type=True))
         return
 
-    user_role = result["data"]["user_role"]
-    user_role = UserRole(user_role)
+    if result["data"]["allowed"] is True:
+        user_role = result["data"]["user_role"]
+        user_role = UserRole(user_role)
 
-    # get connection, cursor
-    conn, cursor = get_conn_cursor()
+        # get connection, cursor
+        conn, cursor = get_conn_cursor()
 
-    result = websocket.add_websocket_sid(
-        connection=conn,
-        cursor=cursor,
-        session_id=session_id,
-        sid=request.sid)
+        result = websocket.add_websocket_sid(
+            connection=conn,
+            cursor=cursor,
+            session_id=session_id,
+            sid=request.sid)
 
-    close_conn_cursor(conn, cursor)
-    if result["success"] is False:
-        emit("status",
-             {
-                 "event": "status",
-                 "data": {
-                     "authorized": False,
-                     "capabilities": [],
-                     "status_code": 500,
-                     "error": str(result["error"])}
-             })
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            emit("status",
+                 msgpack.packb({
+                     "event": "status",
+                     "data": {
+                         "authorized": False,
+                         "capabilities": [],
+                         "status_code": "500",
+                         "error": str(result["error"])}
+                 }, use_bin_type=True))
+            return
+
+        join_room(room=host_upwards_room)
+
+        # can only be "authorized": True but still checking
+        emit("status", msgpack.packb({
+            "event": "status",
+            "data": {
+                "authorized": True if user_role >= UserRole.HOST else False,
+                "capabilities": capabilities,
+                "status_code": "200"
+            }}, use_bin_type=True))
         return
-
-    join_room(room=host_upwards_room)
-
-    # can only be "authorized": True but still checking
-    emit("status", {
-        "event": "status",
-        "data": {
-            "authorized": True if user_role >= UserRole.HOST else False,
-            "capabilities": ["host"] if user_role == UserRole.HOST else ["host", "tutor"] if user_role == UserRole.TUTOR else ["host", "tutor", "admin"] if user_role == UserRole.ADMIN else [],
-            "status_code": 200
-        }})
-    return
 
 @socketio.on("disconnect")
 def handle_disconnect():
@@ -1354,9 +1355,6 @@ def handle_disconnect():
     if result["data"]["allowed"] is False:
         return
 
-    user_role = result["data"]["user_role"]
-    user_role = UserRole(user_role)
-
     # get connection, cursor
     conn, cursor = get_conn_cursor()
 
@@ -1367,15 +1365,6 @@ def handle_disconnect():
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        emit("status",
-             {
-                 "event": "status",
-                 "data": {
-                     "authorized": False,
-                     "capabilities": [],
-                     "status_code": 500,
-                     "error": str(result["error"])}
-             })
         return
 
     leave_room(room=host_upwards_room)
@@ -1389,16 +1378,20 @@ def handle_ping(msg):
     try:
         data = msgpack.unpack(msg, raw=False)
     except Exception as e:
-        emit("pong", {"event": "pong", "error": f"Invalid msgpack format: {str(e)}"})
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "500",
+             "message": f"Invalid msgpack format: {str(e)}"}}, use_bin_type=True))
         return
 
     req_id = data.get("req_id", None)
 
     if req_id is None:
-        emit("pong", {"event": "pong", "error": "The req_id must be specified"})
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "401",
+             "message": f"The req_id must be specified"}}, use_bin_type=True))
         return
 
-    emit("pong", {"event": "pong", "req_id": req_id})
+    emit("pong", msgpack.packb({"event": "pong", "req_id": req_id}, use_bin_type=True))
     return
 
 @socketio.on("heartbeat")
@@ -1406,10 +1399,16 @@ def handle_heartbeat():
     """
     handle a heartbeat from the client
     """
-    emit("heartbeat", {"event": "heartbeat"})
+    emit("heartbeat", msgpack.packb({"event": "heartbeat"}, use_bin_type=True))
     return
 
-@socketio.on()
+@socketio.on("")
+
+
+
+
+
+
 
 @app.route("/websocket_local", methods=["POST"])
 def websocket_change():
@@ -1438,7 +1437,7 @@ def websocket_change():
             mimetype="application/json")
         return response
 
-    emit("guest_list_update", {"payload": {"first_name": first_name, "last_name": last_name, "event": event}})
+    emit("guest_list_update", msgpack.packb({"payload": {"first_name": first_name, "last_name": last_name, "event": event}}, use_bin_type=True))
 
     response = Response(
         status=200)

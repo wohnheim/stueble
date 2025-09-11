@@ -15,6 +15,7 @@ google-auth
 cryptography
 msgpack
 eventlet
+jwcrypto
 
 h11
 pip

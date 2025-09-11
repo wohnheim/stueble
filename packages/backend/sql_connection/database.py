@@ -102,7 +102,7 @@ def create_pool(max_connections : int = 20):
 # TODO for arguments as list might not be completely implemented
 @catch_exception
 def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",), conditions: dict | None=None,
-               expect_single_answer=False, select_max_of_key: str="", specific_where: str="", order_by: tuple | None=None,
+               expect_single_answer=False, select_max_of_key: str="", specific_where: str="", variables: list | None=None, order_by: tuple | None=None,
                connection=None) -> dict:
     """
     read_table \n
@@ -114,12 +114,17 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
         conditions (dict): under which conditions (key: column, value: value) values should be selected, if empty, no conditions
         expect_single_answer (bool): specify whether one or more answers are to be received, therefore it changes, whether list or single object will be returned
         select_max_of_key (bool): conditions must be empty, otherwise it won't be used
-        specific_where (str): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string)
+        specific_where (str): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string),
+        variables (list | None): list of variables that should be passed into the specific_where statement
         order_by (tuple | None): (key to order by, 0: descending / 1: ascending) by default no ordering, if specified and second value is invalid, then set to DESC
         connection (connection): is added to make using the wrapper full_pack easier
     Returns:
         dict: {"success": bool, data: value}
     """
+
+    if specific_where == "" and variables is not None:
+        return {"success": False, "error": ValueError("if specific_where is empty, variables must be None as well")}
+
     keywords = list(keywords)
     if conditions is None:
         conditions = {}
@@ -139,7 +144,10 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
     elif specific_where != "":
         query += f" WHERE {specific_where}"
         query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
-    cursor.execute(query)
+    if variables is None:
+        cursor.execute(query)
+    else:
+        cursor.execute(query, variables)
     if expect_single_answer:
         data = cursor.fetchone()
         return {"success": True, "data": data}
