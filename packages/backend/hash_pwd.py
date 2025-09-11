@@ -1,4 +1,4 @@
-from backend.sql_connection import database as db
+from packages.backend.sql_connection import database as db
 
 import bcrypt
 from cryptography.hazmat.primitives.asymmetric import padding

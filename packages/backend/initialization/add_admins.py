@@ -1,5 +1,5 @@
-from backend.sql_connection import database as db
-from backend import hash_pwd
+from packages.backend.sql_connection import database as db
+from packages.backend import hash_pwd
 import os
 
 pwd_hes = os.getenv("ADMIN_PASSWORD_HES")

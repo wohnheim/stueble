@@ -1,19 +1,18 @@
 from flask import Flask, request, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import json
-from backend.sql_connection import (
+from packages.backend.sql_connection import (
     users,
     sessions,
     motto,
     guest_events,
     websocket,
     configs,
-    signup_validation as signup_val,
     events as codes,
     database as db)
-import backend.hash_pwd as hp
-from backend.data_types import *
-from backend.google_functions import gmail
+from packages.backend.sql_connection import signup_validation as signup_val
+from packages import backend as hp
+from packages.backend.google_functions import gmail
 import re
 from datetime import timedelta
 import msgpack

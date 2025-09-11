@@ -1,7 +1,5 @@
-from click import argument
-
-import backend.sql_connection.database as db
-from backend.sql_connection.common_functions import clean_single_data
+from packages import backend as db
+from packages.backend.sql_connection.common_functions import clean_single_data
 
 
 def add_guest(connection, cursor, user_id: int, stueble_id: int, invited_by: int | None=None) -> dict:

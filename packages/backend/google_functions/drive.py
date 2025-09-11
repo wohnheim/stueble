@@ -4,9 +4,9 @@ from googleapiclient.http import MediaInMemoryUpload
 import datetime
 from zoneinfo import ZoneInfo
 
-from backend import export
-from backend.sql_connection import database as db
-from backend.google_functions.authentification import authenticate
+from packages.backend import export
+from packages.backend.sql_connection import database as db
+from packages.backend.google_functions.authentification import authenticate
 
 def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type: str):
     """

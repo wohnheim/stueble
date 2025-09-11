@@ -4,9 +4,9 @@ import psycopg2
 import requests
 import warnings
 
-import backend.sql_connection.database as db
-from backend.sql_connection import users
-from backend.data_types import *
+from packages import backend as db
+from packages.backend.sql_connection import users
+
 
 def is_valid_event_notify(other):
     if isinstance(other, Event_Notify):
