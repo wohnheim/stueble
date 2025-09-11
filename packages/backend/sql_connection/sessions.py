@@ -1,4 +1,4 @@
-from packages import backend as db
+from packages.backend.sql_connection import database as db
 from datetime import datetime, timedelta
 import pytz
 
@@ -27,6 +27,7 @@ def create_session(connection, cursor, user_id: int) -> dict:
     tz = pytz.timezone("Europe/Berlin")
     now = datetime.now(tz)
     expiration_date = now + timedelta(days=expiration_time)
+    expiration_date = expiration_date.replace(hour=5, minute=30, second=0, microsecond=0)  # set expiration time to 5:30am
 
     # set the expiration_date
     result = db.insert_table(
@@ -54,7 +55,9 @@ def get_session(cursor, session_id: str) -> dict:
         keywords=["session_id", "expiration_date"],
         table_name="sessions",
         expect_single_answer=True,
-        conditions={"session_id": session_id})
+        specific_where="session_id = %s AND expiration_date > NOW()",
+        variables=[session_id]
+        )
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "no session found"}
     return result

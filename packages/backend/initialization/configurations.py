@@ -1,13 +1,11 @@
 from packages.backend.sql_connection import database as db
 
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives import serialization
+from jwcrypto import jwk
 
 # Generate private key
-private_key = rsa.generate_private_key(
-    public_exponent=65537,
-    key_size=4096
-)
+private_key = ed25519.Ed25519PrivateKey.generate()
 
 # Extract public key
 public_key = private_key.public_key()
@@ -19,11 +17,17 @@ pem_private = private_key.private_bytes(
     encryption_algorithm=serialization.NoEncryption()
 )
 
+jwk_private = jwk.JWK(kty='OKP', crv='Ed25519', d=pem_private.hex())
+jwk_private_json = jwk_private.export(private_key=True)
+
 # Save public key to PEM
 pem_public = public_key.public_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PublicFormat.SubjectPublicKeyInfo
 )
+
+jwk_public = jwk.JWK(kty='OKP', crv='Ed25519', x=pem_public.hex())
+jwk_public_json = jwk_public.export(private_key=False)
 
 conn, cursor = db.connect()
 # Store keys in the configurations table

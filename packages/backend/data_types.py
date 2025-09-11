@@ -8,14 +8,6 @@ class UserRole(str, Enum):
     USER = "user"
     EXTERN = "extern"
 
-    _order = {
-        "admin": 4,
-        "tutor": 3,
-        "host": 2,
-        "user": 1,
-        "extern": 0
-    }
-
     def __lt__(self, other):
         if isinstance(other, UserRole):
             members = list(self.__class__)
@@ -44,6 +36,9 @@ class UserRole(str, Enum):
         if isinstance(other, UserRole):
             return self.value == other.value
         return NotImplemented
+
+def get_leq_roles(role: UserRole):
+    return [r for r in UserRole if r <= role]
 
 def is_valid_role(value):
     return value in UserRole._value2member_map_
