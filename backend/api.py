@@ -1253,65 +1253,65 @@ def handle_connect():
 
     session_id = request.cookies.get("SID", None)
     if session_id is None:
-        response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
-            status=401,
-            mimetype="application/json")
-        return response
+        emit("status",
+             {
+                 "event": "status",
+                 "data": {
+                     "authorized": False,
+                     "capabilities": [],
+                     "status_code": 401,
+                     "error": "The session_id must be specified"}
+             })
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    """# check permissions
+    # check permissions
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        response = Response(
-            response=json.dumps({"error": str(result["error"])}),
-            status=401,
-            mimetype="application/json")
-        return response
+        emit("status",
+             {
+                 "event": "status",
+                 "data": {
+                     "authorized": False,
+                     "capabilities": [],
+                     "status_code": 500,
+                     "error": str(result["error"])}
+             })
     if result["data"]["allowed"] is False:
-        response = Response(
-            response=json.dumps({"error": "invalid permissions, need role host or above"}),
-            status=403,
-            mimetype="application/json")
-        return response
+        emit("status",
+             {
+                 "event": "status",
+                 "data": {
+                     "authorized": False,
+                     "capabilities": [],
+                     "status_code": 401,
+                     "error": "invalid permissions, need role host or above"}
+             })
 
-    if result["data"]["allowed"] is False:
-        response = Response(
-            response=json.dumps({"error": "invalid permissions, need role host or above"}),
-            status=403,
-            mimetype="application/json")
-        return response"""
+    user_role = result["data"]["user_role"]
+    user_role = UserRole(user_role)
 
-    result = websocket.get_websocket_sids(cursor)
-    if result["success"] is False:
-        response = Response(
-            response=json.dumps({"error": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    result = websocket.add_websocket_sid(
-        cursor=cursor,
-        connection=conn,
-        sid=request.sid,
-        user_id=result["data"]["user_id"],
-        session_id=session_id)
-
-    if result["success"] is False:
-        response = Response(
-            response=json.dumps({"error": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    emit("connected", {"message": "connected to websocket", "sid": request.sid})
+    # can only be "authorized": True but still checking
+    emit("status", {
+        "event": "status",
+        "data": {
+            "authorized": True if user_role >= UserRole.HOST else False,
+            "capabilities": ["host"] if user_role == UserRole.HOST else ["host", "tutor"] if user_role == UserRole.TUTOR else ["host", "tutor", "admin"] if user_role == UserRole.ADMIN else [],
+            "status_code": 200
+        }})
 
     response = Response(
         status=200)
     return response
+
+
+
+
+
+
+
 
 @app.route("/websocket_local", methods=["POST"])
 def websocket_change():
