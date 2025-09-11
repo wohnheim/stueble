@@ -1,13 +1,13 @@
-from flask import Flask, request, Response, send_file
-from flask_socketio import SocketIO, emit
+from flask import Flask, request, Response
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import json
 from backend.sql_connection import (
     users,
     sessions,
     motto,
     guest_events,
-    configs,
     websocket,
+    configs,
     signup_validation as signup_val,
     events as codes,
     database as db)
@@ -15,7 +15,8 @@ import backend.hash_pwd as hp
 from backend.data_types import *
 from backend.google_functions import gmail
 import re
-from datetime import timedelta, date
+from datetime import timedelta
+import msgpack
 
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
 # TODO always close connection after last request
@@ -27,6 +28,8 @@ pool = db.create_pool()
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 app.pool = pool
+
+host_upwards_room = "host_upwards"
 
 def valid_session_id(func):
     def wrapper(*args, **kwargs):
@@ -1262,6 +1265,7 @@ def handle_connect():
                      "status_code": 401,
                      "error": "The session_id must be specified"}
              })
+        return
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
@@ -1279,6 +1283,7 @@ def handle_connect():
                      "status_code": 500,
                      "error": str(result["error"])}
              })
+        return
     if result["data"]["allowed"] is False:
         emit("status",
              {
@@ -1289,9 +1294,34 @@ def handle_connect():
                      "status_code": 401,
                      "error": "invalid permissions, need role host or above"}
              })
+        return
 
     user_role = result["data"]["user_role"]
     user_role = UserRole(user_role)
+
+    # get connection, cursor
+    conn, cursor = get_conn_cursor()
+
+    result = websocket.add_websocket_sid(
+        connection=conn,
+        cursor=cursor,
+        session_id=session_id,
+        sid=request.sid)
+
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        emit("status",
+             {
+                 "event": "status",
+                 "data": {
+                     "authorized": False,
+                     "capabilities": [],
+                     "status_code": 500,
+                     "error": str(result["error"])}
+             })
+        return
+
+    join_room(room=host_upwards_room)
 
     # can only be "authorized": True but still checking
     emit("status", {
@@ -1301,17 +1331,84 @@ def handle_connect():
             "capabilities": ["host"] if user_role == UserRole.HOST else ["host", "tutor"] if user_role == UserRole.TUTOR else ["host", "tutor", "admin"] if user_role == UserRole.ADMIN else [],
             "status_code": 200
         }})
+    return
 
-    response = Response(
-        status=200)
-    return response
+@socketio.on("disconnect")
+def handle_disconnect():
+    """
+    handle a websocket disconnection
+    """
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        return
 
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
 
+    # check permissions
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        return
+    if result["data"]["allowed"] is False:
+        return
 
+    user_role = result["data"]["user_role"]
+    user_role = UserRole(user_role)
 
+    # get connection, cursor
+    conn, cursor = get_conn_cursor()
 
+    result = websocket.remove_websocket_sid(
+        connection=conn,
+        cursor=cursor,
+        sid=request.sid)
 
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        emit("status",
+             {
+                 "event": "status",
+                 "data": {
+                     "authorized": False,
+                     "capabilities": [],
+                     "status_code": 500,
+                     "error": str(result["error"])}
+             })
+        return
 
+    leave_room(room=host_upwards_room)
+    return
+
+@socketio.on("ping")
+def handle_ping(msg):
+    """
+    handle a ping from the client
+    """
+    try:
+        data = msgpack.unpack(msg, raw=False)
+    except Exception as e:
+        emit("pong", {"event": "pong", "error": f"Invalid msgpack format: {str(e)}"})
+        return
+
+    req_id = data.get("req_id", None)
+
+    if req_id is None:
+        emit("pong", {"event": "pong", "error": "The req_id must be specified"})
+        return
+
+    emit("pong", {"event": "pong", "req_id": req_id})
+    return
+
+@socketio.on("heartbeat")
+def handle_heartbeat():
+    """
+    handle a heartbeat from the client
+    """
+    emit("heartbeat", {"event": "heartbeat"})
+    return
+
+@socketio.on()
 
 @app.route("/websocket_local", methods=["POST"])
 def websocket_change():
