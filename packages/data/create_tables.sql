@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    user_name TEXT CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL))
+    user_name TEXT CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL)),
+    verified BOOLEAN DEFAULT FALSE
 );
 
 -- table for stueble mottos
@@ -115,6 +116,14 @@ CREATE TABLE IF NOT EXISTS error_logs (
     stack_trace TEXT,
     raised_python TEXT,
     actions_taken BOOLEAN DEFAULT FALSE
+);
+
+-- table for timestamps from websocket connections
+CREATE TABLE IF NOT EXISTS websocket_timestamps (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    last_timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$

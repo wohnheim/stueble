@@ -3,4 +3,4 @@ FROM configurations)
 
 DELETE FROM password_resets
 USING config
-WHERE created_at + (config.expiration_time || ' minute')::interval > NOW();
+WHERE created_at + (config.reset_code_expiration_minutes || ' minute')::interval > NOW();
