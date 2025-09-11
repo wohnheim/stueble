@@ -1,11 +1,5 @@
-bin
-include
-lib
-lib64
 pyvenv.cfg
 passwords.md
 __pycache__
 do_not_track
-.venv
 .env
-.idea
