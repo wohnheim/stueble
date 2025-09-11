@@ -1,11 +1,8 @@
-from backend.data_types import *
-import backend.sql_connection.database as db
-from backend.data_types import *
-from typing import Annotated
+from packages import backend as db
 from datetime import datetime, timedelta
 import pytz
 
-from backend.sql_connection.common_functions import clean_single_data
+from packages.backend.sql_connection.common_functions import clean_single_data
 
 
 def create_session(connection, cursor, user_id: int) -> dict:

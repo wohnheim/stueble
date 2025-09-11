@@ -1,6 +1,5 @@
-from backend.data_types import Email
-from backend.google_functions.authentification import authenticate
-import os.path
+from packages.backend.data_types import Email
+from packages.backend.google_functions.authentification import authenticate
 import base64
 from email.mime.text import MIMEText
 from googleapiclient.discovery import build
