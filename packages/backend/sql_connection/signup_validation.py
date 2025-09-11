@@ -1,5 +1,5 @@
 from packages.backend.sql_connection import database as db
-
+from packages.backend.data_types import *
 
 def validate_user_data(cursor,
                        user_role: UserRole,
