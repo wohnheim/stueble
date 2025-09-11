@@ -6,7 +6,7 @@ import warnings
 
 from packages import backend as db
 from packages.backend.sql_connection import users
-
+from packages.backend.data_types import *
 
 def is_valid_event_notify(other):
     if isinstance(other, Event_Notify):
