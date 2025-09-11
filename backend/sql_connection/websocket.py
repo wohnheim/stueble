@@ -28,6 +28,20 @@ def add_websocket_sid(connection, cursor, sid: str, user_id: int, session_id: in
         connection=connection,
         cursor=cursor,
         table_name='websocket_sids',
-        keywords=["sid"],
         arguments={"sid": sid, "user_id": user_id, "session_id": session_id})
+    return result
+
+def remove_websocket_sid(connection, cursor, sid: str):
+    """
+    Remove a WebSocket session ID from the database.
+
+    Parameters:
+        cursor: Database cursor object.
+        sid (str): WebSocket session ID to remove.
+    """
+    result = db.delete_table(
+        connection=connection,
+        cursor=cursor,
+        table_name='websocket_sids',
+        conditions={"sid": sid})
     return result
