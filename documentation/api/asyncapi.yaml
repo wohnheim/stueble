@@ -1,0 +1,480 @@
+asyncapi: 3.0.0
+info:
+  title: Stüble WebSocket-API
+  version: 1.0.0
+defaultContentType: application/vnd.msgpack
+servers:
+  development:
+    host: stueble.wir-sind-frey.de/websocket
+    protocol: ws
+    description: |-
+      Development server secured with TLS. \
+      Messages are structured in JSON and encoded in MessagePack.
+    security:
+      - $ref: "#/components/securitySchemes/apiKey"
+
+channels:
+  primary:
+    address: /
+    messages:
+      status:
+        $ref: "#/components/messages/status"
+      ping:
+        $ref: "#/components/messages/ping"
+      pong:
+        $ref: "#/components/messages/pong"
+      heartbeat:
+        $ref: "#/components/messages/heartbeat"
+      acknowledgement:
+        $ref: "#/components/messages/acknowledgement"
+      guestAdded:
+        $ref: "#/components/messages/guestAdded"
+      guestRemoved:
+        $ref: "#/components/messages/guestRemoved"
+      guestModified:
+        $ref: "#/components/messages/guestModified"
+      guestVerification:
+        $ref: "#/components/messages/guestVerification"
+      requestMotto:
+        $ref: "#/components/messages/requestMotto"
+      motto:
+        $ref: "#/components/messages/motto"
+      requestQRCode:
+        $ref: "#/components/messages/requestQRCode"
+      qrCode:
+        $ref: "#/components/messages/qrCode"
+      requestPublicKey:
+        $ref: "#/components/messages/requestPublicKey"
+      publicKey:
+        $ref: "#/components/messages/publicKey"
+
+operations:
+  receiveStatus:
+    summary: Notifies the client about the connection status.
+    action: receive
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/status"
+
+  sendPing:
+    summary: Request the server to send a pong message.
+    action: send
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/ping"
+    reply:
+      messages:
+        - $ref: "#/channels/primary/messages/pong"
+
+  sendHeartbeat:
+    summary: Send heartbeat message to keep the connection alive.
+    action: send
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/heartbeat"
+
+  receiveGuestListChanges:
+    summary: Notify clients about changes to the guest list.
+    description: "Important: Changes are not sent to the client that caused the change."
+    action: receive
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/guestAdded"
+      - $ref: "#/channels/primary/messages/guestRemoved"
+      - $ref: "#/channels/primary/messages/guestModified"
+    reply:
+      messages:
+        - $ref: "#/channels/primary/messages/acknowledgement"
+
+  sendGuestVerification:
+    summary: Verify guest via identity card or room key.
+    action: send
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/guestVerification"
+
+  requestMotto:
+    summary: Request the server to send the weekly motto.
+    action: send
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/requestMotto"
+    reply:
+      messages:
+        - $ref: "#/channels/primary/messages/motto"
+
+  requestQRCode:
+    summary: Request signed qr code data.
+    action: send
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/requestQRCode"
+    reply:
+      messages:
+        - $ref: "#/channels/primary/messages/qrCode"
+
+  requestPublicKey:
+    summary: Request public key.
+    action: send
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/requestPublicKey"
+    reply:
+      messages:
+        - $ref: "#/channels/primary/messages/publicKey"
+
+components:
+  messages:
+    status:
+      summary: Shows connection status (Application-Level).
+      description: Needed because even unauthorized connections are being opened.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: status
+          data:
+            type: object
+            properties:
+              authorized:
+                type: boolean
+              capabilities:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - host
+                    - admin
+
+    ping:
+      summary: Ping server to check connection health (Application-Level).
+      description: Client can ping server to determine whether connection is alive, server responds with pong.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: ping
+          reqId:
+            $ref: "#/components/schemas/reqId"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    pong:
+      summary: Pong is a response to ping message (Application-Level).
+      description: Server pong response to a ping to determine whether connection is alive.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: pong
+          reqId:
+            $ref: "#/components/schemas/reqId"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    heartbeat:
+      summary: Keep connection alive (Application-Level).
+      description: Server heartbeat sent if no traffic within 25 seconds occurs.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: heartbeat
+
+    acknowledgement:
+      title: Acknowledgement message
+      summary: >-
+        Confirm the receipt of a message.
+        Messages that have not been confirmed should be considered undelivered.
+      payload:
+        $ref: "#/components/schemas/resId"
+      correlationId:
+        location: "$message.payload#/"
+
+    guestAdded:
+      name: guestAdded
+      title: Guest added
+      summary: |-
+        A guest was added to the guest list.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: guestAdded
+          resId:
+            $ref: "#/components/schemas/resId"
+          data:
+            $ref: "#/components/schemas/Guest"
+      correlationId:
+        location: "$message.payload#/resId"
+
+    guestRemoved:
+      name: guestRemoved
+      title: Guest removed
+      summary: |-
+        A guest was removed from the guest list.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: guestRemoved
+          resId:
+            $ref: "#/components/schemas/resId"
+          data:
+            $ref: "#/components/schemas/UUID"
+      correlationId:
+        location: "$message.payload#/resId"
+
+    guestModified:
+      name: guestModified
+      title: Guest modified
+      summary: |-
+        A guest on the guest list was modified.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: guestModified
+          resId:
+            $ref: "#/components/schemas/resId"
+          data:
+            $ref: "#/components/schemas/Guest"
+      correlationId:
+        location: "$message.payload#/resId"
+
+    guestVerification:
+      name: guestVerification
+      title: Verify guest via identity card or room key.
+      summary: |-
+        Update the verification of the specified guest.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: guestVerification
+          reqId:
+            $ref: "#/components/schemas/reqId"
+          data:
+            $ref: "#/components/schemas/GuestVerification"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    requestMotto:
+      name: requestMotto
+      title: Request the motto.
+      summary: |-
+        Request the weekly motto specified by the current WG.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: requestMotto
+          reqId:
+            $ref: "#/components/schemas/reqId"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    motto:
+      name: motto
+      title: Contains the motto.
+      summary: |-
+        Response to the `requestMotto` request.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: motto
+          reqId:
+            $ref: "#/components/schemas/reqId"
+          data:
+            type: string
+            description: String containing the weekly motto.
+            example: "Freue dich auf unser Men-In-Black Stüble!"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    requestQRCode:
+      name: requestQRCode
+      title: Request the motto.
+      summary: |-
+        Request the signed QR code.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: requestQRCode
+          reqId:
+            $ref: "#/components/schemas/reqId"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    qrCode:
+      name: qrCode
+      title: Contains the the qr code data.
+      summary: |-
+        Response to the `requestQRCode` request.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: qrCode
+          reqId:
+            $ref: "#/components/schemas/reqId"
+          data:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  id:
+                    $ref: "#/components/schemas/UUID"
+                  timestamp:
+                    type: integer
+                    format: uint32
+              signature:
+                type: string
+                description: JSON message signed by Ed25519.
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    requestPublicKey:
+      name: requestPublicKey
+      title: Request public key.
+      summary: |-
+        Request the public key signing qr codes.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: requestPublicKey
+          reqId:
+            $ref: "#/components/schemas/reqId"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    publicKey:
+      name: publicKey
+      title: Contains public key used to sign qr code data.
+      summary: |-
+        Response to the `requestPublicKey` request.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: publicKey
+          reqId:
+            $ref: "#/components/schemas/reqId"
+          data:
+            type: object
+            description: JsonWebKey (Ed25519)
+      correlationId:
+        location: "$message.payload#/reqId"
+
+  schemas:
+    GuestIntern:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Smith
+        roomNumber:
+          type: integer
+          format: int32
+          example: 301
+        residence:
+          type: string
+          description: Student residence
+          example: HES
+        present:
+          type: boolean
+          description: Guest is present
+        verified:
+          type: boolean
+          description: Identity verified (via identity card or key)
+        extern:
+          type: boolean
+          const: false
+
+    GuestExtern:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Smith
+        present:
+          type: boolean
+          description: Guest is present
+        extern:
+          type: boolean
+          const: true
+
+    Guest:
+      oneOf:
+        - $ref: "#/components/schemas/GuestIntern"
+        - $ref: "#/components/schemas/GuestExtern"
+
+    GuestVerification:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        method:
+          type: string
+          enum:
+            - idCard
+            - roomKey
+
+    UUID:
+      type: string
+      format: uuid
+      description: UUID conforming to RFC4122
+      example: 1d419481-4fab-4170-acd9-bc20dcbf224a
+
+    reqId:
+      type: integer
+      format: uint32
+      description: message id indexing client requests.
+
+    resId:
+      type: integer
+      format: uint32
+      description: message id indexing server responses.
+
+  securitySchemes:
+    apiKey:
+      type: httpApiKey
+      in: cookie
+      name: SID
+      description: The unique and signed session id
