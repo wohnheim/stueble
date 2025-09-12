@@ -4,6 +4,10 @@ from flask import Flask, request, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import json
 
+from jwcrypto import jwk
+
+from packages.backend.http_to_websocket import *
+
 from packages.backend.data_types import *
 from packages.backend.sql_connection import (
     users,
@@ -442,14 +446,20 @@ def delete():
 
 # NOTE: this endpoint is public, since the motto is also shown on the website without logging in
 @app.route("/motto", methods=["GET"])
-def get_motto():
+def get_motto(date: str | None = None):
     """
     returns the motto for the next stueble party
+
+    Parameters:
+        date (str | None): the date of the motto
     """
 
-    # load data
-    data = request.get_json()
-    date = data.get("date", None)
+    if date is None:
+        data = request.get_json()
+        date = data.get("date", None)
+        # load data
+    elif date == "":
+        date = None
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
@@ -492,6 +502,28 @@ def get_motto():
         status=200,
         mimetype="application/json")
     return response
+
+@socketio.on("requestMotto")
+def request_motto(msg):
+    try:
+        data = msgpack.unpack(msg, raw=False)
+    except Exception as e:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "500",
+             "message": f"Invalid msgpack format: {str(e)}"}}, use_bin_type=True))
+        return
+    req_id = data.get("reqId", None)
+    date = data.get("date", "")
+
+    if req_id is None:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "401",
+             "message": "req_id must be specified"}}, use_bin_type=True))
+
+    result = get_motto(date=date)
+    emit("motto", http_to_websocket_response(response=result, event="motto"), to=request.sid)
+    return
+
 
 #TODO: work on guest dictionary
 # NOTE: if no stueble is happening today or yesterday, an empty list is returned
@@ -1161,7 +1193,7 @@ def invite_friend():
             close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"error": "No such user found"}),
-                status=404,
+                status=401,
                 mimetype="application/json")
             return response
         if len(users_list) > 1:
@@ -1654,37 +1686,52 @@ def change_user_role():
     return response
 
 @socketio.on("guestVerification")
-def verify_guest():
+def verify_guest(msg):
     """
     sets guest verified to True
     """
 
     # load data
-    data = request.get_json()
+    try:
+        data = msgpack.unpack(msg, raw=False)
+    except Exception as e:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "500",
+             "message": f"Invalid msgpack format: {str(e)}"}}, use_bin_type=True))
+        return
+    req_id = data.get("reqId", None)
+    if req_id is None:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "401",
+             "message": "req_id must be specified"}}, use_bin_type=True))
+        return
+    user_data = data.get("data", None)
+    if user_data is None:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "400",
+             "message": "data must be specified"}}, use_bin_type=True))
+        return
     user_uuid = data.get("id", None)
     verification_method = data.get("method", None)
     session_id = request.cookies.get("SID", None)
 
     if session_id is None:
-        response = Response(
-            response=json.dumps({"error": "missing cookie"}),
-            status=401,
-            mimetype="application/json")
-        return response
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "400",
+             "message": "missing cookie"}}, use_bin_type=True))
+        return
 
     if user_uuid is None or verification_method is None:
-        response = Response(
-            response=json.dumps({"error": "id and method must be specified"}),
-            status=400,
-            mimetype="application/json")
-        return response
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "400",
+             "message": "id and method must be specified"}}, use_bin_type=True))
+        return
 
     if not valid_verification_method(verification_method) or verification_method == "kolping":
-        response = Response(
-            response=json.dumps({"error": "invalid verification method"}),
-            status=400,
-            mimetype="application/json")
-        return response
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "400",
+             "message": "invalid verification method"}}, use_bin_type=True))
+        return
 
     verification_method = VerificationMethod(verification_method)
 
@@ -1706,10 +1753,21 @@ def verify_guest():
              "message": "invalid permissions, need role host or above"}}, use_bin_type=True))
         return
 
-
-
+    result = users.add_verification_method(connection=conn, cursor=cursor, user_uuid=user_uuid, method=verification_method)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "500",
+             "message": str(result["error"])}}, use_bin_type=True))
+        return
 
     emit("guestVerification", msgpack.packb({"event": "guestVerification"}, use_bin_type=True))
+
+    emit("guestVerified", msgpack.packb({
+        "event": "guestVerified",
+        "req_id": req_id,
+        "data": user_data
+    }, use_bin_type=True), to=host_upwards_room, skip_sid=request.sid)
     return
 
 @socketio.on("connect")
@@ -1853,7 +1911,7 @@ def handle_ping(msg):
              "message": f"Invalid msgpack format: {str(e)}"}}, use_bin_type=True))
         return
 
-    req_id = data.get("req_id", None)
+    req_id = data.get("reqId", None)
 
     if req_id is None:
         emit("error", msgpack.packb({"event": "error", "data":
@@ -1876,6 +1934,95 @@ def handle_heartbeat():
     emit("heartbeat", msgpack.packb({"event": "heartbeat"}, use_bin_type=True))
     return
 
+@socketio.on("requestQRCode")
+def get_qrcode(msg):
+    """
+    get a new qr-code for a guest
+
+    Parameters:
+        msg (bytes): msgpack packed data containing:
+            - reqId (str): request id to identify the request
+            - data (dict): data containing:
+                - id (uuid): user_uuid
+    """
+    try:
+        data = msgpack.unpack(msg, raw=False)
+    except Exception as e:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "500",
+             "message": f"Invalid msgpack format: {str(e)}"}}, use_bin_type=True))
+        return
+    user_uuid = data.get("id", None)
+    req_id = data.get("reqId", None)
+    if req_id is None or user_uuid is None:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "401",
+             "message": "reqId and id must be specified"}}, use_bin_type=True))
+        return
+
+    stueble_id = data.get("stuebleId", None)
+
+    # get connection, cursor
+    conn, cursor = get_conn_cursor()
+
+    result = events.check_guest(cursor=cursor,
+                                user_uuid=user_uuid,
+                                stueble_id=stueble_id)
+    if result["success"] is False:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "500",
+             "message": str(result["error"])}}, use_bin_type=True))
+        return
+
+    if result["data"] is False:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "401",
+             "message": "Guest not on guest_list"}}, use_bin_type=True))
+        return
+
+    timestamp = int(datetime.datetime.now().timestamp())
+
+    signature = hp.create_signature(cursor=cursor, message=json.dumps({"id": user_uuid,
+                                                                       "timestamp": timestamp}))
+
+    data = {"data":
+                {"id": user_uuid,
+                 "timestamp": timestamp},
+            "signature": signature}
+
+    emit("requestQRCode", msgpack.packb({"event": "requestQRCode",
+                                        "req_id": req_id,
+                                        "data": data}, use_bin_type=True))
+    return
+
+@socketio.on("requestPublicKey")
+def get_public_key(msg):
+    """
+    sends the public key
+    """
+
+    # get connection, cursor
+    conn, cursor = get_conn_cursor()
+
+    result = configs.get_configuration(cursor=cursor, key="public_key")
+    if result["success"] is False:
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "500",
+             "message": str(result["error"])}}, use_bin_type=True))
+        return
+
+    pem_public = result["data"]
+    jwk_public = jwk.JWK(kty='OKP', crv='Ed25519', x=pem_public.hex())
+    jwk_public_json = jwk_public.export(private_key=False)
+
+    emit("publicKey", msgpack.packb({"event": "requestPublicKey", "data": {
+        "publicKey": jwk_public_json
+    }}, use_bin_type=True))
+    return
+
+
+@NotImplemented
+# TODO: implement
 @socketio.on("guestRemoved")
 def guest_removed():
     """
@@ -1885,28 +2032,6 @@ def guest_removed():
 
     # get connection, cursor
     conn, cursor = get_conn_cursor()
-
-
-
-
-@socketio.on("guestVerification")
-def verify_guest():
-    """
-
-    :return:
-    """
-
-    # get connection, cursor
-    conn, cursor = get_conn_cursor()
-
-
-
-
-
-
-
-
-
 
 @app.route("/websocket_local", methods=["POST"])
 def websocket_change():

@@ -1,6 +1,8 @@
 from packages.backend.sql_connection import database as db
 from packages.backend.sql_connection.common_functions import clean_single_data
 
+from typing import Annotated
+
 
 def add_guest(connection, cursor, user_id: int, stueble_id: int, invited_by: int | None=None) -> dict:
     """
@@ -56,3 +58,61 @@ def remove_guest(connection, cursor, user_id: int, stueble_id: int) -> dict:
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "error occurred"}
     return clean_single_data(result)
+
+def check_guest(cursor, stueble_id: int | None=None, user_id: Annotated[int | None, "Explicit with user_uuid"]=None, user_uuid: Annotated[str | None, "Explicit with user_id"]=None) -> dict:
+    """
+    checks if a user is currently a guest at a stueble party
+
+    Parameters:
+        cursor: cursor for the connection
+        user_id (int | None): id of the user
+        user_uuid (str | None): uuid of the user
+        stueble_id (int | None): id of the stueble party
+    Returns:
+        dict: {"success": bool, "data": bool} if successful, {"success": False, "error": e} if error occurred
+    """
+
+    if (user_uuid is not None and user_id is None) or (user_uuid is None and user_id is None):
+        return {"success": False, "error": "either user_id or user_uuid must be specified"}
+
+    if stueble_id is None:
+        query = """
+        SELECT id FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
+        result = db.custom_call(
+            connection=None,
+            cursor=cursor,
+            query=query,
+            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
+        )
+        if not result["success"]:
+            return result
+        if result["data"] is None:
+            return {"success": False, "error": "no stueble party found"}
+        stueble_id = result["data"]
+
+
+    query = f"""
+            SELECT 'add' =
+                   COALESCE((SELECT event_type
+                             FROM events
+                             WHERE {'id' if user_id is not None else 'user_uuid'} = %s
+                               AND stueble_id = %s
+                               AND event_type IN ('add', 'remove')
+                             ORDER BY submitted DESC
+                             LIMIT 1), 'remove')
+            """
+    result = db.custom_call(
+        connection=None,
+        cursor=cursor,
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+        variables=[user_id, stueble_id]
+    )
+
+    if not result["success"]:
+        return result
+
+    if result["data"] is None:
+        return {"success": False, "error": "error occurred"}
+
+    return result

@@ -325,26 +325,42 @@ def confirm_reset_code(cursor, reset_code: str):
         return {"success": False, "error": "Reset code doesn't exist."}
     return clean_single_data(result)
 
-def add_verification_method(connection, cursor, user_id: int | None, , method: VerificationMethod) -> dict:
+def add_verification_method(connection, cursor, method: VerificationMethod,
+                            user_id: Annotated[str | None, "Explicit with user_uuid"]=None,
+                            user_uuid: Annotated[str | None, "Explicit with user_id"]=None) -> dict:
     """
     adds a verification method for a specific user
 
     Parameters:
         connection: connection to the db
         cursor: cursor for the connection
-        user_id (int): id of the user
         method (VerificationMethod): verification method to be added
+        user_id (int | None): id of the user
+        user_uuid (str | None): uuid of the user
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
+        dict: {"success": bool} by default, {"success": False, "error": e} if error occurred
     """
+
+    if (user_id is None and user_uuid is None) or (user_id is not None and user_uuid is not None):
+        return {"success": False, "error": ValueError("Either user_id or user_uuid must be set.")}
+
+    arguments = {"method": method.value}
+    if user_id is not None:
+        arguments["id"] = user_id
+    else:
+        arguments["user_uuid"] = user_uuid
 
     result = db.insert_table(
         connection=connection,
         cursor=cursor,
         table_name="user_verification_methods",
-        arguments={"user_id": user_id, "method": method.value},
+        arguments=arguments,
         returning_column="id")
 
-    if result["success"] and result["data"] is None:
+    if result["success"] is False:
+        return result
+
+    if result["data"] is None:
         return {"success": False, "error": "error occurred"}
-    return clean_single_data(result)
+
+    return {"success": True}
