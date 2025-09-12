@@ -3,3 +3,5 @@ passwords.md
 __pycache__
 do_not_track
 .env
+venv
+.idea
