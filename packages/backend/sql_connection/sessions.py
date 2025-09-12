@@ -83,7 +83,7 @@ def remove_session(connection, cursor, session_id: str) -> dict:
         return {"success": False, "error": "no session found"}
     return result
 
-def get_user(cursor, session_id: str, keywords: tuple[str] | list[str]=("id", "user_role",)) -> dict:
+def get_user(cursor, session_id: str, keywords: tuple[str] | list[str]=("id", "user_role","user_uuid",)) -> dict:
     """
     gets the user role of a user from the table users via the sessions table
     Parameters:

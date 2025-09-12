@@ -12,6 +12,10 @@ CREATE TYPE USER_ROLE AS ENUM ('admin', 'tutor', 'host', 'user', 'extern');
 -- arrive, leave will be handled by python, add, remove, modify by triggers
 CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave');
 
+CREATE TYPE ACTION_TYPE AS ENUM('guestArrived', 'guestLeft', 'guestAdded', 'guestRemoved', 'userVerification');
+
+CREATE TYPE VERIFICATION AS ENUM('idCard', 'roomKey', 'kolping', NULL);
+
 -- enum for residence in table users
 CREATE TYPE RESIDENCE AS ENUM('altbau', 'neubau', 'anbau', 'hirte');
 
@@ -29,7 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_name TEXT CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL)),
-    verified BOOLEAN DEFAULT FALSE
+    verified VERIFICATION DEFAULT NULL
 );
 
 -- table for stueble mottos
@@ -93,7 +97,7 @@ CREATE TABLE IF NOT EXISTS allowed_users (
 
 CREATE TABLE IF NOT EXISTS password_resets (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     reset_code UUID UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -123,6 +127,15 @@ CREATE TABLE IF NOT EXISTS websocket_timestamps (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     last_timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS websocket_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_uuid) NOT NULL,
+    action ACTION_TYPE NOT NULL,
+    message_content JSONB,
+    required_role USER_ROLE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 

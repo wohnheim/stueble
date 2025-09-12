@@ -12,7 +12,7 @@ from packages.backend.sql_connection import (
     guest_events,
     websocket,
     configs,
-    events as codes,
+    events,
     database as db)
 from packages.backend.sql_connection import signup_validation as signup_val
 from packages.backend import hash_pwd as hp
@@ -59,9 +59,10 @@ def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
     user_id = result["data"][0]
     user_role = result["data"][1]
     user_role = UserRole(user_role)
+    user_uuid = result["data"][2]
     if user_role >= required_role:
-        return {"success": True, "data": {"allowed": True, "user_id": user_id, "user_role": user_role}}
-    return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role}}
+        return {"success": True, "data": {"allowed": True, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid}}
+    return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid}}
 
 def get_conn_cursor():
     """
@@ -186,9 +187,10 @@ def login():
                         samesite='Lax')
     return response
 
-# TODO handle deleted accounts like signup
+# TODO: handle deleted accounts like signup
+# TODO: add email verification
 @app.route("/auth/signup", methods=["POST"])
-def signup():
+def signup_data():
     """
     create a new user
     """
@@ -266,6 +268,31 @@ def signup():
             status=result["status"],
             mimetype="application/json")
         return response
+
+    '''result = users.create_password_reset_code(connection=conn, cursor=cursor, user_id=None)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    verification_token = result["data"]
+
+    subject = "Neuer Benutzeraccount für das Stüble"
+    body = f"""Hallo {user_info["first_name"]} {user_info["last_name"]},\n\nmit diesem Code kannst du deinen Account bestätigen: {verification_token}\nFalls du keinen neuen Account erstellt hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+
+    result = gmail.send_mail(recipient=user_info["email"], subject=subject, body=body)
+
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    response = Response(
+        status=204)
+    return response'''
 
     # hash password
     hashed_password = hp.hash_pwd(user_info["password"])
@@ -466,6 +493,7 @@ def get_motto():
         mimetype="application/json")
     return response
 
+#TODO: work on guest dictionary
 # NOTE: if no stueble is happening today or yesterday, an empty list is returned
 @app.route("/guests", methods=["GET"])
 def guests():
@@ -711,6 +739,7 @@ def search():
         mimetype="application/json")
 
     return response
+
 # TODO: change other /guests endpoint
 @app.route("/guests", methods=["POST"])
 def guest_change():
@@ -721,7 +750,7 @@ def guest_change():
     # load data
     data = request.get_json()
     session_id = request.cookies.get("SID", None)
-    user_uuid = data.get("uuid", None)
+    user_uuid = data.get("id", None)
     present = data.get("present", None)
 
     if session_id is None or user_uuid is None or present is None:
@@ -751,10 +780,77 @@ def guest_change():
             mimetype="application/json")
         return response
 
+    user_id = result["data"]["user_id"]
     event_type = EventType.ARRIVE if present else EventType.LEAVE
 
     # change guest status to arrive / leave
     result = guest_events.change_guest(connection=conn, cursor=cursor, user_uuid=user_uuid, event_type=event_type)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    # find sid to skip
+    result = websocket.get_sid_by_session_id(cursor=cursor, session_id=session_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    req_id = result["data"]
+
+    # get user data
+    keywords = ["first_name", "last_name", "room", "residence", "verified", "user_role"]
+    result = users.get_user(
+        cursor=cursor,
+        user_id=user_id,
+        keywords=keywords,
+        expect_single_answer=True)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    user_info = {key: value for key, value in zip(keywords, result["data"])}
+    user_info["user_role"] = FrontendUserRole.EXTERN if user_info["user_role"] == "extern" else FrontendUserRole.INTERN
+
+    user_data = {
+            "id": user_uuid,
+            "present": present,
+            "firstName": user_info["first_name"],
+            "lastName": user_info["last_name"],
+            "extern": user_info["user_role"] == FrontendUserRole.EXTERN}
+
+    if user_info["user_role"] == FrontendUserRole.INTERN:
+        user_data["roomNumber"] = user_info["room"]
+        user_data["residence"] = user_info["residence"]
+        user_data["verified"] = True if user_info["verified"] is not None else False
+
+    message = {
+        "event": "guestModified",
+        "req_id": req_id,
+        "data": user_data}
+
+    action_type = Action_Type("guestArrived") if present else Action_Type("guestLeft")
+    # insert into websocket_log
+    result = websocket.add_websocket_event(
+        connection=conn,
+        cursor=cursor,
+        action_type=action_type,
+        user_id=user_id,
+        message_content=message,
+        required_role=UserRole.HOST)
+
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -763,13 +859,172 @@ def guest_change():
             mimetype="application/json")
         return response
 
+    # send a websocket message to all hosts that the guest list changed
+    emit("guestModified", msgpack.packb(message), to=host_upwards_room, skip_sid=result["data"])
+
     # return 204
     response = Response(
         status=204)
     return response
 
+@app.route("/user/stueble_signup", methods=["POST"])
+def attend_stueble():
+    """
+    sign up for a stueble party
+    """
+
+    # load data
+    data = request.get_json()
+    session_id = request.cookies.get("SID", None)
+    date = data.get("date", None)
+
+    if session_id is None or date is None:
+        response = Response(
+            response=json.dumps({"error": f"The session_id and date must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only hosts can add guests
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role user or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    user_id = result["data"]["user_id"]
+    user_uuid = result["data"]["user_uuid"]
+
+    result = motto.get_info(cursor=cursor, date=date)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    stueble_id = result["data"][0]
+
+    result = events.add_guest(
+        connection=conn,
+        cursor=cursor,
+        user_id=user_id,
+        stueble_id=stueble_id)
+
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        status_code = 500
+        error = str(result["error"])
+        if "; code: " in str(result["error"]):
+            error, status_code = str(result["error"]).split("; code: ")
+            status_code = int(status_code)
+        response = Response(
+            response=json.dumps({"error": error}),
+            status=status_code,
+            mimetype="application/json")
+        return response
+
+    timestamp = int(datetime.datetime.now().timestamp())
+
+    signature = hp.create_signature(cursor=cursor, message=json.dumps({"id": user_uuid,
+                                                                       "timestamp": timestamp}))
+
+    data = {"data":
+                {"id": user_uuid,
+                 "timestamp": timestamp},
+            "signature": signature}
+
+    # find sid to skip
+    result = websocket.get_sid_by_session_id(cursor=cursor, session_id=session_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    req_id = result["data"]
+
+    # get user data
+    keywords = ["first_name", "last_name", "room", "residence", "verified"]
+    result = users.get_user(
+        cursor=cursor,
+        user_id=user_id,
+        keywords=keywords,
+        expect_single_answer=True)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    user_info = {key: value for key, value in zip(keywords, result["data"])}
+    user_info["user_role"] = FrontendUserRole.INTERN
+
+    user_data = {
+        "id": user_uuid,
+        "present": False,
+        "firstName": user_info["first_name"],
+        "lastName": user_info["last_name"],
+        "extern": False,
+        "roomNumber": user_info["room"],
+        "residence": user_info["residence"],
+        "verified": True if user_info["verified"] is not None else False}
+
+    message = {
+        "event": "guestModified",
+        "req_id": req_id,
+        "data": user_data}
+
+    action_type = Action_Type("guestAdded")
+    # insert into websocket_log
+    result = websocket.add_websocket_event(
+        connection=conn,
+        cursor=cursor,
+        action_type=action_type,
+        user_id=user_id,
+        message_content=user_data,
+        required_role=UserRole.HOST)
+
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    # send a websocket message to all hosts that the guest list changed
+    emit(action_type.value, msgpack.packb(message), to=host_upwards_room, skip_sid=result["data"])
+
+    response = Response(
+        response=json.dumps(data),
+        status=200,
+        mimetype="application/json")
+    return response
+
 # NOTE: extern guest can be multiple times in table users since only first_name, last_name are specified, which are not unique
 @app.route("/user/invite_friend", methods=["POST"])
+@app.route("/user/invite_friend", methods=["DELETE"])
 def invite_friend():
     """
     invite a friend and share a qr-code
@@ -825,13 +1080,23 @@ def invite_friend():
 
     stueble_id = result["data"][0]
 
-    result = users.add_user(
-        connection=conn,
-        cursor=cursor,
-        user_role=UserRole.EXTERN,
-        first_name=invitee_first_name,
-        last_name=invitee_last_name,
-        returning="id, user_uuid")
+    if request.method == "POST":
+        # add user to table
+        result = users.add_user(
+            connection=conn,
+            cursor=cursor,
+            user_role=UserRole.EXTERN,
+            first_name=invitee_first_name,
+            last_name=invitee_last_name,
+            returning="id, user_uuid")
+
+    else:
+        # get user to remove
+        result = user.get_user(
+            cursor=cursor,
+            keywords=["id", "user_uuid"],
+            conditions={"first_name": invitee_first_name, "last_name": invitee_last_name, "user_role": UserRole.EXTERN.value},
+            expect_single_answer=False)
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -841,15 +1106,90 @@ def invite_friend():
             mimetype="application/json")
         return response
 
-    invitee_id = result["data"][0]
-    invitee_uuid = result["data"][1]
+    if request.method == "DELETE":
+        possible_users = result["data"]
+        if len(possible_users) == 0:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"error": "No such user found"}),
+                status=404,
+                mimetype="application/json")
+            return response
+        users_list = []
+        for i in possible_users:
+            query = """
+            SELECT user_id FROM events
+            WHERE user_id = %s AND stueble_id = %s AND event_type = 'add' AND invited_by = %s
+            ORDER BY submitted DESC LIMIT 1"""
+            result = db.custom_call(connection=None,
+                                    cursor=cursor,
+                                    query=query,
+                                    type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+                                    variables=[i[0], stueble_id, user_id])
+            if result["success"] is False:
+                close_conn_cursor(conn, cursor)
+                response = Response(
+                    response=json.dumps({"error": str(result["error"])}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+            if result["data"] is None:
+                continue
+            possible_invitee_id = result["data"][0][0]
 
-    result = codes.add_guest(
-        connection=conn,
-        cursor=cursor,
-        user_id=invitee_id,
-        stueble_id=stueble_id,
-        invited_by=user_id)
+            result = users.get_user(cursor=cursor,
+                                    user_id=possible_invitee_id,
+                                    keywords=["user_uuid"],
+                                    expect_single_answer=True)
+            if result["success"] is False:
+                close_conn_cursor(conn, cursor)
+                response = Response(
+                    response=json.dumps({"error": str(result["error"])}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+            if result["data"] is None:
+                close_conn_cursor(conn, cursor)
+                response = Response(
+                    response=json.dumps({"error": "Data integrity error, user not found"}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+            possible_invitee_uuid = result["data"][0]
+            users_list.append({"invitee_id": possible_invitee_id, "invitee_uuid": possible_invitee_uuid})
+        if len(users_list) == 0:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"error": "No such user found"}),
+                status=404,
+                mimetype="application/json")
+            return response
+        if len(users_list) > 1:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"error": "Multiple users found, please contact an admin"}),
+                status=409,
+                mimetype="application/json")
+            return response
+        invitee_id = users_list[0]["invitee_id"]
+        invitee_uuid = users_list[0]["invitee_uuid"]
+    else:
+        invitee_id = result["data"][0]
+        invitee_uuid = result["data"][1]
+
+    if request.method == "POST":
+        result = events.add_guest(
+            connection=conn,
+            cursor=cursor,
+            user_id=invitee_id,
+            stueble_id=stueble_id,
+            invited_by=user_id)
+    else:
+        result = events.remove_guest(
+            connection=conn,
+            cursor=cursor,
+            user_id=invitee_id,
+            stueble_id=stueble_id)
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
@@ -864,15 +1204,86 @@ def invite_friend():
             mimetype="application/json")
         return response
 
-    timestamp = int(datetime.datetime.now().timestamp())
+    if request.method == "POST":
+        timestamp = int(datetime.datetime.now().timestamp())
 
-    signature = hp.create_signature(cursor=cursor, message=json.dumps({"id": invitee_uuid,
-                                                            "timestamp": timestamp}))
+        signature = hp.create_signature(cursor=cursor, message=json.dumps({"id": invitee_uuid,
+                                                                "timestamp": timestamp}))
 
-    data = {"data":
-                {"id": invitee_uuid,
-                 "timestamp": timestamp},
-            "signature": signature}
+        data = {"data":
+                    {"id": invitee_uuid,
+                     "timestamp": timestamp},
+                "signature": signature}
+
+    # find sid to skip
+    result = websocket.get_sid_by_session_id(cursor=cursor, session_id=session_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    req_id = result["data"]
+
+    # get user data
+    keywords = ["first_name", "last_name", "room", "residence", "verified"]
+    result = users.get_user(
+        cursor=cursor,
+        user_id=invitee_id,
+        keywords=keywords,
+        expect_single_answer=True)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    invitee_info = {key: value for key, value in zip(keywords, result["data"])}
+    invitee_info["user_role"] = FrontendUserRole.EXTERN
+
+    invitee_data = {
+        "id": invitee_uuid,
+        "present": False,
+        "firstName": invitee_info["first_name"],
+        "lastName": invitee_info["last_name"],
+        "extern": True}
+
+    message = {
+        "event": "guestModified",
+        "req_id": req_id,
+        "data": invitee_data}
+
+    action_type = Action_Type("guestAdded") if request.method == "POST" else Action_Type("guestRemoved")
+
+    # insert into websocket_log
+    result = websocket.add_websocket_event(
+        connection=conn,
+        cursor=cursor,
+        action_type=action_type,
+        user_id=user_id,
+        message_content=message,
+        required_role=UserRole.HOST)
+
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    # send a websocket message to all hosts that the guest list changed
+    emit(action_type.value, msgpack.packb(message), to=host_upwards_room, skip_sid=result["data"])
+
+    if request.method == "DELETE":
+        response = Response(
+            status=204)
+        return response
 
     response = Response(
         response=json.dumps(data),
@@ -1242,6 +1653,65 @@ def change_user_role():
         status=204)
     return response
 
+@socketio.on("guestVerification")
+def verify_guest():
+    """
+    sets guest verified to True
+    """
+
+    # load data
+    data = request.get_json()
+    user_uuid = data.get("id", None)
+    verification_method = data.get("method", None)
+    session_id = request.cookies.get("SID", None)
+
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"error": "missing cookie"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    if user_uuid is None or verification_method is None:
+        response = Response(
+            response=json.dumps({"error": "id and method must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    if not valid_verification_method(verification_method) or verification_method == "kolping":
+        response = Response(
+            response=json.dumps({"error": "invalid verification method"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    verification_method = VerificationMethod(verification_method)
+
+    # get connection, cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "401",
+             "message": str(result["error"])}}, use_bin_type=True))
+        return
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        emit("error", msgpack.packb({"event": "error", "data":
+            {"code": "403",
+             "message": "invalid permissions, need role host or above"}}, use_bin_type=True))
+        return
+
+
+
+
+    emit("guestVerification", msgpack.packb({"event": "guestVerification"}, use_bin_type=True))
+    return
+
 @socketio.on("connect")
 def handle_connect():
     """
@@ -1399,10 +1869,38 @@ def handle_heartbeat():
     """
     handle a heartbeat from the client
     """
+
+    # get connection, cursor
+    conn, cursor = get_conn_cursor()
+
     emit("heartbeat", msgpack.packb({"event": "heartbeat"}, use_bin_type=True))
     return
 
-@socketio.on("")
+@socketio.on("guestRemoved")
+def guest_removed():
+    """
+
+    :return:
+    """
+
+    # get connection, cursor
+    conn, cursor = get_conn_cursor()
+
+
+
+
+@socketio.on("guestVerification")
+def verify_guest():
+    """
+
+    :return:
+    """
+
+    # get connection, cursor
+    conn, cursor = get_conn_cursor()
+
+
+
 
 
 

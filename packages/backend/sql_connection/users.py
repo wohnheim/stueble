@@ -1,4 +1,4 @@
-from packages import backend as db
+from packages.backend.sql_connection import database as db
 from typing import Annotated
 
 from packages.backend.data_types import *
@@ -32,7 +32,7 @@ def add_user(connection,
         password_hash (str | None): password hash of the user
         user_name (str | None): username of the user
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
+        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
     """
     values_set = any(i is None for i in [room, residence, email, password_hash, user_name, first_name, last_name])
     values_not_set = any(i is not None for i in [room, residence, email, password_hash, user_name])
@@ -121,7 +121,7 @@ def update_user(
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
     """
 
-    allowed_fields = ["user_role", "room", "residence", "first_name", "last_name", "email", "password_hash", "user_name"]
+    allowed_fields = ["user_role", "first_name", "last_name", "email", "password_hash", "user_name"]
     for k, v in kwargs.items():
         if k not in allowed_fields:
             return {"success": False, "error": ValueError(f"Field {k} is not allowed to be updated.")}
@@ -227,9 +227,18 @@ def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
     """
 
     query = """
-    SELECT users.first_name, users.last_name, users.user_role, users.personal_hash
-    FROM users
-    INNER JOIN (SELECT user_id FROM stueble_codes WHERE invited_by = %s AND stueble_id = %s) as invited ON users.id = invited.user_id"""
+    SELECT u.first_name, u.last_name, u.user_role, u.user_uuid
+    FROM (SELECT user_id
+          FROM (SELECT DISTINCT ON (user_id) *
+                FROM events
+                WHERE invited_by = %s
+                  AND stueble_id = %s
+                  AND event_type IN ('add', 'remove')
+                ORDER BY user_id, submitted DESC) as latest_event
+          WHERE latest_event = 'add'
+          ORDER BY user_id) as invitees
+    JOIN users AS u ON invitees.user_id = u.id;
+    """
 
     # check how many friends were invited by the user to a specific stueble party
     result = db.custom_call(
@@ -242,14 +251,24 @@ def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
 
     if result["success"] is True and result["data"] is None:
         # if no friends were invited, check if user is registered for the specific stueble
-        result = db.read_table(
+        query = """
+        SELECT 'add' =
+        COALESCE((SELECT event_type
+        FROM events
+        WHERE user_id = %s
+          AND stueble_id = %s
+          AND event_type IN ('add', 'remove')
+        ORDER BY submitted DESC
+        LIMIT 1), 'remove')
+        """
+        result = db.custom_call(
+            connection=None,
             cursor=cursor,
-            table_name="stueble_codes",
-            keywords=["user_id"],
-            conditions={"user_id": user_id},
-            expect_single_answer=True
+            query=query,
+            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+            variables=[user_id, stueble_id]
         )
-        if result["success"] is True and result["data"] is None:
+        if result["success"] is True and (result["data"] is None or result["data"] is False):
             return {"success": False, "error": "User has to be in stueble in order to invite friends."}
         elif result["success"] is False:
             return result
@@ -257,14 +276,14 @@ def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
 
     return result
 
-def create_password_reset_code(connection, cursor, user_id: int) -> dict:
+def create_password_reset_code(connection, cursor, user_id: int | None) -> dict:
     """
     creates a password reset code for a specific user
 
     Parameters:
         connection: connection to the db
         cursor: cursor for the connection
-        user_id (int): id of the user
+        user_id (int | None): id of the user; if None, then code is a verification code for email
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
     """
@@ -273,7 +292,7 @@ def create_password_reset_code(connection, cursor, user_id: int) -> dict:
         connection=connection,
         cursor=cursor,
         table_name="password_resets",
-        arguments={"user_id": user_id},
+        arguments={"user_id": user_id} if user_id is not None else None,
         returning_column="reset_code")
 
     # maybe shouldn't be possible, but still left in
@@ -304,4 +323,28 @@ def confirm_reset_code(cursor, reset_code: str):
         return result
     if result["data"] is None:
         return {"success": False, "error": "Reset code doesn't exist."}
+    return clean_single_data(result)
+
+def add_verification_method(connection, cursor, user_id: int | None, , method: VerificationMethod) -> dict:
+    """
+    adds a verification method for a specific user
+
+    Parameters:
+        connection: connection to the db
+        cursor: cursor for the connection
+        user_id (int): id of the user
+        method (VerificationMethod): verification method to be added
+    Returns:
+        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
+    """
+
+    result = db.insert_table(
+        connection=connection,
+        cursor=cursor,
+        table_name="user_verification_methods",
+        arguments={"user_id": user_id, "method": method.value},
+        returning_column="id")
+
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "error occurred"}
     return clean_single_data(result)

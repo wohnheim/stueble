@@ -77,3 +77,22 @@ class Email:
 class Event_Notify(str, Enum):
     ARRIVE = "ARRIVE"
     LEAVE = "LEAVE"
+
+class Action_Type(str, Enum):
+    GuestArrived = 'guestArrived'
+    GuestLeft = 'guestLeft'
+    GuestAdded = 'guestAdded'
+    GuestRemoved = 'guestRemoved'
+    UserVerification = 'userVerification'
+
+def valid_action_type(value):
+    return value in Action_Type._value2member_map_
+
+class VerificationMethod(str, Enum):
+    ID_CARD = 'idCard'
+    ROOM_KEY = 'roomKey'
+    KOLPING = 'kolping'
+    NONE = None
+
+def valid_verification_method(value):
+    return value in VerificationMethod._value2member_map_
