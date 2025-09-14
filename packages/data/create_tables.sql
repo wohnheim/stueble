@@ -14,7 +14,7 @@ CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave');
 
 CREATE TYPE ACTION_TYPE AS ENUM('guestArrived', 'guestLeft', 'guestAdded', 'guestRemoved', 'userVerification');
 
-CREATE TYPE VERIFICATION AS ENUM('idCard', 'roomKey', 'kolping', NULL);
+CREATE TYPE VERIFICATION AS ENUM('idCard', 'roomKey', 'kolping');
 
 -- enum for residence in table users
 CREATE TYPE RESIDENCE AS ENUM('altbau', 'neubau', 'anbau', 'hirte');

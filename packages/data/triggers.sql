@@ -154,6 +154,7 @@ BEGIN
                 WHERE event_type = 'add');
             END IF;
 
+            -- TODO: remove this leave statement and block arriving until stueble begins as well as blocking removing after stueble began
             -- creates a bigger id; shouldn't be problematic since removal by user is banned during stueble, also leave is okay due to the same reason
             INSERT INTO events (id, user_id, stueble_id, event_type)
             VALUES (NEW.user_id, NEW.stueble_id, 'leave');
