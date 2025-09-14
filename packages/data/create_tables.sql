@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS websocket_timestamps (
 
 CREATE TABLE IF NOT EXISTS websocket_log (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_uuid) NOT NULL,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
     action ACTION_TYPE NOT NULL,
     message_content JSONB,
     required_role USER_ROLE NOT NULL,
