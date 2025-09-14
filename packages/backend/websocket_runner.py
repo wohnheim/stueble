@@ -34,29 +34,31 @@ def listen_to_db(connection):
         while connection.notifies:
             notify = connection.notifies.pop(0)
             data = json.loads(notify.payload)
-            if not set(data.keys()) == {"event", "user_id", "stueble_id"}:
+            if not set(data[0].keys()) == {"event", "user_id", "stueble_id"}:
                 # TODO catch this, e.g. by sending an error message to api.py
                 warnings.warn("Keys don't match")
                 continue
-            event = data["event"] # only possible events are arrive and leave for notifications to be sent
-            event = Event_Notify(event)
-            user_id = data["user_id"]
-            stueble_id = data["stueble_id"]
-            result = users.get_user(cursor=cursor, user_id=user_id, keywords=["first_name", "last_name", "user_uuid"])
-            if result["success"] is False:
-                # TODO catch this, e.g. by sending an error message to api.py
-                warnings.warn(f"Could not get user with id {user_id}")
-                continue
-            # NOTE only use user_uuid for the guest_list not publicly available for hosts etc.
-            first_name, last_name, user_uuid = result["data"]
-            data = {"first_name": first_name,
-                    "last_name": last_name,
-                    "user_uuid": user_uuid,
-                    "stueble_id": stueble_id,
-                    "event": event}
-            # TODO configure url
-            response = requests.post("http://127.0.0.1:5000/websocket_local", json=data)
-            if response.status_code != 200:
-                warnings.warn(f"Could not send data to websocket server: {response.text}")
-                continue
-            # TODO handle error
+            # event is always remove
+            for removed_user in data:
+                event = removed_user["event"]
+                event = Event_Notify(event) # only possible events are arrive and leave for notifications to be sent
+                user_id = removed_user["user_id"]
+                stueble_id = removed_user["stueble_id"]
+                result = users.get_user(cursor=cursor, user_id=user_id, keywords=["first_name", "last_name", "user_uuid"])
+                if result["success"] is False:
+                    # TODO catch this, e.g. by sending an error message to api.py
+                    warnings.warn(f"Could not get user with id {user_id}")
+                    continue
+                # NOTE only use user_uuid for the guest_list not publicly available for hosts etc.
+                first_name, last_name, user_uuid = result["data"]
+                removed_user_data = {"first_name": first_name,
+                        "last_name": last_name,
+                        "user_uuid": user_uuid,
+                        "stueble_id": stueble_id,
+                        "event": event}
+                # TODO configure url
+                response = requests.post("http://127.0.0.1:5000/websocket_local", json=removed_user_data)
+                if response.status_code != 200:
+                    warnings.warn(f"Could not send data to websocket server: {response.text}")
+                    continue
+                # TODO handle error
