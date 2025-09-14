@@ -1,9 +1,9 @@
 -- when a guest arrives or leaves, notify all hosts with an event using websocket
 CREATE OR REPLACE FUNCTION event_guest_change()
 RETURNS trigger AS $$
-DECLARE
-    inviter_role          user_role;
-    DECLARE inviter_users INTEGER;
+DECLARE inviter_role USER_ROLE;
+DECLARE inviter_users INTEGER;
+DECLARE automatically_removed_users INTEGER;
 BEGIN
 
     -- check, whether admins are trying to arrive / leave
@@ -43,7 +43,23 @@ BEGIN
                 RAISE EXCEPTION 'User is not registered for stueble %; code: 400', NEW.stueble_id;
             END IF;
 
-            -- if user is leaving, check if not already left and whether they arrived first
+            -- check, whether inviter is still added for stueble
+            IF COALESCE((SELECT user_role FROM users WHERE id = NEW.user_id), 'extern')
+                AND COALESCE((SELECT event_type
+                              FROM events
+                              WHERE user_id = NEW.invited_by
+                                AND stueble_id = NEW.stueble_id
+                                AND event_type IN ('add', 'remove')
+                              ORDER BY submitted
+                                  DESC
+                              LIMIT 1),
+                             'remove') != 'add'
+            THEN
+                RAISE EXCEPTION 'Inviter of user % is not registered for stueble % anymore; code: 400', NEW.user_id, NEW.stueble_id;
+            END IF;
+
+
+        -- if user is leaving, check if not already left and whether they arrived first
         ELSE
             IF COALESCE((SELECT event_type
                 FROM events
@@ -75,9 +91,9 @@ BEGIN
             END IF;
 
             -- set inviter_role
-            inviter_role := (SELECT user_role
+            inviter_role := COALESCE((SELECT user_role
                              FROM users
-                             WHERE id = NEW.invited_by);
+                             WHERE id = NEW.invited_by), 'extern');
 
             -- if user is being added, check, whether inviter role is allowed
             IF NEW.invited_by IS NOT NULL AND inviter_role IN ('extern', 'admin')
@@ -146,17 +162,23 @@ BEGIN
             IF (SELECT user_role FROM users WHERE id = NEW.user_id) != 'extern'
             THEN
                 INSERT INTO events (user_id, stueble_id, event_type, invited_by)
-                (SELECT user_id, NEW.stueble_id, 'remove', NEW.user_id
-                FROM (SELECT DISTINCT ON (user_id) user_id, event_type
+                (SELECT DISTINCT ON (user_id) user_id, NEW.stueble_id, 'remove', NEW.user_id
                       FROM events
-                      WHERE event_type IN ('add', 'remove') AND invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
-                      ORDER BY user_id, submitted DESC) AS last_events
-                WHERE event_type = 'add');
+                      WHERE event_type != 'arrive' AND invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
+                      ORDER BY events.user_id, submitted DESC)
+                RETURNING user_id INTO automatically_removed_users;
+                PERFORM pg_notify(
+                    'automatically_removed_users',
+                    json_build_object(
+                            'event', 'remove',
+                            'user_id', automatically_removed_users,
+                            'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
+                    )::text);
             END IF;
 
             -- TODO: remove this leave statement and block arriving until stueble begins as well as blocking removing after stueble began
             -- creates a bigger id; shouldn't be problematic since removal by user is banned during stueble, also leave is okay due to the same reason
-            INSERT INTO events (id, user_id, stueble_id, event_type)
+            INSERT INTO events (user_id, stueble_id, event_type)
             VALUES (NEW.user_id, NEW.stueble_id, 'leave');
         END IF;
     END IF;

@@ -4,7 +4,7 @@ import psycopg2
 import requests
 import warnings
 
-from packages import backend as db
+from packages.backend.sql_connection import database as db
 from packages.backend.sql_connection import users
 from packages.backend.data_types import *
 
@@ -16,7 +16,7 @@ def is_valid_event_notify(other):
 conn = db.connect()
 cursor = conn.cursor()
 
-cursor.execute("LISTEN guest_list_update;")
+cursor.execute("LISTEN automatically_removed_users;")
 def listen_to_db(connection):
     """
     Listens to the database for notifications on the channel 'guest_list_update'.
@@ -42,18 +42,19 @@ def listen_to_db(connection):
             event = Event_Notify(event)
             user_id = data["user_id"]
             stueble_id = data["stueble_id"]
-            result = users.get_user(cursor=cursor, user_id=user_id, keywords=["first_name", "last_name", "personal_hash"])
+            result = users.get_user(cursor=cursor, user_id=user_id, keywords=["first_name", "last_name", "user_uuid"])
             if result["success"] is False:
                 # TODO catch this, e.g. by sending an error message to api.py
                 warnings.warn(f"Could not get user with id {user_id}")
                 continue
-            # NOTE only use personal_hash for the guest_list not publicly available for hosts etc.
-            first_name, last_name, personal_hash = result["data"]
+            # NOTE only use user_uuid for the guest_list not publicly available for hosts etc.
+            first_name, last_name, user_uuid = result["data"]
             data = {"first_name": first_name,
                     "last_name": last_name,
-                    "personal_hash": personal_hash,
+                    "user_uuid": user_uuid,
                     "stueble_id": stueble_id,
                     "event": event}
+            # TODO configure url
             response = requests.post("http://127.0.0.1:5000/websocket_local", json=data)
             if response.status_code != 200:
                 warnings.warn(f"Could not send data to websocket server: {response.text}")

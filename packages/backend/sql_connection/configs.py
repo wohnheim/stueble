@@ -1,4 +1,4 @@
-from packages import backend as db
+from packages.backend.sql_connection import database as db
 from packages.backend.sql_connection.common_functions import clean_single_data
 
 
