@@ -1,6 +1,9 @@
 from packages.backend.sql_connection import database as db
 from datetime import date
 
+from packages.backend.sql_connection.common_functions import clean_single_data
+
+
 def get_motto(cursor, date: date | None=None) -> dict:
     """
     gets the motto from the table motto
@@ -55,4 +58,30 @@ def get_info(cursor, date: date | None=None) -> dict:
 
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "no stueble party found"}
+    return result
+
+def create_stueble(connection, cursor, date: date, motto: str, hosts: list[int], shared_apartment: str | None) -> dict:
+    """
+    creates a new entry in the table stueble_motto
+    Parameters:
+        connection: connection to the database
+        cursor: cursor for the connection
+        date (datetime.date): date for which the motto is valid
+        motto (str): motto for the stueble party
+        hosts (list[int]): list of user ids who are the hosts for the stueble party
+        shared_apartment (str): shared apartment for the stueble party, can be None
+    Returns:
+        dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occurred
+    """
+    result = db.insert_table(
+        connection=connection,
+        cursor=cursor,
+        table_name="stueble_motto",
+        data={"date_of_time": date, "motto": motto, "shared_apartment": shared_apartment, "hosts": hosts},
+        returning="id"
+    )
+    if result["success"] is True and result["data"] is not None:
+        return {"success": False, "error": "error occurred"}
+    if result["success"] is True:
+        return clean_single_data(result)
     return result
