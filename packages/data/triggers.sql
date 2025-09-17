@@ -317,5 +317,5 @@ CREATE OR REPLACE TRIGGER set_session_id_trigger
     FOR EACH ROW EXECUTE FUNCTION set_session_id();
 
 CREATE OR REPLACE TRIGGER set_reset_code_trigger
-    BEFORE INSERT ON password_resets
+    BEFORE INSERT ON verification_codes
     FOR EACH ROW EXECUTE FUNCTION set_reset_code();

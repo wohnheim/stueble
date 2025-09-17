@@ -278,7 +278,7 @@ def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
 
     return result
 
-def create_password_reset_code(connection, cursor, user_id: int | None, additional_data: dict | None=None) -> dict:
+def create_verification_code(connection, cursor, user_id: int | None, additional_data: dict | None=None) -> dict:
     """
     creates a password reset code for a specific user
 
@@ -303,7 +303,7 @@ def create_password_reset_code(connection, cursor, user_id: int | None, addition
     result = db.insert_table(
         connection=connection,
         cursor=cursor,
-        table_name="password_resets",
+        table_name="verification_codes",
         arguments=arguments,
         returning_column="reset_code")
 
@@ -312,7 +312,7 @@ def create_password_reset_code(connection, cursor, user_id: int | None, addition
         return {"success": False, "error": "error occurred"}
     return clean_single_data(result)
 
-def confirm_reset_code(cursor, reset_code: str, additional_data: bool=False) -> dict:
+def confirm_verification_code(cursor, reset_code: str, additional_data: bool=False) -> dict:
     """
     confirms a password reset code for a specific user
 
@@ -330,7 +330,7 @@ def confirm_reset_code(cursor, reset_code: str, additional_data: bool=False) -> 
 
     result = db.read_table(
         cursor=cursor,
-        table_name="password_resets",
+        table_name="verification_codes",
         keywords=keywords,
         conditions={"reset_code": reset_code},
         expect_single_answer=(len(keywords) == 1)

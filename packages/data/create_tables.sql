@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS allowed_users (
     last_name TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS password_resets (
+CREATE TABLE IF NOT EXISTS verification_codes (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     reset_code UUID UNIQUE NOT NULL,
