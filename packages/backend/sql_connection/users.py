@@ -1,3 +1,5 @@
+import json
+
 from packages.backend.sql_connection import database as db
 from typing import Annotated
 
@@ -276,7 +278,7 @@ def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
 
     return result
 
-def create_password_reset_code(connection, cursor, user_id: int | None) -> dict:
+def create_password_reset_code(connection, cursor, user_id: int | None, additional_data: dict | None=None) -> dict:
     """
     creates a password reset code for a specific user
 
@@ -284,15 +286,25 @@ def create_password_reset_code(connection, cursor, user_id: int | None) -> dict:
         connection: connection to the db
         cursor: cursor for the connection
         user_id (int | None): id of the user; if None, then code is a verification code for email
+        additional_data (dict | None): additional data to be stored in the table; can be None
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
+        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
     """
+
+    arguments = {}
+    if user_id is not None:
+        arguments["user_id"] = user_id
+    if additional_data is not None:
+        additional_data = json.dumps(additional_data)
+        arguments["additional_data"] = additional_data
+    if arguments == {}:
+        arguments = None
 
     result = db.insert_table(
         connection=connection,
         cursor=cursor,
         table_name="password_resets",
-        arguments={"user_id": user_id} if user_id is not None else None,
+        arguments=arguments,
         returning_column="reset_code")
 
     # maybe shouldn't be possible, but still left in
@@ -300,29 +312,36 @@ def create_password_reset_code(connection, cursor, user_id: int | None) -> dict:
         return {"success": False, "error": "error occurred"}
     return clean_single_data(result)
 
-def confirm_reset_code(cursor, reset_code: str):
+def confirm_reset_code(cursor, reset_code: str, additional_data: bool=False) -> dict:
     """
     confirms a password reset code for a specific user
 
     Parameters:
         cursor: cursor for the connection
         reset_code (str): reset code of the user
+        additional_data (bool): whether to return additional data
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
     """
 
+    keywords = ["user_id"]
+    if additional_data:
+        keywords.append("additional_data")
+
     result = db.read_table(
         cursor=cursor,
         table_name="password_resets",
-        keywords=["user_id"],
+        keywords=keywords,
         conditions={"reset_code": reset_code},
-        expect_single_answer=True
+        expect_single_answer=(len(keywords) == 1)
     )
 
     if result["success"] is False:
         return result
     if result["data"] is None:
         return {"success": False, "error": "Reset code doesn't exist."}
+    if additional_data:
+        return result
     return clean_single_data(result)
 
 def add_verification_method(connection, cursor, method: VerificationMethod,
