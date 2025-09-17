@@ -1,0 +1,161 @@
+flowchart LR
+    %% Database
+    subgraph DB[Database]
+        subgraph allowedUsers[allowedUsers]
+            ids
+            created_at
+            room
+            residence
+            firstname
+            lastname
+        end
+        subgraph users[users]
+            id
+            user_role
+            room
+            residence
+            first_name
+            last_name
+            password_hash
+            email
+            created_at
+            user_uuid
+            last_updated
+            user_name
+            verified
+        end
+        subgraph stueble_motto[stueble_motto]
+            id
+            motto
+            date_of_time
+            created_at
+            shared_apartment
+            hosts
+        end
+        subgraph sessions[sessions]
+            id
+            expiration_date
+            user_id
+            session_token
+            session_id
+        end
+        subgraph events[events]
+            id
+            user_id
+            invited_by
+            event_type
+            submitted
+            stueble_id
+        end
+        subgraph events_affected_users[events_affected_users]
+            id
+            event_id
+            affected_user_id
+            submitted
+        end
+        subgraph configurations[configurations]
+            id
+            key
+            value
+            created_at
+        end
+        subgraph verification_codes[verification_codes]
+            id
+            user_id
+            reset_code
+            created_at
+        end
+        subgraph websocket_sids[websocket_sids]
+            id
+            user_id
+            session_id
+            sid
+            created_at
+        end
+
+        subgraph websocket_timestamps[websocket_timestamps]
+            id
+            user_id
+            last_timestamp
+            created_at
+        end
+
+        subgraph websocket_log[websocket_log]
+            id
+            user_id
+            action
+            message_content
+            required_role
+            created_at
+        end
+    end
+    %% Registration
+    subgraph Registration
+        subgraph Backend
+            reg["register name + room_nr"]
+            verify["verify_mail()"]
+            regsave["save user to database"]
+        end
+
+        subgraph Frontend
+            regUI["Registration UI"]
+            codeUI["Bestätigungscode UI"]
+        end
+    end
+
+    %% Login
+    subgraph Login
+        subgraph Backend
+            login["login with name + room_nr"]
+        end
+
+        subgraph Frontend
+            loginUI["Login UI"]
+            personalUI["Personal Page"]
+        end
+    end
+
+    %% Stueble Anmeldung
+    subgraph Stueble
+        subgraph Backend
+            stubReg["stueble_register"]
+            addGuest["add_guest"]
+        end
+
+        subgraph Frontend
+            stubUI["Zu Stueble anmelden"]
+            inviteUI["Gast einladen"]
+        end
+    end
+
+    %% Host hinzufügen
+    subgraph Host
+        subgraph Backend
+            addHost["addHost (nur für Tutoren)"]
+            checkPerms["check_relos()"]
+        end
+
+        subgraph Frontend
+            addHostUI["Stueble-Host hinzufügen"]
+            hostAddedUI["Host hinzugefügt"]
+        end
+    end
+
+    %% Connections
+    allowedUsers --> reg
+    reg --> verify --> regsave
+    regUI --> reg
+    codeUI --> verify
+    regsave --> registeredUsers
+
+    registeredUsers --> login
+    login --> loginUI
+    login --> personalUI
+
+    stubReg --> addGuest --> gaesteListe
+    stubUI --> stubReg
+    inviteUI --> addGuest
+
+    addHost --> checkPerms
+    addHost --> hostAddedUI
+    checkPerms --> addHostUI

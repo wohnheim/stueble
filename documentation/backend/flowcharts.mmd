@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph Registration Process
+        subgraph Backend
+                signup["api - signup_data"]
+                validate["check validity and uniqueness of data"]
+                verify["verify_mail()"]
+                regsave["save user to database"]
+            end
+
+            subgraph Frontend
+                regUI["Registration UI"]
+                codeUI["Bestätigungscode UI"]
+            end
+    regUI --> signup
+    signup --> validate
+    validate --> signup
+    signup --> 
+
+    
+end
