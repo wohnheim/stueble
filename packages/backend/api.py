@@ -1724,7 +1724,7 @@ def change_user_role():
         status=204)
     return response
 
-@app.route("tutor/create_stueble", methods=["POST"])
+@app.route("/tutor/create_stueble", methods=["POST"])
 def create_stueble():
     """
     creates a new stueble event
