@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS password_resets (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     reset_code UUID UNIQUE NOT NULL,
+    additional_data JSONB DEFAULT NULL, -- to store optional changes in users
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
