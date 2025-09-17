@@ -274,7 +274,15 @@ def signup_data():
             mimetype="application/json")
         return response
 
-    '''result = users.create_password_reset_code(connection=conn, cursor=cursor, user_id=None)
+    # hash password
+    hashed_password = hp.hash_pwd(user_info["password"])
+    user_info["password_hash"] = hashed_password
+    del user_info["password"]
+
+    additional_data = user_info
+
+    result = users.create_password_reset_code(connection=conn, cursor=cursor, user_id=None, additional_data=additional_data)
+
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -297,12 +305,40 @@ def signup_data():
         return response
     response = Response(
         status=204)
-    return response'''
+    return response
 
-    # hash password
-    hashed_password = hp.hash_pwd(user_info["password"])
-    user_info["password_hash"] = hashed_password
-    del user_info["password"]
+@app.route("/auth/verify_signup", methods=["POST"])
+def verify_signup():
+    """
+    verifies the signup
+    """
+
+    # load data
+    data = request.get_json()
+    token = data.get("token", None)
+
+    if token is None:
+        response = Response(
+            response=json.dumps({"error": "The token must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # verify token
+    result = users.confirm_reset_code(cursor=cursor, reset_code=token, additional_data=True)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    additional_data = result["data"][1]
+    user_info = json.loads(additional_data)
 
     # add user to table
     result = users.add_user(
@@ -324,7 +360,7 @@ def signup_data():
     # create a new session
     result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
 
-    close_conn_cursor(conn, cursor) # close conn, cursor
+    close_conn_cursor(conn, cursor)  # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"error": str(result["error"])}),
@@ -344,6 +380,8 @@ def signup_data():
                         secure=True,
                         samesite='Lax')
     return response
+
+
 
 @app.route("/auth/logout", methods=["POST"])
 def logout():
