@@ -249,7 +249,7 @@ def signup_data():
 
     # check, whether email is valid
     try:
-        user_info["email"] = Email(email=user_info["email"])
+        user_info["email"] = Email(email=user_info["email"]).value
     except ValueError:
         response = Response(
             response=json.dumps({"error": "Invalid email format"}),
@@ -261,8 +261,8 @@ def signup_data():
     conn, cursor = get_conn_cursor()
 
     user_role = UserRole.USER
-    user_info["user_role"] = user_role
-    user_info["residence"] = Residence(user_info["residence"])
+    user_info["user_role"] = user_role.value
+    user_info["residence"] = Residence(user_info["residence"]).value
     check_info = user_info.copy()
     del check_info["password"]
     # check whether user data is unique
