@@ -281,7 +281,7 @@ def signup_data():
 
     additional_data = user_info
 
-    result = users.create_password_reset_code(connection=conn, cursor=cursor, user_id=None, additional_data=additional_data)
+    result = users.create_verification_code(connection=conn, cursor=cursor, user_id=None, additional_data=additional_data)
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
@@ -328,7 +328,7 @@ def verify_signup():
     conn, cursor = get_conn_cursor()
 
     # verify token
-    result = users.confirm_reset_code(cursor=cursor, reset_code=token, additional_data=True)
+    result = users.confirm_verification_code(cursor=cursor, reset_code=token, additional_data=True)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1419,7 +1419,7 @@ def reset_password_mail():
 
     email = Email(email=email)
 
-    result = users.create_password_reset_code(connection=conn, cursor=cursor, user_id=user_id)
+    result = users.create_verification_code(connection=conn, cursor=cursor, user_id=user_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -1472,7 +1472,7 @@ def confirm_code():
     conn, cursor = get_conn_cursor()
 
     # check whether reset token exists
-    result = users.confirm_reset_code(cursor=cursor, reset_code=reset_token)
+    result = users.confirm_verification_code(cursor=cursor, reset_code=reset_token)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
