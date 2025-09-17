@@ -34,8 +34,9 @@ pool = db.create_pool()
 
 # initialize flask app
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
 app.pool = pool
+
+socketio = SocketIO(app)
 
 host_upwards_room = "host_upwards"
 
