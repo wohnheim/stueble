@@ -36,7 +36,7 @@ pool = db.create_pool()
 app = Flask(__name__)
 app.pool = pool
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode="eventlet")
 
 host_upwards_room = "host_upwards"
 
