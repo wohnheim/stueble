@@ -2151,19 +2151,6 @@ def get_public_key(msg):
     }}, use_bin_type=True))
     return
 
-
-@NotImplemented
-# TODO: implement
-@socketio.on("guestRemoved")
-def guest_removed():
-    """
-
-    :return:
-    """
-
-    # get connection, cursor
-    conn, cursor = get_conn_cursor()
-
 @app.route("/websocket_local", methods=["POST"])
 def websocket_change():
     """
