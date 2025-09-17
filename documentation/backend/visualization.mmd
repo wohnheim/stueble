@@ -1,7 +1,14 @@
 flowchart LR
     %% Database
     subgraph DB[Database]
-        allowedUsers[(allowedUsers)]
+        subgraph allowedUsers
+            ids[(ids)]
+            created_at[(created_at)]
+            room[(room)]
+            residence[(residence)]
+            firstname[(firstname)]
+            lastname[(lastname)]
+        end
         registeredUsers[(registeredUsers)]
         gaesteListe[(gaesteListe)]
     end

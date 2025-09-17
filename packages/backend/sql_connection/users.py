@@ -364,3 +364,31 @@ def add_verification_method(connection, cursor, method: VerificationMethod,
         return {"success": False, "error": "error occurred"}
 
     return {"success": True}
+
+def get_users(cursor,
+              information: list[str | int],
+              keywords: tuple[str] | list[str] = ("id",)) -> dict:
+    """
+    retrieves users from the table users
+
+    Parameters:
+        cursor: cursor for the connection
+        information (list[str | int]): list of user emails / usernames
+        keywords (tuple[str] | list[str]): list of fields to be retrieved, defaults to ["*"]
+    Returns:
+        dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": users} otherwise
+    """
+    keywords = list(keywords)
+    users_list = [(i, "email") if "@" in i else (i, "user_name") for i in information]
+
+    specific_where = f' OR '.join([f"{i[1]} = {i[0]}"  for i in users_list])
+    result = db.read_table(
+        cursor=cursor,
+        table_name="users",
+        keywords=keywords,
+        expect_single_answer=False,
+        specific_where=specific_where)
+
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "No users found."}
+    return result
