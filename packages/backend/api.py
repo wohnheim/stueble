@@ -1,4 +1,5 @@
 import datetime
+from zoneinfo import ZoneInfo
 
 from flask import Flask, request, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -1678,6 +1679,98 @@ def change_user_role():
         response = Response(
             response=json.dumps({"error": "No user found with the given user_id / email"}),
             status=400,
+            mimetype="application/json")
+        return response
+
+    response = Response(
+        status=204)
+    return response
+
+@app.route("tutor/create_stueble", methods=["POST"])
+def create_stueble():
+    """
+    creates a new stueble event
+    """
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"error": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only tutors or above can change user role
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.TUTOR)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "invalid permissions, need role tutor or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    # load data
+    data = request.get_json()
+    date = data.get("timestamp", None)
+    motto = data.get("motto", None)
+    hosts = data.get("hosts", None)
+    shared_apartment = data.get("shared_apartment", None)
+
+    if date is None or motto is None or hosts is None or hosts == [] or motto == "":
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "date, motto and hosts must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    try:
+        date = datetime.datetime.fromtimestamp(date, tz=ZoneInfo("Europe/Berlin"))
+    except ValueError:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "Invalid timestamp"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    user_ids = users.get_users(cursor=cursor, information=hosts)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    if len(user_ids["data"]) != len(hosts):
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "One or more hosts not found"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    result = motto.create_stueble(connection=conn,
+                                  cursor=cursor,
+                                  date=date,
+                                  motto=motto,
+                                  hosts=hosts,
+                                  shared_apartment=shared_apartment)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"error": str(result["error"])}),
+            status=500,
             mimetype="application/json")
         return response
 
