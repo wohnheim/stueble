@@ -341,8 +341,6 @@ def confirm_verification_code(cursor, reset_code: str, additional_data: bool=Fal
         return result
     if result["data"] is None:
         return {"success": False, "error": "Reset code doesn't exist."}
-    if additional_data:
-        return result
     return clean_single_data(result)
 
 def add_verification_method(connection, cursor, method: VerificationMethod,

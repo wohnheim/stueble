@@ -339,7 +339,9 @@ def verify_signup():
         return response
 
     additional_data = result["data"][1]
-    user_info = json.loads(additional_data)
+    user_info = additional_data
+
+    user_info = {k: Residence(v) if k == "residence" else UserRole(v) if k == "user_role" else Email(v) if k == "email" else v for k, v in user_info.items()}
 
     # add user to table
     result = users.add_user(
