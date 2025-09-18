@@ -28,20 +28,20 @@ def validate_user_data(cursor,
               'status' is 200 for success, 400 for client errors, and 500 for server errors.
     """
     if not isinstance(user_role, UserRole) or (user_role.value == "admin"):
-        return {"success": False, "error": "Invalid user role, admin not allowed"}
+        return {"success": False, "error": "Invalid user role, admin not allowed", "status": 400}
     try:
         room = int(room)
     except ValueError:
-        return {"success": False, "error": "Room must be a number"}
+        return {"success": False, "error": "Room must be a number", "status": 400}
 
     if not isinstance(residence, Residence):
-        return {"success": False, "error": "Invalid residence"}
+        return {"success": False, "error": "Invalid residence", "status": 400}
 
     if not first_name or not last_name:
-        return {"success": False, "error": "First name and last name cannot be or None"}
+        return {"success": False, "error": "First name and last name cannot be or None", "status": 400}
 
     if not isinstance(email, Email):
-        return {"success": False, "error": "Invalid email format, must be of type Email"}
+        return {"success": False, "error": "Invalid email format, must be of type Email", "status": 400}
 
     query = """SELECT email, user_name, room, residence FROM users WHERE email = %s OR user_name = %s OR (room = %s AND residence = %s);"""
     result = db.custom_call(
