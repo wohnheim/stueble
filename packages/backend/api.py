@@ -353,12 +353,17 @@ def verify_signup():
     user_info = {k: Residence(v) if k == "residence" else UserRole(v) if k == "user_role" else Email(v) if k == "email" else v for k, v in user_info.items()}
 
     # add user to table
+    # TODO maybe check, whether correct user is updated and whether it is really allowed
     if method == "update":
+        user_data = {}
+        user_data["user_role"] = user_info["user_role"]
+        user_data["password_hash"] = user_info["password_hash"]
+        user_data["user_name"] = user_info["user_name"]
         result = users.update_user(
             connection=conn,
             cursor=cursor,
             user_email=user_info["email"],
-            **user_info)
+            **user_data)
     else:
         result = users.add_user(
             connection=conn,
