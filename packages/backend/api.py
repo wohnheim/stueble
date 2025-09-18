@@ -155,7 +155,7 @@ def login():
 
     if user[1] is None:
         response = Response(
-            response=json.dumps({"error": "account was deleted, can be reactivated by resetting password using email"}),
+            response=json.dumps({"error": "account was deleted, can be reactivated by signup"}),
             status=401,
             mimetype="application/json")
         return response
@@ -358,7 +358,6 @@ def verify_signup():
             connection=conn,
             cursor=cursor,
             user_email=user_info["email"],
-            returning="id",
             **user_info)
     else:
         result = users.add_user(
