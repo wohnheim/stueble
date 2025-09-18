@@ -60,6 +60,21 @@ def validate_user_data(cursor,
     room_residence_list = [(row[2], row[3]) for row in result["data"]]
 
     if len(result["data"]) != 0:
+        query = """SELECT email, user_name, room, residence FROM users WHERE (email = %s OR user_name = %s OR (room = %s AND residence = %s)) AND password_hash IS NOT NULL"""
+        result = db.custom_call(
+            connection=None,
+            cursor=cursor,
+            query=query,
+            variables=[email.email, user_name, room, residence.value],
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
+        
+        if result["success"] is False:
+            result["status"] = 500
+            return result
+        
+        if len(result["data"]) == 0:
+            return {"success": True, "status": 200, "warning": "An account was already created, but deleted."}
+
         if (room, residence.value) in room_residence_list:
             return {"success": False, "error": "For this apartment an account already exists.", "status": 400}
         if email.email in email_list:
@@ -67,4 +82,4 @@ def validate_user_data(cursor,
         if user_name in user_name_list:
             return {"success": False, "error": "Username already exists.", "status": 400}
 
-    return {"success": True, "status": 200}
+    return {"success": True, "status": 200, "warning": None}
