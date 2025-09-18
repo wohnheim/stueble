@@ -295,6 +295,7 @@ def create_verification_code(connection, cursor, user_id: int | None, additional
     if user_id is not None:
         arguments["user_id"] = user_id
     if additional_data is not None:
+        additional_data = {k: v.value if isinstance(v, Enum) else v.email if isinstance(v, Email) else v for k, v in additional_data.items()}
         additional_data = json.dumps(additional_data)
         arguments["additional_data"] = additional_data
     if arguments == {}:
