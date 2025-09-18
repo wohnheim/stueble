@@ -274,13 +274,20 @@ def signup_data():
             status=result["status"],
             mimetype="application/json")
         return response
+    
 
     # hash password
     hashed_password = hp.hash_pwd(user_info["password"])
     user_info["password_hash"] = hashed_password
     del user_info["password"]
 
+
     additional_data = user_info
+    
+    if result["warning"] is not None:
+        additional_data["method"] = "update"
+    else:
+        additional_data["method"] = "create"
 
     result = users.create_verification_code(connection=conn, cursor=cursor, user_id=None, additional_data=additional_data)
 
@@ -339,16 +346,26 @@ def verify_signup():
         return response
 
     additional_data = result["data"][1]
-    user_info = additional_data
+    method = additional_data["method"]
+    user_info = additional_data.copy()
+    del user_info["method"]
 
     user_info = {k: Residence(v) if k == "residence" else UserRole(v) if k == "user_role" else Email(v) if k == "email" else v for k, v in user_info.items()}
 
     # add user to table
-    result = users.add_user(
-        connection=conn,
-        cursor=cursor,
-        returning="id",
-        **user_info)
+    if method == "update":
+        result = users.update_user(
+            connection=conn,
+            cursor=cursor,
+            user_email=user_info["email"],
+            returning="id",
+            **user_info)
+    else:
+        result = users.add_user(
+            connection=conn,
+            cursor=cursor,
+            returning="id",
+            **user_info)
 
     # if server error occurred, return error
     if result["success"] is False:
@@ -1399,7 +1416,7 @@ def reset_password_mail():
     conn, cursor = get_conn_cursor()
 
     # check whether user with email exists
-    result = users.get_user(cursor=cursor, keywords=["id", "first_name", "last_name", "email"], expect_single_answer=True, **value)
+    result = users.get_user(cursor=cursor, keywords=["id", "first_name", "last_name", "email", "password_hash"], expect_single_answer=True, **value)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1414,11 +1431,19 @@ def reset_password_mail():
             status=404,
             mimetype="application/json")
         return response
-
     user_id = result["data"][0]
     first_name = result["data"][1]
     last_name = result["data"][2]
     email = result["data"][3]
+    password_hash = result["data"][4]
+
+    if password_hash is None or password_hash == "":
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"error": "User was deleted, needs to signup again."}),
+            status=400,
+            mimetype="application/json")
+        return response
 
     email = Email(email=email)
 
