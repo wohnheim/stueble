@@ -101,14 +101,14 @@ def login():
     # password can't be empty
     if password == "":
         response = Response(
-            response=json.dumps({"error": "password cannot be empty"}),
+            response=json.dumps({"code": 401, "message": "password cannot be empty"}),
             status=401,
             mimetype="application/json")
         return response
 
     if name is None:
         response = Response(
-            response=json.dumps({"error": "specify user"}),
+            response=json.dumps({"code": 400, "message": "specify user"}),
             status=400,
             mimetype="application/json")
         return response
@@ -119,7 +119,7 @@ def login():
             name = Email(email=name)
         except ValueError:
             response = Response(
-                response=json.dumps({"error": "Invalid email format"}),
+                response=json.dumps({"code": 400, "message": "Invalid email format"}),
                 status=400,
                 mimetype="application/json")
             return response
@@ -130,7 +130,7 @@ def login():
     # if data is not valid return error
     if password is None:
         response = Response(
-            response=json.dumps({"error": "specify password"}),
+            response=json.dumps({"code": 400, "message": "specify password"}),
             status=400,
             mimetype="application/json")
         return response
@@ -145,7 +145,7 @@ def login():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -155,7 +155,7 @@ def login():
 
     if user[1] is None:
         response = Response(
-            response=json.dumps({"error": "account was deleted, can be reactivated by signup"}),
+            response=json.dumps({"code": 401, "message": "account was deleted, can be reactivated by signup"}),
             status=401,
             mimetype="application/json")
         return response
@@ -164,7 +164,7 @@ def login():
     if not hp.match_pwd(password, user[1]):
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid password"}),
+            response=json.dumps({"code": 401, "message": "invalid password"}),
             status=401,
             mimetype="application/json")
         return response
@@ -175,7 +175,7 @@ def login():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -206,7 +206,7 @@ def signup_data():
     privacy_policy = data.get("privacyPolicy", None)
     if privacy_policy is None or privacy_policy is False:
         response = Response(
-            response=json.dumps({"error": "Privacy policy needs to be accepted"}),
+            response=json.dumps({"code": 400, "message": "Privacy policy needs to be accepted"}),
             status=400,
             mimetype="application/json")
         return response
@@ -224,7 +224,7 @@ def signup_data():
     # if a value wasn't set, return error
     if any(e is None for e in user_info.values()):
         response = Response(
-            response=json.dumps({"error": f"The following fields must be specified: {', '.join([key for key, value in user_info.items() if value is None])}"}),
+            response=json.dumps({"code": 400, "message": f"The following fields must be specified: {', '.join([key for key, value in user_info.items() if value is None])}"}),
             status=400,
             mimetype="application/json")
         return response
@@ -234,7 +234,7 @@ def signup_data():
         user_info["room"] = int(user_info["room"])
     except ValueError:
         response = Response(
-            response=json.dumps({"error": "Room must be a number"}),
+            response=json.dumps({"code": 400, "message": "Room must be a number"}),
             status=400,
             mimetype="application/json")
         return response
@@ -242,7 +242,7 @@ def signup_data():
     # check, whether residence is valid
     if not is_valid_residence(user_info["residence"]):
         response = Response(
-            response=json.dumps({"error": "Invalid residence"}),
+            response=json.dumps({"code": 400, "message": "Invalid residence"}),
             status=400,
             mimetype="application/json")
         return response
@@ -252,7 +252,7 @@ def signup_data():
         user_info["email"] = Email(email=user_info["email"])
     except ValueError:
         response = Response(
-            response=json.dumps({"error": "Invalid email format"}),
+            response=json.dumps({"code": 400, "message": "Invalid email format"}),
             status=400,
             mimetype="application/json")
         return response
@@ -270,7 +270,7 @@ def signup_data():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": result["status"], "message": str(result["error"])}),
             status=result["status"],
             mimetype="application/json")
         return response
@@ -294,7 +294,7 @@ def signup_data():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -307,7 +307,7 @@ def signup_data():
 
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -327,7 +327,7 @@ def verify_signup():
 
     if token is None:
         response = Response(
-            response=json.dumps({"error": "The token must be specified"}),
+            response=json.dumps({"code": 400, "message": "The token must be specified"}),
             status=400,
             mimetype="application/json")
         return response
@@ -340,7 +340,7 @@ def verify_signup():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -374,7 +374,7 @@ def verify_signup():
     # if server error occurred, return error
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -387,7 +387,7 @@ def verify_signup():
     close_conn_cursor(conn, cursor)  # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -415,7 +415,7 @@ def logout():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
+            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -431,7 +431,7 @@ def logout():
     # if nothing could be removed, return error
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -450,7 +450,7 @@ def delete():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
+            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -464,7 +464,7 @@ def delete():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -472,7 +472,7 @@ def delete():
     if result["data"][1] == UserRole.ADMIN.value:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "Admins cannot be deleted"}),
+            response=json.dumps({"code": 403, "message": "Admins cannot be deleted"}),
             status=403,
             mimetype="application/json")
         return response
@@ -485,7 +485,7 @@ def delete():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -495,7 +495,7 @@ def delete():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -538,7 +538,7 @@ def get_motto(date: str | None = None):
         close_conn_cursor(conn, cursor) # close conn, cursor
         if result["success"] is False:
             response = Response(
-                response=json.dumps({"error": str(result["error"])}),
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
             return response
@@ -554,7 +554,7 @@ def get_motto(date: str | None = None):
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -599,7 +599,7 @@ def guests():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
+            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -612,14 +612,14 @@ def guests():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role host or above"}),
+            response=json.dumps({"code": 401, "message": "invalid permissions, need role host or above"}),
             status=401,
             mimetype="application/json")
         return response
@@ -629,7 +629,7 @@ def guests():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -650,7 +650,7 @@ def user():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
+            response=json.dumps({"code": 400, "message": "The session_id must be specified"}),
             status=400,
             mimetype="application/json")
         return response
@@ -663,7 +663,7 @@ def user():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -700,7 +700,7 @@ def search():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
+            response=json.dumps({"code": 400, "message": "The session_id must be specified"}),
             status=400,
             mimetype="application/json")
         return response
@@ -714,14 +714,14 @@ def search():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need at least role host"}),
+            response=json.dumps({"code": 401, "message": "invalid permissions, need at least role host"}),
             status=401,
             mimetype="application/json")
         return response
@@ -731,7 +731,7 @@ def search():
 
     if data is None or not isinstance(data, dict):
         response = Response(
-            response=json.dumps({"error": "The data must be a valid json object"}),
+            response=json.dumps({"code": 400, "message": "The data must be a valid json object"}),
             status=400,
             mimetype="application/json")
         return response
@@ -744,7 +744,7 @@ def search():
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
         response = Response(
-            response=json.dumps({"error": f"Only the following keys are allowed: {', '.join(allowed_keys)}"}),
+            response=json.dumps({"code": 400, "message": f"Only the following keys are allowed: {', '.join(allowed_keys)}"}),
             status=400,
             mimetype="application/json")
         return response
@@ -753,7 +753,7 @@ def search():
     # if only either room or residence but not both were specified, return error
     if any(key in data.keys() for key in ["room", "residence"]) and not all(key in data.keys() for key in ["room", "residence"]):
         response = Response(
-            response=json.dumps({"error": "If room or residence is specified, both must be specified"}),
+            response=json.dumps({"code": 400, "message": "If room or residence is specified, both must be specified"}),
             status=400,
             mimetype="application/json")
         return response
@@ -789,7 +789,7 @@ def search():
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -849,7 +849,7 @@ def guest_change():
 
     if session_id is None or user_uuid is None or present is None:
         response = Response(
-            response=json.dumps({"error": f"The session_id, uuid, present must be specified"}),
+            response=json.dumps({"code": 401, "message": f"The session_id, uuid, present must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -862,14 +862,14 @@ def guest_change():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role host or above"}),
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -882,7 +882,7 @@ def guest_change():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -892,7 +892,7 @@ def guest_change():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -910,7 +910,7 @@ def guest_change():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -948,7 +948,7 @@ def guest_change():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -974,7 +974,7 @@ def attend_stueble():
 
     if session_id is None or date is None:
         response = Response(
-            response=json.dumps({"error": f"The session_id and date must be specified"}),
+            response=json.dumps({"code": 401, "message": f"The session_id and date must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -988,14 +988,14 @@ def attend_stueble():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role user or above"}),
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -1007,7 +1007,7 @@ def attend_stueble():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1028,7 +1028,7 @@ def attend_stueble():
             error, status_code = str(result["error"]).split("; code: ")
             status_code = int(status_code)
         response = Response(
-            response=json.dumps({"error": error}),
+            response=json.dumps({"code": status_code, "message": error}),
             status=status_code,
             mimetype="application/json")
         return response
@@ -1048,7 +1048,7 @@ def attend_stueble():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1066,7 +1066,7 @@ def attend_stueble():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1102,7 +1102,7 @@ def attend_stueble():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1149,14 +1149,14 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role user or above"}),
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -1167,7 +1167,7 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1195,7 +1195,7 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1205,7 +1205,7 @@ def invite_friend():
         if len(possible_users) == 0:
             close_conn_cursor(conn, cursor)
             response = Response(
-                response=json.dumps({"error": "No such user found"}),
+                response=json.dumps({"code": 404, "message": "No such user found"}),
                 status=404,
                 mimetype="application/json")
             return response
@@ -1223,7 +1223,7 @@ def invite_friend():
             if result["success"] is False:
                 close_conn_cursor(conn, cursor)
                 response = Response(
-                    response=json.dumps({"error": str(result["error"])}),
+                    response=json.dumps({"code": 500, "message": str(result["error"])}),
                     status=500,
                     mimetype="application/json")
                 return response
@@ -1238,14 +1238,14 @@ def invite_friend():
             if result["success"] is False:
                 close_conn_cursor(conn, cursor)
                 response = Response(
-                    response=json.dumps({"error": str(result["error"])}),
+                    response=json.dumps({"code": 500, "message": str(result["error"])}),
                     status=500,
                     mimetype="application/json")
                 return response
             if result["data"] is None:
                 close_conn_cursor(conn, cursor)
                 response = Response(
-                    response=json.dumps({"error": "Data integrity error, user not found"}),
+                    response=json.dumps({"code": 500, "message": "Data integrity error, user not found"}),
                     status=500,
                     mimetype="application/json")
                 return response
@@ -1254,14 +1254,14 @@ def invite_friend():
         if len(users_list) == 0:
             close_conn_cursor(conn, cursor)
             response = Response(
-                response=json.dumps({"error": "No such user found"}),
+                response=json.dumps({"code": 401, "message": "No such user found"}),
                 status=401,
                 mimetype="application/json")
             return response
         if len(users_list) > 1:
             close_conn_cursor(conn, cursor)
             response = Response(
-                response=json.dumps({"error": "Multiple users found, please contact an admin"}),
+                response=json.dumps({"code": 409, "message": "Multiple users found, please contact an admin"}),
                 status=409,
                 mimetype="application/json")
             return response
@@ -1293,7 +1293,7 @@ def invite_friend():
             error, status_code = str(result["error"]).split("; code: ")
             status_code = int(status_code)
         response = Response(
-            response=json.dumps({"error": error}),
+            response=json.dumps({"code": status_code, "message": error}),
             status=status_code,
             mimetype="application/json")
         return response
@@ -1314,7 +1314,7 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1332,7 +1332,7 @@ def invite_friend():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1366,7 +1366,7 @@ def invite_friend():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1396,7 +1396,7 @@ def reset_password_mail():
     name = data.get("user", None)
     if name is None:
         response = Response(
-            response=json.dumps({"error": "specify user"}),
+            response=json.dumps({"code": 400, "message": "specify user"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1407,7 +1407,7 @@ def reset_password_mail():
             name = Email(email=name)
         except ValueError:
             response = Response(
-                response=json.dumps({"error": "Invalid email format"}),
+                response=json.dumps({"code": 400, "message": "Invalid email format"}),
                 status=400,
                 mimetype="application/json")
             return response
@@ -1423,14 +1423,14 @@ def reset_password_mail():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
     if result["data"] is None:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "No user with the given email exists"}),
+            response=json.dumps({"code": 404, "message": "No user with the given email exists"}),
             status=404,
             mimetype="application/json")
         return response
@@ -1443,7 +1443,7 @@ def reset_password_mail():
     if password_hash is None or password_hash == "":
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "User was deleted, needs to signup again."}),
+            response=json.dumps({"code": 400, "message": "User was deleted, needs to signup again."}),
             status=400,
             mimetype="application/json")
         return response
@@ -1454,7 +1454,7 @@ def reset_password_mail():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1466,7 +1466,7 @@ def reset_password_mail():
     result = gmail.send_mail(recipient=email, subject=subject, body=body)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1487,14 +1487,14 @@ def confirm_code():
 
     if reset_token is None or new_password is None:
         response = Response(
-            response=json.dumps({"error": f"The {'reset_token' if reset_token is None else 'new_password' if new_password is None else 'reset_token and new_password'} must be specified"}),
+            response=json.dumps({"code": 400, "message": f"The {'reset_token' if reset_token is None else 'new_password' if new_password is None else 'reset_token and new_password'} must be specified"}),
             status=400,
             mimetype="application/json")
         return response
 
     if new_password == "":
         response = Response(
-            response=json.dumps({"error": "password cannot be empty"}),
+            response=json.dumps({"code": 400, "message": "password cannot be empty"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1507,7 +1507,7 @@ def confirm_code():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1522,7 +1522,7 @@ def confirm_code():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1533,7 +1533,7 @@ def confirm_code():
         if result["error"] != "no sessions found":
             close_conn_cursor(conn, cursor)
             response = Response(
-                response=json.dumps({"error": str(result["error"])}),
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
             return response
@@ -1543,7 +1543,7 @@ def confirm_code():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -1572,7 +1572,7 @@ def change_user_data():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
+            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -1585,14 +1585,14 @@ def change_user_data():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role user or above"}),
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -1604,13 +1604,13 @@ def change_user_data():
         new_pwd = data.get("newPassword", None)
         if new_pwd is None:
             response = Response(
-                response=json.dumps({"error": "The new_password must be specified"}),
+                response=json.dumps({"code": 400, "message": "The new_password must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
         if new_pwd == "":
             response = Response(
-                response=json.dumps({"error": "Password cannot be empty"}),
+                response=json.dumps({"code": 400, "message": "Password cannot be empty"}),
                 status=400,
                 mimetype="application/json")
             return response
@@ -1619,13 +1619,13 @@ def change_user_data():
         username = data.get("username", None)
         if username is None:
             response = Response(
-                response=json.dumps({"error": f"Username must be specified"}),
+                response=json.dumps({"code": 400, "message": f"Username must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
         if username == "":
             response = Response(
-                response=json.dumps({"error": "Username cannot be empty"}),
+                response=json.dumps({"code": 400, "message": "Username cannot be empty"}),
                 status=400,
                 mimetype="application/json")
             return response
@@ -1639,13 +1639,13 @@ def change_user_data():
         error = result["error"]
         if f"Key (user_name)=({data['user_name']}) already exists." in error:
             response = Response(
-                response=json.dumps({"error": "Username already exists"}),
+                response=json.dumps({"code": 400, "message": "Username already exists"}),
                 status=400,
                 mimetype="application/json")
             return response
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
@@ -1664,7 +1664,7 @@ def change_user_role():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
+            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -1677,14 +1677,14 @@ def change_user_role():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role tutor or above"}),
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -1693,7 +1693,7 @@ def change_user_role():
     name = data.get("user", None)
     if name is None:
         response = Response(
-            response=json.dumps({"error": "specify user"}),
+            response=json.dumps({"code": 400, "message": "specify user"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1704,7 +1704,7 @@ def change_user_role():
             name = Email(email=name)
         except ValueError:
             response = Response(
-                response=json.dumps({"error": "Invalid email format"}),
+                response=json.dumps({"code": 400, "message": "Invalid email format"}),
                 status=400,
                 mimetype="application/json")
             return response
@@ -1716,14 +1716,14 @@ def change_user_role():
 
     if new_role is None:
         response = Response(
-            response=json.dumps({"error": "The new_role must be specified"}),
+            response=json.dumps({"code": 400, "message": "The new_role must be specified"}),
             status=400,
             mimetype="application/json")
         return response
 
     if is_valid_role(new_role) is False or new_role == "admin":
         response = Response(
-            response=json.dumps({"error": "The new_role must be a valid role (extern, user, host, tutor) and can't be admin"}),
+            response=json.dumps({"code": 400, "message": "The new_role must be a valid role (extern, user, host, tutor) and can't be admin"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1739,14 +1739,14 @@ def change_user_role():
     close_conn_cursor(conn, cursor)
     if user["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
 
     if result["data"] is None:
         response = Response(
-            response=json.dumps({"error": "No user found with the given user_id / email"}),
+            response=json.dumps({"code": 400, "message": "No user found with the given user_id / email"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1763,7 +1763,7 @@ def create_stueble():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"error": "The session_id must be specified"}),
+            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -1776,14 +1776,14 @@ def create_stueble():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "invalid permissions, need role tutor or above"}),
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
             mimetype="application/json")
         return response
@@ -1798,7 +1798,7 @@ def create_stueble():
     if date is None or motto is None or hosts is None or hosts == [] or motto == "":
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "date, motto and hosts must be specified"}),
+            response=json.dumps({"code": 400, "message": "date, motto and hosts must be specified"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1808,7 +1808,7 @@ def create_stueble():
     except ValueError:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "Invalid timestamp"}),
+            response=json.dumps({"code": 400, "message": "Invalid timestamp"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1817,14 +1817,14 @@ def create_stueble():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
     if len(user_ids["data"]) != len(hosts):
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"error": "One or more hosts not found"}),
+            response=json.dumps({"code": 400, "message": "One or more hosts not found"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1838,7 +1838,7 @@ def create_stueble():
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"error": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
@@ -2190,7 +2190,7 @@ def websocket_change():
 
     if request.remote_addr != "127.0.0.1":
         response = Response(
-            response=json.dumps({"error": "Unauthorized, only local requests are allowed"}),
+            response=json.dumps({"code": 401, "message": "Unauthorized, only local requests are allowed"}),
             status=401,
             mimetype="application/json")
         return response
@@ -2204,7 +2204,7 @@ def websocket_change():
     event = data.get("event", None)
     if first_name is None or last_name is None or event is None:
         response = Response(
-            response=json.dumps({"error": f"first_name, last_name and event must be specified"}),
+            response=json.dumps({"code": 400, "message": f"first_name, last_name and event must be specified"}),
             status=400,
             mimetype="application/json")
         return response
