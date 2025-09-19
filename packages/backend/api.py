@@ -218,7 +218,7 @@ def signup_data():
     user_info["first_name"] = data.get("firstName", None)
     user_info["last_name"] = data.get("lastName", None)
     user_info["email"] = data.get("email", None)
-    user_info["user_name"] = data.get("userName", None)
+    user_info["user_name"] = data.get("username", None)
     user_info["password"] = data.get("password", None)
 
     # if a value wasn't set, return error
@@ -1617,7 +1617,7 @@ def change_user_data():
             return response
         data["password_hash"] = hp.hash_pwd(new_pwd)
     elif request.path == "/user/change_username":
-        username = data.get("userName", None)
+        username = data.get("username", None)
         if username is None:
             response = Response(
                 response=json.dumps({"error": f"Username must be specified"}),
