@@ -564,7 +564,7 @@ def get_motto(date: str | None = None):
         mimetype="application/json")
     return response
 
-@socketio.on("requestMotto")
+@socketio.on("requestMotto", namespace="/websocket")
 def request_motto(msg):
     try:
         data = msgpack.unpack(msg, raw=False)
@@ -1845,7 +1845,7 @@ def create_stueble():
         status=204)
     return response
 
-@socketio.on("guestVerification")
+@socketio.on("guestVerification", namespace="/websocket")
 def verify_guest(msg):
     """
     sets guest verified to True
@@ -1930,7 +1930,7 @@ def verify_guest(msg):
     }, use_bin_type=True), to=host_upwards_room, skip_sid=request.sid)
     return
 
-@socketio.on("connect")
+@socketio.on("connect", namespace="/websocket")
 def handle_connect():
     """
     handle a new websocket connection
@@ -2023,7 +2023,7 @@ def handle_connect():
             }}, use_bin_type=True))
         return
 
-@socketio.on("disconnect")
+@socketio.on("disconnect", namespace="/websocket")
 def handle_disconnect():
     """
     handle a websocket disconnection
@@ -2058,7 +2058,7 @@ def handle_disconnect():
     leave_room(room=host_upwards_room)
     return
 
-@socketio.on("ping")
+@socketio.on("ping", namespace="/websocket")
 def handle_ping(msg):
     """
     handle a ping from the client
@@ -2082,7 +2082,7 @@ def handle_ping(msg):
     emit("pong", msgpack.packb({"event": "pong", "req_id": req_id}, use_bin_type=True))
     return
 
-@socketio.on("heartbeat")
+@socketio.on("heartbeat", namespace="/websocket")
 def handle_heartbeat():
     """
     handle a heartbeat from the client
@@ -2094,7 +2094,7 @@ def handle_heartbeat():
     emit("heartbeat", msgpack.packb({"event": "heartbeat"}, use_bin_type=True))
     return
 
-@socketio.on("requestQRCode")
+@socketio.on("requestQRCode", namespace="/websocket")
 def get_qrcode(msg):
     """
     get a new qr-code for a guest
@@ -2155,7 +2155,7 @@ def get_qrcode(msg):
                                         "data": data}, use_bin_type=True))
     return
 
-@socketio.on("requestPublicKey")
+@socketio.on("requestPublicKey", namespace="/websocket")
 def get_public_key(msg):
     """
     sends the public key
