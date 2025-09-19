@@ -88,8 +88,7 @@ paths:
               $ref: "#/components/requestBodies/SignupVerificationRequest"
       responses:
         "204":
-          description:
-            Successfully verified the signup. The session ID is returned in a cookie named `SID`. You need to include this cookie in subsequent requests.
+          description: Successfully verified the signup. The session ID is returned in a cookie named `SID`. You need to include this cookie in subsequent requests.
           headers:
             Set-Cookie:
               schema:
@@ -447,6 +446,38 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - host_sid: []
+
+  /motto:
+    post:
+      tags:
+        - motto
+      summary: Modify motto.
+      description: >
+        Modify the weekly motto.
+        Only the hosts are allowed to change the motto.
+      operationId: modifyMotto
+      requestBody:
+        required: true
+        description: A JSON string containing the new motto.
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        "204":
+          description: Motto Successfully updated.
         "403":
           description: Authorization failure (not a host).
         "401":
