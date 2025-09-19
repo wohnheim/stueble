@@ -46,7 +46,7 @@ paths:
       tags:
         - auth
       summary: Creates an account.
-      description: Creates an account and returns the authentication cookie.
+      description: Creates an account.
       operationId: createAccount
       requestBody:
         required: true
@@ -56,10 +56,40 @@ paths:
             schema:
               $ref: "#/components/requestBodies/SignUpRequest"
       responses:
-        "200":
+        "204":
           description: >
-            Successfully signed up.
-            The session ID is returned in a cookie named `SID`. You need to include this cookie in subsequent requests.
+            Successfully signed up first part. Now email must be verified.
+        "400":
+          description: Invalid data supplied.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+
+  /auth/verify_signup:
+    post:
+      tags:
+        - auth
+      summary: Verifies account creation.
+      description: Verifies an account and returns the authentication cookie.
+      operationId: verifiesAccountCreation
+      requestBody:
+        required: true
+        description: A JSON object containing the token from the email.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/SignupVerificationRequest"
+      responses:
+        "204":
+          description:
+            Successfully verified the signup. The session ID is returned in a cookie named `SID`. You need to include this cookie in subsequent requests.
           headers:
             Set-Cookie:
               schema:
@@ -527,6 +557,14 @@ components:
             privacyPolicy:
               type: boolean
               const: true
+
+    SignupVerificationRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Token from the verification email
+          example: abcd1234
 
     UserCreationRequest:
       allOf:
