@@ -274,13 +274,11 @@ def signup_data():
             status=result["status"],
             mimetype="application/json")
         return response
-    
 
     # hash password
     hashed_password = hp.hash_pwd(user_info["password"])
     user_info["password_hash"] = hashed_password
     del user_info["password"]
-
 
     additional_data = user_info
     
