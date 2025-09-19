@@ -16,6 +16,7 @@ cryptography
 msgpack
 eventlet
 jwcrypto
+websockets
 
 h11
 pip
