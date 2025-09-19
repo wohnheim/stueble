@@ -1132,8 +1132,8 @@ def invite_friend():
 
     if any(i is None for i in [session_id,  date,  invitee_first_name,  invitee_last_name]):
         response = Response(
-            response=json.dumps({
-                "error": f"session_id, date, invitee_first_name, invitee_last_name, invitee_email must be specified"}),
+            response=json.dumps({"code": 401,
+                "message": f"session_id, date, invitee_first_name, invitee_last_name, invitee_email must be specified"}),
             status=401,
             mimetype="application/json")
         return response
