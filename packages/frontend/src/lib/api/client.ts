@@ -67,6 +67,22 @@ class HTTPClient {
     return false;
   }
 
+  async verifyAccount(token: string) {
+    const res = await fetch("/api/auth/verify_signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+      }),
+    });
+
+    if (res.ok) return true;
+    else if (res.status == 400 || Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return false;
+  }
+
   async logout(forward = true) {
     const res = await fetch("/api/auth/logout", {
       method: "POST",
