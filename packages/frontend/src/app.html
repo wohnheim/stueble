@@ -13,7 +13,10 @@
     %sveltekit.head%
 
     <!-- Description -->
-    <meta name="description" content="Melde dich einfach beim nächsten Stüble im HES an." />
+    <meta
+      name="description"
+      content="Melde dich einfach beim nächsten Stüble im HES an."
+    />
     <meta name="keywords" content="Stüble, HES, Augsburg" />
     <meta name="author" content="Quentin Frey et al." />
 
@@ -174,13 +177,14 @@
   </head>
 
   <body data-sveltekit-preload-data="hover">
-    <div style="display: contents">%sveltekit.body%</div>
+    <div>%sveltekit.body%</div>
   </body>
 </html>
 
 <style>
   html,
-  body {
+  body,
+  body > div {
     height: 100%;
     width: 100%;
     margin: 0;
@@ -192,8 +196,6 @@
   }
 
   body {
-    position: absolute;
-    top: 0;
     background: var(--background);
   }
 
