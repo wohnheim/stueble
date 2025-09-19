@@ -301,7 +301,7 @@ def signup_data():
     verification_token = result["data"]
 
     subject = "Neuer Benutzeraccount für das Stüble"
-    body = f"""Hallo {user_info["first_name"]} {user_info["last_name"]},\n\nmit diesem Code kannst du deinen Account bestätigen: {verification_token}\nFalls du keinen neuen Account erstellt hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+    body = f"""Hallo {user_info["first_name"]} {user_info["last_name"]},\n\nklicke diesen Link, um deinen Account zu bestätigen:\n\nhttps://stueble.pages.dev/verify?token={verification_token}\n\nFalls du keinen neuen Account erstellt hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
     result = gmail.send_mail(recipient=user_info["email"], subject=subject, body=body)
 
