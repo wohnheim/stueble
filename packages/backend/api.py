@@ -659,7 +659,7 @@ def user():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_role"])
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid"])
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -676,8 +676,7 @@ def user():
             "roomNumber": data[2],
             "residence": data[3],
             "email": data[4],
-            "capabilities": [""] if UserRole(data[5]) <= UserRole.USER else ["host"] if UserRole(
-                data[5]) < UserRole.ADMIN else ["host", "admin"]}
+            "id": data[5]}
 
     response = Response(
         response=json.dumps(user),
