@@ -5,3 +5,4 @@ do_not_track
 .env
 venv
 .idea
+.vscode
