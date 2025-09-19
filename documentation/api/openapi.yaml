@@ -16,7 +16,7 @@ paths:
       operationId: login
       requestBody:
         required: true
-        description: A JSON object containing the email and password.
+        description: A JSON object containing the username and password.
         content:
           application/json:
             schema:
@@ -181,7 +181,7 @@ paths:
               schema:
                 $ref: "#/components/responses/Error"
       security:
-        - host_sid: []
+        - guest_sid: []
 
     post:
       tags:
@@ -243,7 +243,7 @@ paths:
               schema:
                 $ref: "#/components/responses/Error"
       security:
-        - host_sid: []
+        - guest_sid: []
 
   /websocket:
     get:
@@ -356,6 +356,30 @@ paths:
                 $ref: "#/components/responses/Error"
       security:
         - host_sid: []
+
+    get:
+      tags:
+        - users
+      summary: Get user properties.
+      description: Get own user properties.
+      operationId: getUser
+      responses:
+        "200":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - guest_sid: []
 
   /user/search:
     get:
@@ -482,7 +506,7 @@ components:
     LoginRequest:
       type: object
       properties:
-        email:
+        username:
           type: string
           example: john.smith@example.com
         password:
@@ -494,7 +518,7 @@ components:
         - $ref: "#/components/schemas/User"
         - type: object
           properties:
-            email:
+            username:
               type: string
               example: john.smith@example.com
             password:
