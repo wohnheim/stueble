@@ -2,7 +2,7 @@ from flask import Response
 import msgpack
 import json
 
-def http_to_websocket_response(response: Response, event: str) -> bytes:
+def http_to_data(response: Response) -> bytes:
     """
     Turns an HTTP response into a WebSocket-compatible response.
 
@@ -16,6 +16,4 @@ def http_to_websocket_response(response: Response, event: str) -> bytes:
     body = json.loads(response.get_data(as_text=True))
     body["code"] = status_code
 
-    diction = msgpack.packb({"event": event, "data": body}, use_bin_type=True)
-
-    return diction
+    return body
