@@ -28,4 +28,4 @@ public_key = pem_public.decode('utf-8')
 os.environ["PRIVATE_KEY"] = private_key
 os.environ["PUBLIC_KEY"] = public_key
 
-print("Keys stored in configurations table.")
+print("Keys stored in env variables.")
