@@ -143,9 +143,9 @@ async def handle_ws(websocket):
             elif event == "disconnect":
                 await handle_disconnect(websocket=websocket)
             elif event == "ping":
-                if data is None or req_id is None:
+                if req_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
-                         "message": "data and reqId must be specified"})
+                         "message": "reqId must be specified"})
                     continue
                 await handle_ping(websocket=websocket, msg=data, req_id=req_id)
             elif event == "heartbeat":
