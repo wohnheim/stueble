@@ -11,8 +11,6 @@
 
   let progress = $state(0);
   let progress2Mode = $state<"login" | "register">("login");
-  let setupError: string = $state("");
-  let actionDisabled = $state(true);
 
   let firstNameValid = $state(true);
   let lastNameValid = $state(true);
