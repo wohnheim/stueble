@@ -60,7 +60,11 @@
     <div>
       <button
         class="top-margin"
-        onclick={() => ui_object.openDialog({ mode: "qrcode" })}
+        onclick={() =>
+          ui_object.openEditDialog({
+            title: "QR-Code scannen",
+            type: "qrcode",
+          })}
       >
         <i>qr_code</i>
         <span>QR-Code scannen</span>

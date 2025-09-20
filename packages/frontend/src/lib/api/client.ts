@@ -237,6 +237,22 @@ class HTTPClient {
 
     return null;
   }
+
+  /* Motto */
+
+  async modifyMotto(motto: string) {
+    const res = await fetch("/api/motto", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(motto),
+    });
+
+    if (res.ok) return true;
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return false;
+  }
 }
 
 class WebSocketClient {
