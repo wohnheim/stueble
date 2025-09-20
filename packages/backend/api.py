@@ -516,7 +516,7 @@ def user():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid"])
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid", "user_name"])
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -533,7 +533,8 @@ def user():
             "roomNumber": data[2],
             "residence": data[3],
             "email": data[4],
-            "id": data[5]}
+            "id": data[5], 
+            "username": data[6]}
 
     response = Response(
         response=json.dumps(user),
@@ -691,12 +692,11 @@ def guest_change():
     # load data
     data = request.get_json()
     session_id = request.cookies.get("SID", None)
-    user_uuid = data.get("id", None)
     present = data.get("present", None)
 
-    if session_id is None or user_uuid is None or present is None:
+    if session_id is None is None or present is None:
         response = Response(
-            response=json.dumps({"code": 401, "message": f"The session_id, uuid, present must be specified"}),
+            response=json.dumps({"code": 401, "message": f"The session_id, present must be specified"}),
             status=401,
             mimetype="application/json")
         return response
