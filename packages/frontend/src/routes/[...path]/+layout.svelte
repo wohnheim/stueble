@@ -56,7 +56,7 @@
       if (localStorage.getItem("loggedIn") == "true") {
         continueMount();
 
-        /* if (get(apiClient("ws").connected)) continueMount();
+        if (get(apiClient("ws").connected)) continueMount();
         else {
           const unsubscribe = apiClient("ws").connected.subscribe(
             async (connected) => {
@@ -66,7 +66,7 @@
               }
             },
           );
-        } */
+        }
       }
     }
   });
