@@ -1,11 +1,9 @@
 <script lang="ts">
+  import type { GuestExtern, GuestIntern, QRCodeData } from "$lib/api/types";
   import { ui_object, type RouteHost } from "$lib/lib/UI.svelte";
+  import { stringToArrayBuffer } from "$lib/lib/utils";
 
   import Guest from "$lib/components/buttons/Guest.svelte";
-  import type { GuestExtern, GuestIntern, QRCodeData } from "$lib/api/types";
-  import { da } from "zod/v4/locales";
-  import { stringToArrayBuffer } from "$lib/lib/utils";
-  import { getGuests } from "$lib/lib/database";
 
   let searchInput = $state("");
 
