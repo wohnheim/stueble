@@ -72,7 +72,7 @@ def check_guest(cursor, stueble_id: int | None=None, user_id: Annotated[int | No
         dict: {"success": bool, "data": bool} if successful, {"success": False, "error": e} if error occurred
     """
 
-    if (user_uuid is not None and user_id is None) or (user_uuid is None and user_id is None):
+    if (user_uuid is not None and user_id is not None) or (user_uuid is None and user_id is None):
         return {"success": False, "error": "either user_id or user_uuid must be specified"}
 
     if stueble_id is None:
