@@ -28,7 +28,7 @@ def get_motto(cursor, date: date | None=None) -> dict:
             keywords=["motto", "date_of_time"],
             table_name="motto",
             expect_single_answer=True,
-            specific_where="date_of_time >= CURRENT_DATE ORDER BY date_of_time ASC LIMIT 1")
+            specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
 
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "no motto found"}
