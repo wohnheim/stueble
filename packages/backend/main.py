@@ -10,11 +10,12 @@ import signal
 import sys
 from packages.backend import api
 from packages.backend import websocket
+from waitress import serve
 
 def run_flask():
     """Run the Flask API server in separate thread"""
     print(f"Starting Flask API server in thread {threading.current_thread().name}...")
-    api.app.run(host="127.0.0.1", port=3000, debug=False, use_reloader=False, threaded=True)
+    serve(api.app, host="127.0.0.1", port=3000)
 
 def run_websocket():
     """Run the WebSocket server in separate thread"""
