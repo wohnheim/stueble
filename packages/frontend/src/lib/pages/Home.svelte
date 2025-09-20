@@ -6,16 +6,10 @@
   import { ui_object, type RouteMain } from "$lib/lib/UI.svelte";
 
   onMount(async () => {
-    // Demo Data
     settings.set(
       "motto",
-      "Melde dich gleich für das beste Stüble dieses Semesters an! 🎉\nDas Motto dieser Woche ist “Man in Black”. 🕶️\nSchmeißt euch in Schale, wir freuen uns auf euch!",
-    );
-
-    /* settings.set(
-      "motto",
       await apiClient("ws").sendMessage({ event: "requestMotto" }),
-    ); */
+    );
   });
 </script>
 
