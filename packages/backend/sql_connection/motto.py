@@ -2,7 +2,7 @@ from packages.backend.sql_connection import database as db, users
 from datetime import date
 from typing import Annotated
 
-from packages.backend.sql_connection.common_functions import clean_single_data
+from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
 
 def get_motto(cursor, date: date | None=None) -> dict:

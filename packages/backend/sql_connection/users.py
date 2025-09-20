@@ -4,7 +4,7 @@ from packages.backend.sql_connection import database as db
 from typing import Annotated
 
 from packages.backend.data_types import *
-from packages.backend.sql_connection.common_functions import clean_single_data
+from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
 
 def add_user(connection,

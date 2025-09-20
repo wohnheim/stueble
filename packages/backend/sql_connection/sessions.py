@@ -2,7 +2,7 @@ from packages.backend.sql_connection import database as db
 from datetime import datetime, timedelta
 import pytz
 
-from packages.backend.sql_connection.common_functions import clean_single_data
+from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
 
 def create_session(connection, cursor, user_id: int) -> dict:
