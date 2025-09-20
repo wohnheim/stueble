@@ -1,16 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
   import { apiClient } from "$lib/api/client";
   import { settings } from "$lib/lib/settings.svelte";
   import { ui_object, type RouteMain } from "$lib/lib/UI.svelte";
-
-  onMount(async () => {
-    settings.set(
-      "motto",
-      await apiClient("ws").sendMessage({ event: "requestMotto" }),
-    );
-  });
 </script>
 
 <div id="center-container" class="middle-align center-align">

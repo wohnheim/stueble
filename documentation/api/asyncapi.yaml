@@ -4,8 +4,8 @@ info:
   version: 1.0.0
 defaultContentType: application/vnd.msgpack
 servers:
-  development:
-    host: stueble.wir-sind-frey.de/websocket
+  production:
+    host: stueble.pages.dev/api/websocket
     protocol: ws
     description: |-
       Development server secured with TLS. \

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ui_object } from "$lib/lib/UI.svelte";
 
-  let nachnameValid = $state(true);
   let vornameValid = $state(true);
+  let nachnameValid = $state(true);
 
   let emailValid = $state(true);
   let emailInput = $state<HTMLInputElement>();

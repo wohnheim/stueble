@@ -17,6 +17,7 @@ msgpack
 eventlet
 jwcrypto
 websockets
+waitress
 
 h11
 pip

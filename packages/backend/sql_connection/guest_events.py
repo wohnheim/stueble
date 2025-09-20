@@ -4,32 +4,38 @@ from packages.backend.sql_connection import database as db
 from packages.backend.data_types import EventType
 from collections import defaultdict
 from packages.backend.data_types import FrontendUserRole
+from typing import Annotated
 
-def change_guest(connection, cursor, user_uuid: uuid.UUID, event_type: EventType) -> dict:
+def change_guest(connection, cursor, event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "Explicit with user_id"]=None, user_id: Annotated[int | None, "Explicit with user_uuid"]=None) -> dict:
     """
     add or remove a guest to the guest_list of present people in events for a stueble party \n
     used when a guest arrives / leaves
     Parameters:
         connection: connection to db
         cursor: cursor from connection
-        user_uuid: uuid of guest
         event_type (EventType): type of event
+        user_uuid: uuid of guest
+        user_id: id of guest
     """
 
-    # get user id from uuid
-    result = db.read_table(
-        cursor=cursor,
-        keywords=["id", "user_role"],
-        table_name="users",
-        expect_single_answer=True,
-        conditions={"user_uuid": str(user_uuid)})
+    if (user_uuid is not None and user_id is not None) or (user_uuid is None and user_id is None):
+        return {"success": False, "error": "either user_uuid or user_id must be specified"}
+    
+    if user_id is None:
+        # get user id from uuid
+        result = db.read_table(
+            cursor=cursor,
+            keywords=["id", "user_role"],
+            table_name="users",
+            expect_single_answer=True,
+            conditions={"user_uuid": str(user_uuid)})
 
-    if result["success"] is False:
-        return result
-    if result["data"] is None:
-        return {"success": False, "error": "no user found"}
+        if result["success"] is False:
+            return result
+        if result["data"] is None:
+            return {"success": False, "error": "no user found"}
 
-    user_id, user_role = result["data"]
+        user_id, user_role = result["data"]
 
     # get stueble_id
     result = db.read_table(

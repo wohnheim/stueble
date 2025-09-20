@@ -10,10 +10,8 @@
   import * as materialSymbols from "beercss/dist/cdn/material-symbols-outlined.woff2";
 
   import { apiClient } from "$lib/api/client";
-  import { getGuests } from "$lib/lib/database";
   import { error } from "$lib/lib/error";
   import { ui_object } from "$lib/lib/UI.svelte";
-  import { settings } from "$lib/lib/settings.svelte";
 
   import logo from "$lib/assets/Fileplay.svg";
   import Layout from "$lib/components/Layout.svelte";
@@ -49,8 +47,6 @@
       };
 
       if (localStorage.getItem("loggedIn") == "true") {
-        continueMount();
-
         if (get(apiClient("ws").connected)) continueMount();
         else {
           const unsubscribe = apiClient("ws").connected.subscribe(
