@@ -706,7 +706,7 @@ def guest_change():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -723,7 +723,6 @@ def guest_change():
         return response
 
     user_id = result["data"]["user_id"]
-    user_uuid = result["data"]["user_uuid"]
     event_type = EventType.ARRIVE if present else EventType.LEAVE
 
     # get user data
@@ -759,7 +758,7 @@ def guest_change():
 
 
     # change guest status to arrive / leave
-    result = guest_events.change_guest(connection=conn, cursor=cursor, user_id=user_id, event_type=event_type)
+    result = guest_events.change_guest(connection=conn, cursor=cursor, user_uuid=user_uuid, event_type=event_type)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -806,6 +805,25 @@ def attend_stueble():
     session_id = request.cookies.get("SID", None)
     date = data.get("date", None)
 
+    if date is None:
+        result = motto.get_motto(cursor=cursor)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        if result["data"] is None:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 400, "message": "No stueble is happening in the next time"}),
+                status=400,
+                mimetype="application/json")
+            return response
+    
+    date = result["data"]    
+
     if session_id is None or date is None:
         response = Response(
             response=json.dumps({"code": 401, "message": f"The session_id and date must be specified"}),
@@ -817,7 +835,7 @@ def attend_stueble():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
