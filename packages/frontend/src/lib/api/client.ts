@@ -7,6 +7,7 @@ import { ui_object } from "$lib/lib/UI.svelte";
 import { timeoutPromise } from "$lib/lib/utils";
 
 import type {
+  Config,
   GuestExtern,
   GuestIntern,
   MessageFromClient,
@@ -25,12 +26,12 @@ import {
 class HTTPClient {
   /* Auth */
 
-  async login(username: string, password: string) {
+  async login(user: string, password: string) {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        username,
+        user,
         password,
       }),
     });
@@ -252,6 +253,32 @@ class HTTPClient {
       console.warn("Failure: " + res.json());
 
     return false;
+  }
+
+  /* Config */
+
+  async getConfig() {
+    const res = await fetch("/api/config");
+
+    if (res.ok) return await res.json<Config>();
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return null;
+  }
+
+  async modifyConfig(config: Partial<Config>) {
+    const res = await fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(config),
+    });
+
+    if (res.ok) return await res.json<Config>();
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return null;
   }
 }
 
