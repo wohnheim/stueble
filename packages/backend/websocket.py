@@ -151,21 +151,21 @@ async def handle_ws(websocket):
             elif event == "heartbeat":
                 await handle_heartbeat(websocket=websocket)
             elif event == "requestMotto":
-                if data is None or req_id is None:
+                if req_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
-                         "message": "data and reqId must be specified"})
+                         "message": "reqId must be specified"})
                     continue
                 await request_motto(websocket=websocket, msg=data, req_id=req_id)
             elif event == "requestQRCode":
-                if data is None or req_id is None:
+                if req_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
-                         "message": "data and reqId must be specified"})
+                         "message": "reqId must be specified"})
                     continue
                 await get_qrcode(websocket=websocket, msg=data, req_id=req_id)
             elif event == "requestPublicKey":
-                if data is None or req_id is None:
+                if req_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
-                         "message": "data and reqId must be specified"})
+                         "message": "reqId must be specified"})
                 await get_public_key(websocket=websocket, req_id=req_id)
     finally:
         host_upwards_room.discard(session_id)
