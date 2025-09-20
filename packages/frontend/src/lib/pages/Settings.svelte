@@ -94,8 +94,17 @@
     </div>
   </Button>
 
-  {#if ui_object.capabilities.some((c) => c == "admin")}
+  {#if ui_object.capabilities.some((c) => c == "host")}
     <p id="header" class="bold">Administrative Funktionen</p>
+
+    <Button>
+      <div>
+        <p id="title">Motto</p>
+        <p id="subtitle">
+          {ui_object.motto}
+        </p>
+      </div>
+    </Button>
 
     <Button clickable={false}>
       <div>
