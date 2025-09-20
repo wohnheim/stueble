@@ -97,6 +97,7 @@ def login():
     user = result["data"]
 
     if user[1] is None:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "account was deleted, can be reactivated by signup"}),
             status=401,
@@ -276,8 +277,8 @@ def verify_signup():
 
     # verify token
     result = users.confirm_verification_code(cursor=cursor, reset_code=token, additional_data=True)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -439,8 +440,6 @@ def delete():
             mimetype="application/json")
         return response
 
-    # TODO remove user and invited users from stueble_table
-
     # return 204
     response = Response(
         status=204)
@@ -585,6 +584,7 @@ def search_intern():
     data = data.get("data", None)
 
     if data is None or not isinstance(data, dict):
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "The data must be a valid json object"}),
             status=400,
@@ -598,6 +598,7 @@ def search_intern():
 
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": f"Only the following keys are allowed: {', '.join(allowed_keys)}"}),
             status=400,
@@ -608,6 +609,7 @@ def search_intern():
 
     # if only either room or residence but not both were specified, return error
     if any(key in data.keys() for key in ["room", "residence"]) and not all(key in data.keys() for key in ["room", "residence"]):
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "If room or residence is specified, both must be specified"}),
             status=400,
@@ -731,6 +733,7 @@ def guest_change():
         expect_single_answer=True)
 
     if data["success"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -750,6 +753,7 @@ def guest_change():
                     response=json.dumps({"code": 500, "message": str(result["error"])}),
                     status=500,
                     mimetype="application/json")
+                return response
 
 
     # change guest status to arrive / leave
@@ -1372,12 +1376,14 @@ def change_user_data():
     if request.path == "/user/change_password":
         new_pwd = data.get("newPassword", None)
         if new_pwd is None:
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "The new_password must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
         if new_pwd == "":
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Password cannot be empty"}),
                 status=400,
@@ -1387,12 +1393,14 @@ def change_user_data():
     elif request.path == "/user/change_username":
         username = data.get("username", None)
         if username is None:
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": f"Username must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
         if username == "":
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Username cannot be empty"}),
                 status=400,
@@ -1461,6 +1469,7 @@ def change_user_role():
     # load data, part 2
     name = data.get("user", None)
     if name is None:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "specify user"}),
             status=400,
@@ -1472,6 +1481,7 @@ def change_user_role():
         try:
             name = Email(email=name)
         except ValueError:
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Invalid email format"}),
                 status=400,
@@ -1484,6 +1494,7 @@ def change_user_role():
     new_role = data.get("newRole", None)
 
     if new_role is None:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "The new_role must be specified"}),
             status=400,
@@ -1491,6 +1502,7 @@ def change_user_role():
         return response
 
     if is_valid_role(new_role) is False or new_role == "admin":
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "The new_role must be a valid role (extern, user, host, tutor) and can't be admin"}),
             status=400,
