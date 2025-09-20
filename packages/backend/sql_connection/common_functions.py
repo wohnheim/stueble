@@ -1,4 +1,4 @@
-from packages.backend.sql_connection import sessions, database as db
+from packages.backend.sql_connection import sessions, motto, database as db
 from packages.backend.data_types import *
 
 pool = db.create_pool()
@@ -42,3 +42,39 @@ def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
     if user_role >= required_role:
         return {"success": True, "data": {"allowed": True, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid}}
     return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid}}
+
+def get_motto(date: str | None = None):
+    """
+    returns the motto for the next stueble party
+
+    Parameters:
+        date (str | None): the date of the motto
+    """
+    if date == "":
+        date = None
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # if date is None, return all stuebles
+    if date is None:
+        result = db.read_table(
+            cursor=cursor,
+            table_name="stueble_motto",
+            keywords=["motto", "date_of_time"],
+            order_by=("date_of_time", 0), # descending
+            expect_single_answer=False)
+        close_conn_cursor(conn, cursor) # close conn, cursor
+        if result["success"] is False:
+            return result
+        data = [{"motto": entry[0], "date": entry[1].isoformat()} for entry in result["data"]]
+        return {"success": True, "data": data}
+
+    # get motto from table
+    result = motto.get_motto(cursor=cursor, date=date)
+    close_conn_cursor(conn, cursor) # close conn, cursor
+    if result["success"] is False:
+        return result
+
+    data = {"motto": result["data"][0], "date": result["data"][1].isoformat()} if result["data"] is not None else {}
+    return {"success": True, "data": data}
