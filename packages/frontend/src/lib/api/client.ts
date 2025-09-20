@@ -117,11 +117,11 @@ class HTTPClient {
   async getGuestList() {
     const res = await fetch("/api/guests");
 
-    if (res.ok) return await res.json<Array<(GuestIntern | GuestExtern)[]>>();
+    if (res.ok) return await res.json<(GuestIntern | GuestExtern)[]>();
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 
   async addToGuestList(uuid: string) {
@@ -135,7 +135,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 
   async modifyGuest(props: { id: string; present: boolean }) {
@@ -149,7 +149,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 
   async removeFromGuestList(uuid: string) {
@@ -163,7 +163,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return false;
+    throw new Error(res.status.toString());
   }
 
   /* Users */
@@ -183,7 +183,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 
   async modifyUser(
@@ -199,7 +199,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 
   async getUser() {
@@ -209,7 +209,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 
   async searchUsers(props: Partial<UserProperties>) {
@@ -236,7 +236,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 
   /* Motto */
@@ -264,7 +264,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 
   async modifyConfig(config: Partial<Config>) {
@@ -278,7 +278,7 @@ class HTTPClient {
     else if (Math.floor(res.status / 100) == 5)
       console.warn("Failure: " + res.json());
 
-    return null;
+    throw new Error(res.status.toString());
   }
 }
 
