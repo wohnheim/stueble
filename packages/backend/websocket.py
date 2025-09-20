@@ -407,19 +407,20 @@ async def get_qrcode(websocket, msg, req_id):
     else:
         user_uuid = None
         stueble_id = None
+    # get connection, cursor
+
+    conn, cursor = get_conn_cursor()
 
     if user_uuid is None:
         session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
         result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["user_uuid"])
         if result["success"] is False:
+            close_conn_cursor(conn, cursor)
             await send(websocket=websocket, event="error", reqId=req_id, data=
                 {"code": "500" if result["error"] != "no matching session and user found" else "401",
                  "message": str(result["error"])})
             return
         user_uuid = result["data"]
-
-    # get connection, cursor
-    conn, cursor = get_conn_cursor()
 
     result = events.check_guest(cursor=cursor,
                                 user_uuid=user_uuid,
