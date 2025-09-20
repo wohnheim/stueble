@@ -57,10 +57,8 @@ def listen_to_db(connection):
                         "stueble_id": stueble_id,
                         "event": event}
                 # TODO configure url
-                response = requests.post("http://127.0.0.1:5000/websocket_local", json=removed_user_data)
+                response = requests.post("http://127.0.0.1:3000/websocket_local", json=removed_user_data)
                 if response.status_code != 200:
                     warnings.warn(f"Could not send data to websocket server: {response.text}")
                     continue
                 # TODO handle error
-
-def ping_websockets

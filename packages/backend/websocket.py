@@ -1,4 +1,5 @@
 import asyncio
+import os
 import websockets
 import msgpack
 import json
@@ -8,6 +9,7 @@ from packages.backend.api import get_conn_cursor, check_permissions, close_conn_
 from packages.backend.data_types import *
 from packages.backend.http_to_websocket import *
 from packages.backend.sql_connection import users, events
+from packages.backend import hash_pwd as hp
 
 host_upwards_room = set()
 connections = set()
@@ -15,6 +17,8 @@ sid_to_websocket = {}
 
 allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "guestVerification", "requestQRCode", "requestPublicKey"]
 
+def get_websocket_by_sid(sid):
+    return sid_to_websocket.get(sid, None)
 
 def parse_cookies(headers):
     return dict(pair.strip().split("=", 1) for header in headers for pair in header[1] if "=" in pair if header[0].lower() == "cookie")
@@ -23,7 +27,20 @@ async def send(websocket, event, data, **kwargs):
     message = msgpack.packb({"event": event, **kwargs, "data": {"event": event, "data": data}}, use_bin_type=True)
     await websocket.send(message)
 
-async def broadcast(room, event, data, skip_sid=None, **kwargs):
+async def broadcast(event, data, skip_sid=None, room=None, **kwargs):
+    """
+    broadcasts an event to a room
+
+    Parameters:
+        event (str): the event to broadcast
+        data (dict): the data to send
+        skip_sid (str): the session id to skip (optional)
+        room (set): the room to broadcast to (optional, defaults to all connections)
+        **kwargs: additional keyword arguments to send
+    """
+    if room is None:
+        room = host_upwards_room
+
     message = msgpack.packb({"event": event, **kwargs, "data": {"event": event, "data": data}}, use_bin_type=True)
     for ws in list(room):
         if ws.parse_cookies(ws.request_headers.items()).get("SID", None) != skip_sid:
@@ -59,37 +76,37 @@ async def handle_ws(websocket):
                      "message": "Invalid msgpack format"})
                 continue
             if event == "connect":
-                await handle_connect(websocket)
+                await handle_connect(websocket=websocket)
             elif event == "disconnect":
-                await handle_disconnect(websocket)
+                await handle_disconnect(websocket=websocket)
             elif event == "ping":
                 if data is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "data must be specified"})
                     continue
-                await handle_ping(websocket, data)
+                await handle_ping(websocket=websocket, msg=data)
             elif event == "heartbeat":
-                await handle_heartbeat(websocket)
+                await handle_heartbeat(websocket=websocket)
             elif event == "requestMotto":
                 if data is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "data must be specified"})
                     continue
-                await request_motto(websocket, data)
+                await request_motto(websocket=websocket, msg=data)
             elif event == "guestVerification":
                 if data is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "data must be specified"})
                     continue
-                await verify_guest(websocket, data)
+                await verify_guest(websocket=websocket, msg=data)
             elif event == "requestQRCode":
                 if data is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "data must be specified"})
                     continue
-                await get_qrcode(websocket, data)
+                await get_qrcode(websocket=websocket, msg=data)
             elif event == "requestPublicKey":
-                await get_public_key(websocket, data)
+                await get_public_key(websocket=websocket, msg=data)
     finally:
         host_upwards_room.discard(session_id)
         connections.discard(websocket)
@@ -274,11 +291,10 @@ async def verify_guest(websocket, msg):
 
     await send(websocket=websocket, event="guestVerification", data={})
 
-    await broadcast(room=host_upwards_room, websocket=websocket, event="guestVerified", req_id=req_id, data=user_data, skip_sid=request.sid)
+    await broadcast(room=host_upwards_room, websocket=websocket, event="guestVerified", req_id=req_id, data=user_data, skip_sid=session_id)
     return
 
-@socketio.on("requestQRCode")
-async def get_qrcode(msg):
+async def get_qrcode(websocket, msg):
     """
     get a new qr-code for a guest
 
@@ -318,8 +334,7 @@ async def get_qrcode(msg):
 
     timestamp = int(datetime.datetime.now().timestamp())
 
-    signature = hp.create_signature(cursor=cursor, message=json.dumps({"id": user_uuid,
-                                                                       "timestamp": timestamp}))
+    signature = hp.create_signature(message={"id": user_uuid, "timestamp": timestamp})
 
     data = {"data":
                 {"id": user_uuid,
@@ -329,34 +344,21 @@ async def get_qrcode(msg):
     await send(websocket=websocket, event="requestQRCode", req_id= req_id, data=data)
     return
 
-@socketio.on("requestPublicKey")
-async def get_public_key():
+async def get_public_key(websocket):
     """
     sends the public key
     """
 
-    # get connection, cursor
-    conn, cursor = get_conn_cursor()
+    public_key = os.getenv("PUBLIC_KEY")
 
-    result = configs.get_configuration(cursor=cursor, key="public_key")
-    if result["success"] is False:
-        await send(websocket=websocket, event="error", data=
-            {"code": "500",
-             "message": str(result["error"])})
-        return
-
-    pem_public = result["data"]
-    jwk_public = jwk.JWK(kty='OKP', crv='Ed25519', x=pem_public.hex())
-    jwk_public_json = jwk_public.export(private_key=False)
-
-    await send(websocket=websocket, event="publicKey", data= {
-        "publicKey": jwk_public_json
+    await send(websocket=websocket, event="publicKey", data={
+        "publicKey": public_key
     })
     return
 
 # Start server
 async def main():
-    async with websockets.serve(handle_ws, "0.0.0.0", 3001):
+    async with websockets.serve(handle_ws, "0.0.0.0", 3001, ping_interval=25, ping_timeout=20, close_timeout=9):
         await asyncio.Future()
 
 if __name__ == "__main__":
