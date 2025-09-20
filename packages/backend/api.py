@@ -1342,7 +1342,7 @@ def confirm_code():
             status=500,
             mimetype="application/json")
         return response
-
+    print(result["data"])
     session_id, expiration_date = result["data"]
 
     # return 204
