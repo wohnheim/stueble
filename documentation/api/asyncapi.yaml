@@ -177,6 +177,9 @@ components:
             const: pong
           reqId:
             $ref: "#/components/schemas/reqId"
+          data:
+            type: boolean
+            const: true
       correlationId:
         location: "$message.payload#/reqId"
 

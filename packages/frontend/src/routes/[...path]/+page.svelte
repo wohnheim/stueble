@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import { apiClient } from "$lib/api/client";
   import { getGuests } from "$lib/lib/database";
@@ -34,49 +34,107 @@
     );
   };
 
+  /* Host Data */
+
+  const loadHostDataFromServer = async () => {
+    const key = await apiClient("ws").sendMessage({
+      event: "requestPublicKey",
+    });
+
+    settings.set("publicKey", JSON.stringify(key));
+    ui_object.publicKey = await importKey(key);
+  };
+
+  const loadHostDataFromDatabase = async () => {
+    if (settings.settings["publicKey"])
+      ui_object.publicKey = await importKey(
+        JSON.parse(settings.settings["publicKey"]),
+      );
+  };
+
+  /* Admin Data */
+
+  const loadAdminDataFromServer = async () => {
+    ui_object.config = await apiClient("http").getConfig();
+
+    settings.set("config", JSON.stringify(ui_object.config));
+  };
+
+  const loadAdminDataFromDatabase = async () => {
+    if (settings.settings["config"])
+      ui_object.config = JSON.parse(settings.settings["config"]);
+  };
+
   let loaded = $state(false);
   let loading = false;
-  const onLoading = async () => {
+
+  const loadFromServer = async () => {
     if (localStorage.getItem("loggedIn")) {
-      // Load from IndexedDB
-      if (settings.settings["motto"])
-        ui_object.motto = settings.settings["motto"];
-
-      if (settings.settings["publicKey"])
-        ui_object.publicKey = await importKey(
-          JSON.parse(settings.settings["publicKey"]),
-        );
-
-      if (settings.settings["qrCodeData"])
-        ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
+      // Initialize IndexedDB mapping
+      await settings.init();
 
       ui_object.guests = await getGuests();
 
-      // Setup WebSocket connection
-      // await apiClient("ws").sendMessage({ event: "ping" });
+      // Load via WebSocket
+      ui_object.motto = await apiClient("ws").sendMessage({
+        event: "requestMotto",
+      });
+
+      ui_object.qrCodeData = await apiClient("ws").sendMessage({
+        event: "requestQRCode",
+      });
+
+      ui_object.user = await apiClient("http").getUser();
+
+      // Store in IndexedDB
+      await settings.set("motto", ui_object.motto);
+
+      await settings.set("qrCodeData", JSON.stringify(ui_object.qrCodeData));
+
+      await settings.set("user", JSON.stringify(ui_object.user));
     }
+  };
+
+  const loadFromDatabase = async () => {
+    if (settings.settings["motto"])
+      ui_object.motto = settings.settings["motto"];
+
+    if (settings.settings["qrCodeData"])
+      ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
+
+    if (settings.settings["user"])
+      ui_object.user = JSON.parse(settings.settings["user"]);
   };
 
   onMount(() => {
     if (!loaded && !loading) {
       loading = true;
-      onLoading().finally(() => {
-        loaded = true;
-        loading = false;
-      });
+
+      loadFromServer()
+        .catch(() => {
+          loadFromDatabase().finally(() => {
+            loaded = true;
+            loading = false;
+          });
+        })
+        .then(() => {
+          loaded = true;
+          loading = false;
+        });
     }
   });
 
   $effect(() => {
-    if (browser && loaded && ui_object.capabilities.find((c) => c == "host")) {
-      apiClient("ws")
-        .sendMessage({ event: "requestPublicKey" })
-        .then(async (key) => {
-          settings.set("publicKey", JSON.stringify(key));
+    if (browser && loaded) {
+      if (ui_object.capabilities.find((c) => c == "host"))
+        untrack(() =>
+          loadHostDataFromServer().catch(() => loadHostDataFromDatabase()),
+        );
 
-          ui_object.publicKey = await importKey(key);
-          // Possibly infinite loop
-        });
+      if (ui_object.capabilities.find((c) => c == "admin"))
+        untrack(() =>
+          loadAdminDataFromServer().catch(() => loadAdminDataFromDatabase()),
+        );
     }
   });
 </script>

@@ -30,8 +30,6 @@
 
   onMount(async () => {
     if (browser) {
-      await settings.init();
-      // ui_object.guests = await getGuests();
       if (!navigator.onLine) error.offline();
 
       const continueMount = () => {
@@ -48,9 +46,6 @@
 
           error.offline();
         });
-
-        /* if (settings.settings["privacyAccepted"] === undefined)
-          ui_object.openDialog({ mode: "privacy" }); */
       };
 
       if (localStorage.getItem("loggedIn") == "true") {
