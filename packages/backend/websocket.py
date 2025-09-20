@@ -9,7 +9,7 @@ from packages.backend.sql_connection.common_functions import get_conn_cursor, ch
 from packages.backend.api import get_motto
 from packages.backend.data_types import *
 from packages.backend.http_to_websocket import *
-from packages.backend.sql_connection import users, events
+from packages.backend.sql_connection import events
 from packages.backend import hash_pwd as hp
 
 host_upwards_room = set()
@@ -97,7 +97,7 @@ async def handle_ws(websocket):
     try:
         async for message in websocket:
             try:
-                msg = msgpack.unpack(message, raw=False)
+                msg = msgpack.unpack(message, raw=True)
                 event = msg.get("event", None)
                 if event is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
