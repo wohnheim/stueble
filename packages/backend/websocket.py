@@ -7,7 +7,6 @@ import datetime
 from packages.backend.sql_connection.common_functions import get_conn_cursor, check_permissions, close_conn_cursor
 from packages.backend.api import get_motto
 from packages.backend.data_types import *
-from packages.backend.http_to_websocket import *
 from packages.backend.sql_connection import events, sessions
 from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
@@ -313,7 +312,12 @@ async def request_motto(websocket, msg, req_id):
         date = None
 
     result = get_motto(date=date)
-    await send(websocket=websocket, event="motto", req_id=req_id, data=http_to_data(response=result))
+    if result["success"] is False:
+        await send(websocket=websocket, event="error", req_id=req_id, data=
+            {"code": "500",
+             "message": str(result["error"])})
+        return
+    await send(websocket=websocket, event="motto", req_id=req_id, data=result["data"])
     return
 
 '''@DeprecationWarning
