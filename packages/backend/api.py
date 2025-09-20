@@ -124,7 +124,7 @@ def login():
             mimetype="application/json")
         return response
 
-    session_id = result["data"]
+    session_id, expiration_date = result["data"]
 
     # return 204
     response = Response(
@@ -132,6 +132,7 @@ def login():
 
     response.set_cookie("SID",
                         session_id,
+                        expires=expiration_date,
                         httponly=True,
                         secure=True,
                         samesite='Lax')
@@ -332,7 +333,7 @@ def verify_signup():
             mimetype="application/json")
         return response
 
-    session_id = result["data"]
+    session_id, expiration_date = result["data"]
 
     # return 204
     response = Response(
@@ -340,6 +341,7 @@ def verify_signup():
 
     response.set_cookie("SID",
                         session_id,
+                        expires=expiration_date,
                         httponly=True,
                         secure=True,
                         samesite='Lax')
@@ -1341,7 +1343,7 @@ def confirm_code():
             mimetype="application/json")
         return response
 
-    session_id = result["data"]
+    session_id, expiration_date = result["data"]
 
     # return 204
     response = Response(
@@ -1349,6 +1351,7 @@ def confirm_code():
 
     response.set_cookie("SID",
                         session_id,
+                        expires=expiration_date,
                         httponly=True,
                         secure=True,
                         samesite='Lax')
