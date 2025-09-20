@@ -8,6 +8,9 @@ def b64url_encode(data):
 
 # Generate private key
 private_key = ed25519.Ed25519PrivateKey.generate()
+# Extract public key
+public_key = private_key.public_key()
+
 pem_private = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
@@ -15,8 +18,6 @@ pem_private = private_key.private_bytes(
     )
 private_key = pem_private.decode('utf-8')
 
-# Extract public key
-public_key = private_key.public_key()
 # PEM format
 pem_public = public_key.public_bytes(
     encoding=serialization.Encoding.PEM,
