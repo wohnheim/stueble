@@ -61,7 +61,7 @@ def parse_cookies(headers):
     return cookies
 
 async def send(websocket, event, data, **kwargs):
-    message = msgpack.packb({"event": event, **kwargs, "data": {"event": event, "data": data}}, use_bin_type=True)
+    message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
     await websocket.send(message)
 
 async def broadcast(event, data, skip_sid=None, room=None, **kwargs):
