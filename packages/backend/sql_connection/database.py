@@ -39,7 +39,7 @@ def full_pack(func):
     return wrapped
 
 # TODO right now for development and testing enabled, for website rather use failsafes (SAME AS IN often_used_db_calls.py)
-def catch_exception(func):
+'''def catch_exception(func):
     """
     catches errors
     connect, pool, update, remove functions DON'T use this wrapper
@@ -53,7 +53,7 @@ def catch_exception(func):
             return func(*args, **kwargs)
         except Exception as e:
             raise Exception(f"An error occurred in database: {e}")
-    return wrapper
+    return wrapper'''
 
 def connect(**kwargs):
     """
@@ -100,7 +100,7 @@ def create_pool(max_connections : int = 100):
 
 # TODO can't return success: False right now
 # TODO for arguments as list might not be completely implemented
-@catch_exception
+# @catch_exception
 def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",), conditions: dict | None=None,
                expect_single_answer=False, select_max_of_key: str="", specific_where: str="", variables: list | None=None, order_by: tuple | None=None,
                connection=None) -> dict:
@@ -154,7 +154,7 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
     return {"success": True, "data": [i if i is None else list(i) for i in cursor.fetchall()]}
 
 # NOTE arguments is either of type dict or of type list
-@catch_exception
+# @catch_exception
 def insert_table(connection, cursor, table_name: str, arguments: dict | None = None, returning_column: str = ""):
     """
     insert data into table
@@ -307,7 +307,7 @@ def custom_call(connection, cursor, query: str, type_of_answer: ANSWER_TYPE, var
         return {"success": False, "error": e}
 
 # TODO can only return success True right now
-@catch_exception
+# @catch_exception
 def get_time(cursor, connection=None):
     """
     returns the current berlin time
