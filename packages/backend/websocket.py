@@ -22,7 +22,17 @@ def get_websocket_by_sid(sid):
     return sid_to_websocket.get(sid, None)
 
 def parse_cookies(headers):
-    return dict(pair.strip().split("=", 1) for header in headers for pair in header[1] if "=" in pair if header[0].lower() == "cookie")
+    """Parse cookies from websocket headers"""
+    cookies = {}
+    for header_name, header_value in headers:
+        if header_name.lower() == "cookie":
+            # Split cookie string by semicolons and parse each pair
+            for cookie_pair in header_value.split(';'):
+                cookie_pair = cookie_pair.strip()
+                if '=' in cookie_pair:
+                    key, value = cookie_pair.split('=', 1)
+                    cookies[key.strip()] = value.strip()
+    return cookies
 
 async def send(websocket, event, data, **kwargs):
     message = msgpack.packb({"event": event, **kwargs, "data": {"event": event, "data": data}}, use_bin_type=True)
