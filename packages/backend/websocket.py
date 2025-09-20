@@ -179,7 +179,7 @@ async def handle_connect(websocket):
                      "message": str(result["error"])})
         return False
 
-    capabilities = [i.value for i in get_leq_roles(result["data"]["role"]) if i.value in ["host", "tutor", "admin"]]
+    capabilities = [i.value for i in get_leq_roles(result["data"]["user_role"]) if i.value in ["host", "tutor", "admin"]]
 
     if result["data"]["allowed"] is False:
         await send(websocket=websocket, event="status", data= {
