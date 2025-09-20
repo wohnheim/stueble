@@ -176,7 +176,8 @@ async def handle_connect(websocket):
     if result["success"] is False:
         await send(websocket=websocket, event="error", data= {
                      "code": "500",
-                     "message": str(result["error"])})
+                     "message": str(result["error"]), 
+                     "authorized": False})
         return False
 
     capabilities = [i.value for i in get_leq_roles(result["data"]["user_role"]) if i.value in ["host", "tutor", "admin"]]
