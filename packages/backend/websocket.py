@@ -10,6 +10,7 @@ from packages.backend.data_types import *
 from packages.backend.http_to_websocket import *
 from packages.backend.sql_connection import events, sessions
 from packages.backend import hash_pwd as hp
+from zoneinfo import ZoneInfo
 
 host_upwards_room = set()
 connections = set()
@@ -139,7 +140,7 @@ async def handle_ws(websocket):
             if expiration_date is None:
                 await send(websocket=websocket, event="error", data={"code": "500",
                     "message": "Internal server error"})
-            elif expiration_date < datetime.datetime.now():   
+            elif expiration_date < datetime.datetime.now(ZoneInfo("Europe/Berlin")):   
                 await send(websocket=websocket, event="error", data={"code": "401",
                         "message": "Session expired"})
                 await websocket.close(code="1000", reason="Session expired")
