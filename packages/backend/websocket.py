@@ -8,12 +8,13 @@ from packages.backend.sql_connection.common_functions import get_conn_cursor, ch
 from packages.backend.api import get_motto
 from packages.backend.data_types import *
 from packages.backend.http_to_websocket import *
-from packages.backend.sql_connection import events
+from packages.backend.sql_connection import events, sessions
 from packages.backend import hash_pwd as hp
 
 host_upwards_room = set()
 connections = set()
 sid_to_websocket = {}
+websockets_info = {}
 
 allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey"]
 
@@ -113,6 +114,19 @@ async def handle_ws(websocket):
     result = await handle_connect(websocket)
     if result is False:
         return
+    
+    # get connection and cursor
+    _, cursor = get_conn_cursor()
+
+    result = sessions.get_session(cursor=cursor, session_id=session_id)
+    if result["success"] is False:
+        await send(websocket=websocket, event="error", req_id=req_id, data=
+            {"code": "500" if result["error"] != "no session found" else "401",
+             "message": str(result["error"])})
+        return
+    
+    _, expiration_date = result["data"]
+    websockets_info[id(websocket)] = expiration_date
 
     sid_to_websocket[session_id] = websocket
 
@@ -121,6 +135,16 @@ async def handle_ws(websocket):
 
     try:
         async for message in websocket:
+            expiration_date = websockets_info.get(id(websocket), None)
+            if expiration_date is None:
+                await send(websocket=websocket, event="error", data={"code": "500",
+                    "message": "Internal server error"})
+            elif expiration_date < datetime.datetime.now():   
+                await send(websocket=websocket, event="error", data={"code": "401",
+                        "message": "Session expired"})
+                await websocket.close(code="1000", reason="Session expired")
+                await handle_disconnect(websocket=websocket)
+                return
             try:
                 msg = msgpack.unpackb(message)
                 event = msg.get("event", None)
@@ -221,7 +245,7 @@ async def handle_connect(websocket):
         user_role = result["data"]["user_role"]
         user_role = UserRole(user_role)
 
-        host_upwards_room.append(websocket)
+        host_upwards_room.add(websocket)
 
         # can only be "authorized": True but still checking
         await send(websocket=websocket, event="status", data= {
@@ -242,11 +266,12 @@ async def handle_disconnect(websocket):
         return
 
     try:
-        host_upwards_room.remove(websocket)
+        host_upwards_room.discard(websocket)
     except ValueError:
         pass
     connections.discard(websocket)
     sid_to_websocket.pop(session_id, None)
+    del websockets_info[id(websocket)]
     return
 
 async def handle_ping(websocket, req_id):
@@ -281,8 +306,10 @@ async def request_motto(websocket, msg, req_id):
         msg (dict): the message from the client
         req_id (str): the request id from the client
     """
-    
-    date = msg.get("date", "")
+    if msg is not None:
+        date = msg.get("date", "")
+    else:
+        date = None
 
     result = get_motto(date=date)
     await send(websocket=websocket, event="motto", req_id=req_id, data=http_to_data(response=result))
@@ -368,17 +395,26 @@ async def get_qrcode(websocket, msg, req_id):
         msg (dict): the message from the client
         req_id (str): the request id from the client
     """
-    user_uuid = msg.get("id", None)
-    if req_id is None or user_uuid is None:
-        await send(websocket=websocket, event="error", data=
-            {"code": "401",
-             "message": "reqId and id must be specified"})
-        return
 
-    stueble_id = msg.get("stuebleId", None)
+    if msg is not None:
+        user_uuid = msg.get("id", None)
+        stueble_id = msg.get("stuebleId", None)
+    else:
+        user_uuid = None
+        stueble_id = None
+
+    if user_uuid is None:
+        session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
+        result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["user_uuid"])
+        if result["success"] is False:
+            await send(websocket=websocket, event="error", req_id=req_id, data=
+                {"code": "500" if result["error"] != "no matching session and user found" else "401",
+                 "message": str(result["error"])})
+            return
+        user_uuid = result["data"]
 
     # get connection, cursor
-    conn, cursor = get_conn_cursor()
+    _, cursor = get_conn_cursor()
 
     result = events.check_guest(cursor=cursor,
                                 user_uuid=user_uuid,
