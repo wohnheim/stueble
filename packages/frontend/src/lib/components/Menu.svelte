@@ -25,7 +25,7 @@
         ui_object.changePath({
           main: "main",
         });
-        ui("#dialog-menu");
+        ui(ui_object.menuDialog);
       }}
     >
       <i>home</i>
@@ -38,7 +38,7 @@
           ui_object.changePath({
             main: "host",
           });
-          ui("#dialog-menu");
+          ui(ui_object.menuDialog);
         }}
       >
         <i>nightlife</i>
@@ -56,7 +56,7 @@
           ui_object.changePath({
             main: "admin",
           });
-          ui("#dialog-menu");
+          ui(ui_object.menuDialog);
         }}
       >
         <i>admin_panel_settings</i>

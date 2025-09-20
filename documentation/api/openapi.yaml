@@ -491,6 +491,70 @@ paths:
       security:
         - host_sid: []
 
+  /config:
+    get:
+      tags:
+        - config
+      summary: Get config.
+      description: >
+        Get the backend configuration.
+        Only admins are allowed to fetch the configuration.
+      operationId: getConfig
+      responses:
+        "200":
+          description: Active configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        "403":
+          description: Authorization failure (not an admin).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - admin_sid: []
+
+    post:
+      tags:
+        - config
+      summary: Modify config.
+      description: >
+        Modify the backend configuration.
+        Only admins are allowed to change the configuration.
+      operationId: modifyConfig
+      requestBody:
+        required: true
+        description: A JSON object containing the updated configuration.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Config"
+      responses:
+        "200":
+          description: Active configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        "403":
+          description: Authorization failure (not an admin).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - admin_sid: []
+
 components:
   schemas:
     UUID:
@@ -563,11 +627,30 @@ components:
         - $ref: "#/components/schemas/GuestIntern"
         - $ref: "#/components/schemas/GuestExtern"
 
+    Config:
+      type: object
+      properties:
+        maximumGuests:
+          type: integer
+          format: int32
+        sessionExpirationDays:
+          type: integer
+          format: int32
+        maximumInvitesPerUser:
+          type: integer
+          format: int32
+        resetCodeExpirationMinutes:
+          type: integer
+          format: int32
+        qrCodeExpirationMinutes:
+          type: integer
+          format: int32
+
   requestBodies:
     LoginRequest:
       type: object
       properties:
-        username:
+        user:
           type: string
           example: john.smith@example.com
         password:
@@ -580,6 +663,9 @@ components:
         - type: object
           properties:
             username:
+              type: string
+              example: JohnSmith
+            email:
               type: string
               example: john.smith@example.com
             password:

@@ -6,7 +6,7 @@
     type Result,
   } from "@zxing/library";
 
-  import type { DialogEdit } from "$lib/lib/UI.svelte";
+  import { ui_object, type DialogEdit } from "$lib/lib/UI.svelte";
 
   let {
     properties = $bindable(),
@@ -25,7 +25,7 @@
         if (!result) return;
 
         properties.value = result.getText();
-        ui("#dialog-general");
+        ui_object.closeDialog(true);
       },
     );
   };
@@ -61,6 +61,12 @@
       bind:value={properties.value}
       placeholder={properties.placeholder}
       maxlength={properties.length}
+    />
+  {:else if properties.type == "number"}
+    <input
+      bind:value={properties.value}
+      placeholder={properties.placeholder}
+      type="number"
     />
   {:else if properties.type == "qrcode"}
     <!-- svelte-ignore a11y_media_has_caption -->

@@ -4,10 +4,11 @@
 
   import { apiClient } from "$lib/api/client";
   import { getGuests } from "$lib/lib/database";
+  import { settings } from "$lib/lib/settings.svelte";
   import { ui_object } from "$lib/lib/UI.svelte";
+
   import Home from "$lib/pages/Home.svelte";
   import Guests from "$lib/pages/Guests.svelte";
-  import { settings } from "$lib/lib/settings.svelte";
   import Settings from "$lib/pages/Settings.svelte";
   import Invite from "$lib/pages/Invite.svelte";
 
@@ -49,10 +50,10 @@
       if (settings.settings["qrCodeData"])
         ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
 
-      ui_object.guests = await getGuests();
+      // ui_object.guests = await getGuests();
 
       // Setup WebSocket connection
-      await apiClient("ws").sendMessage({ event: "ping" });
+      // await apiClient("ws").sendMessage({ event: "ping" });
     }
   };
 
@@ -67,7 +68,12 @@
   });
 
   $effect(() => {
-    if (browser && loaded && ui_object.capabilities.find((c) => c == "host")) {
+    if (
+      false &&
+      browser &&
+      loaded &&
+      ui_object.capabilities.find((c) => c == "host")
+    ) {
       apiClient("ws")
         .sendMessage({ event: "requestPublicKey" })
         .then(async (key) => {
