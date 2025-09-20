@@ -140,10 +140,12 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
         return {"success": True, "data": [i if i is None else list(i) for i in cursor.fetchall()]}
     if select_max_of_key != "":
         query += f" WHERE {select_max_of_key} = (SELECT MAX({select_max_of_key}) FROM {table_name}) LIMIT 1"
-        query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
+        if order_by is not None:
+            query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
     elif specific_where != "":
         query += f" WHERE {specific_where}"
-        query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
+        if order_by is not None:
+            query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
     if variables is None:
         cursor.execute(query)
     else:
