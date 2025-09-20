@@ -491,7 +491,7 @@ async def get_public_key(websocket, req_id):
     }
 
     await send(websocket=websocket, event="publicKey", reqId=req_id, data={
-        "publicKey": public_key
+        "publicKey": jwk
     })
     return
 
