@@ -178,8 +178,6 @@ def login():
                         samesite='Lax')
     return response
 
-# TODO: handle deleted accounts like signup
-# TODO: add email verification
 @app.route("/auth/signup", methods=["POST"])
 def signup_data():
     """
@@ -784,7 +782,6 @@ def search_intern():
 
     return response
 
-# TODO: change other /guests endpoint
 @app.route("/guests", methods=["POST"])
 def guest_change():
     """
@@ -827,24 +824,38 @@ def guest_change():
     user_id = result["data"]["user_id"]
     event_type = EventType.ARRIVE if present else EventType.LEAVE
 
-    # change guest status to arrive / leave
-    result = guest_events.change_guest(connection=conn, cursor=cursor, user_uuid=user_uuid, event_type=event_type)
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
+    # get user data
+    keywords = ["first_name", "last_name", "room", "residence", "verified", "user_role"]
+    data = users.get_user(
+        cursor=cursor,
+        user_id=user_id,
+        keywords=keywords,
+        expect_single_answer=True)
+
+    if data["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
 
-    # get user data
-    keywords = ["first_name", "last_name", "room", "residence", "verified", "user_role"]
-    result = users.get_user(
-        cursor=cursor,
-        user_id=user_id,
-        keywords=keywords,
-        expect_single_answer=True)
+    if event_type == EventType.ARRIVE:
+        # verify guest if not verified yet
+        if data["data"][4] is False:
+            result = users.update_user(connection=conn, 
+                                       cursor=cursor, 
+                                       user_id=user_id, 
+                                       verified=True)
+            if result["success"] is False:
+                close_conn_cursor(conn, cursor)
+                response = Response(
+                    response=json.dumps({"code": 500, "message": str(result["error"])}),
+                    status=500,
+                    mimetype="application/json")
 
+
+    # change guest status to arrive / leave
+    result = guest_events.change_guest(connection=conn, cursor=cursor, user_uuid=user_uuid, event_type=event_type)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -853,7 +864,7 @@ def guest_change():
             mimetype="application/json")
         return response
 
-    user_info = {key: value for key, value in zip(keywords, result["data"])}
+    user_info = {key: value for key, value in zip(keywords, data["data"])}
     user_info["user_role"] = FrontendUserRole.EXTERN if user_info["user_role"] == "extern" else FrontendUserRole.INTERN
 
     user_data = {
@@ -866,7 +877,7 @@ def guest_change():
     if user_info["user_role"] == FrontendUserRole.INTERN:
         user_data["roomNumber"] = user_info["room"]
         user_data["residence"] = user_info["residence"]
-        user_data["verified"] = True if user_info["verified"] is not None else False
+        user_data["verified"] = True
 
     message = {
         "event": "guestModified",

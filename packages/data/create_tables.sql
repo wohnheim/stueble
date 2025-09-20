@@ -14,7 +14,7 @@ CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave');
 
 CREATE TYPE ACTION_TYPE AS ENUM('guestArrived', 'guestLeft', 'guestAdded', 'guestRemoved', 'userVerification');
 
-CREATE TYPE VERIFICATION AS ENUM('idCard', 'roomKey', 'kolping');
+-- CREATE TYPE VERIFICATION AS ENUM('idCard', 'roomKey', 'kolping');
 
 -- enum for residence in table users
 CREATE TYPE RESIDENCE AS ENUM('altbau', 'neubau', 'anbau', 'hirte');
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_name TEXT CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL)),
-    verified VERIFICATION DEFAULT NULL
+    verified BOOLEAN DEFAULT NULL
 );
 
 -- table for stueble mottos
