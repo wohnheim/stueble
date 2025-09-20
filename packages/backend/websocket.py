@@ -15,7 +15,7 @@ host_upwards_room = set()
 connections = set()
 sid_to_websocket = {}
 
-allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "guestVerification", "requestQRCode", "requestPublicKey"]
+allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey"]
 
 def get_websocket_by_sid(sid):
     return sid_to_websocket.get(sid, None)
@@ -93,12 +93,6 @@ async def handle_ws(websocket):
                          "message": "data must be specified"})
                     continue
                 await request_motto(websocket=websocket, msg=data)
-            elif event == "guestVerification":
-                if data is None:
-                    await send(websocket=websocket, event="error", data={"code": "400",
-                         "message": "data must be specified"})
-                    continue
-                await verify_guest(websocket=websocket, msg=data)
             elif event == "requestQRCode":
                 if data is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
@@ -224,6 +218,7 @@ async def request_motto(websocket, msg):
     await send(websocket=websocket, event="motto", data=http_to_data(response=result))
     return
 
+'''@DeprecationWarning
 async def verify_guest(websocket, msg):
     """
     sets guest verified to True
@@ -292,7 +287,7 @@ async def verify_guest(websocket, msg):
     await send(websocket=websocket, event="guestVerification", data={})
 
     await broadcast(room=host_upwards_room, websocket=websocket, event="guestVerified", req_id=req_id, data=user_data, skip_sid=session_id)
-    return
+    return'''
 
 async def get_qrcode(websocket, msg):
     """
