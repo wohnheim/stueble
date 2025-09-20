@@ -39,7 +39,7 @@ def create_session(connection, cursor, user_id: int) -> dict:
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "error occurred"}
     if result["success"]:
-        result["data"] = list(result["data"]).append(expiration_date)
+        result["data"] = list(result["data"]) + [expiration_date]
     return result
 
 def get_session(cursor, session_id: str) -> dict:
