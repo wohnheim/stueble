@@ -70,6 +70,8 @@
 
   const loadFromServer = async () => {
     if (localStorage.getItem("loggedIn")) {
+      console.log("sending messages");
+
       // Initialize IndexedDB mapping
       await settings.init();
 
@@ -92,6 +94,8 @@
       await settings.set("qrCodeData", JSON.stringify(ui_object.qrCodeData));
 
       await settings.set("user", JSON.stringify(ui_object.user));
+
+      console.log("sending messages completed");
     }
   };
 
@@ -112,6 +116,7 @@
 
       loadFromServer()
         .catch(() => {
+          console.log("Failed to load from server");
           loadFromDatabase().finally(() => {
             loaded = true;
             loading = false;
