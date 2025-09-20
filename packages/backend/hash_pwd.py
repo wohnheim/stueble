@@ -30,6 +30,12 @@ def create_signature(message: str | dict) -> dict:
         message = json.dumps(message, separators=(',', ':'))
 
     private_key = os.getenv("PRIVATE_KEY")
+    if not private_key:
+        return {"success": False, "error": "Private key not found in environment variables."}
+    private_key = serialization.load_pem_private_key(
+        private_key.encode('utf-8'),
+        password=None,
+    )
     signature = private_key.sign(message)
     return {"success": True, "data": signature}
 
@@ -47,6 +53,12 @@ def verify_signature(public_key_pem: str, message: str, signature: bytes) -> boo
     """
 
     public_key = os.getenv("PUBLIC_KEY")
+    if not public_key:
+        print("Public key not found in environment variables.")
+        return False
+    public_key = serialization.load_pem_public_key(
+        public_key.encode('utf-8')
+    )
     message = message.encode()
     try:
         public_key.verify(
