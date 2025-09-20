@@ -70,44 +70,40 @@
 
   const loadFromServer = async () => {
     if (localStorage.getItem("loggedIn")) {
-      console.log("sending messages");
-
       // Initialize IndexedDB mapping
       await settings.init();
 
       ui_object.guests = await getGuests();
 
       // Load via WebSocket
-      ui_object.motto = await apiClient("ws").sendMessage({
-        event: "requestMotto",
-      });
+      ui_object.user = await apiClient("http").getUser();
 
       ui_object.qrCodeData = await apiClient("ws").sendMessage({
         event: "requestQRCode",
       });
 
-      ui_object.user = await apiClient("http").getUser();
+      ui_object.motto = await apiClient("ws").sendMessage({
+        event: "requestMotto",
+      });
 
       // Store in IndexedDB
-      await settings.set("motto", ui_object.motto);
+      await settings.set("user", JSON.stringify(ui_object.user));
 
       await settings.set("qrCodeData", JSON.stringify(ui_object.qrCodeData));
 
-      await settings.set("user", JSON.stringify(ui_object.user));
-
-      console.log("sending messages completed");
+      await settings.set("motto", ui_object.motto);
     }
   };
 
   const loadFromDatabase = async () => {
-    if (settings.settings["motto"])
-      ui_object.motto = settings.settings["motto"];
+    if (settings.settings["user"])
+      ui_object.user = JSON.parse(settings.settings["user"]);
 
     if (settings.settings["qrCodeData"])
       ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
 
-    if (settings.settings["user"])
-      ui_object.user = JSON.parse(settings.settings["user"]);
+    if (settings.settings["motto"])
+      ui_object.motto = settings.settings["motto"];
   };
 
   onMount(() => {
@@ -116,7 +112,6 @@
 
       loadFromServer()
         .catch(() => {
-          console.log("Failed to load from server");
           loadFromDatabase().finally(() => {
             loaded = true;
             loading = false;
