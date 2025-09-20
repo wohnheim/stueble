@@ -44,7 +44,7 @@
         });
         window.addEventListener("offline", () => {
           ui_object.closeDialog();
-          if (ui_object.largeDialog?.open) ui("#dialog-large");
+          if (ui_object.largeDialog?.open) ui(ui_object.largeDialog);
 
           error.offline();
         });

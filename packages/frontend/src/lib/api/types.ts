@@ -44,6 +44,16 @@ export const guestExtern = z.object({
 
 export type GuestExtern = z.infer<typeof guestExtern>;
 
+export const config = z.object({
+  maximumGuests: z.int32(),
+  sessionExpirationDays: z.int32(),
+  maximumInvitesPerUser: z.int32(),
+  resetCodeExpirationMinutes: z.int32(),
+  qrCodeExpirationMinutes: z.int32(),
+});
+
+export type Config = z.infer<typeof config>;
+
 // Message IDs
 export const reqId = z.uint32();
 export const resId = z.uint32();

@@ -2,7 +2,10 @@
   import { ui_object, type RouteHost } from "$lib/lib/UI.svelte";
 
   import Guest from "$lib/components/buttons/Guest.svelte";
-  import type { GuestExtern, GuestIntern } from "$lib/api/types";
+  import type { GuestExtern, GuestIntern, QRCodeData } from "$lib/api/types";
+  import { da } from "zod/v4/locales";
+  import { stringToArrayBuffer } from "$lib/lib/utils";
+  import { getGuests } from "$lib/lib/database";
 
   let searchInput = $state("");
 
@@ -47,6 +50,48 @@
       );
     }
   };
+
+  const scanQRCode = async () => {
+    const res = await ui_object.openEditDialog({
+      title: "QR-Code scannen",
+      type: "qrcode",
+    });
+
+    if (res.length == 0 || ui_object.publicKey === undefined) return;
+    const data: QRCodeData = JSON.parse(res);
+
+    const verified = await window.crypto.subtle.verify(
+      { name: "Ed25519" },
+      ui_object.publicKey,
+      stringToArrayBuffer(data.signature) as ArrayBuffer,
+      stringToArrayBuffer(JSON.stringify(data.data)) as ArrayBuffer,
+    );
+
+    if (!verified) {
+      console.log("Failed to verify");
+      return;
+    }
+
+    const guest = ui_object.guests.find((g) => g.id == data.data.id);
+    if (guest === undefined) {
+      console.log("Failed to find guest");
+      return;
+    }
+
+    await ui_object.openDialog({
+      mode: "check-in",
+      guest: {
+        present: false,
+        extern: false,
+        id: "1234567",
+        verified: true,
+        firstName: "Gerda",
+        lastName: "Huber",
+        roomNumber: 123,
+        residence: "hirte",
+      },
+    });
+  };
 </script>
 
 {#if (ui_object.path as RouteHost).sub === undefined}
@@ -58,20 +103,13 @@
     </p>
 
     <div>
-      <button
-        class="top-margin"
-        onclick={() =>
-          ui_object.openEditDialog({
-            title: "QR-Code scannen",
-            type: "qrcode",
-          })}
-      >
+      <button class="top-margin" onclick={() => scanQRCode()}>
         <i>qr_code</i>
         <span>QR-Code scannen</span>
       </button>
       <button
         class="top-margin secondary"
-        onclick={() => ((ui_object.path as RouteHost).sub = "list")}
+        onclick={() => ui_object.changePath({ main: "host", sub: "list" })}
       >
         <i>checklist</i>
         <span>Zur Gästeliste</span>
@@ -88,7 +126,11 @@
     >
       {#if ui_object.layout == "mobile"}
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-        <a id="left-button" class="wave" onclick={() => ui("#dialog-menu")}>
+        <a
+          id="left-button"
+          class="wave"
+          onclick={() => ui(ui_object.menuDialog)}
+        >
           <i>menu</i>
         </a>
       {/if}
@@ -96,7 +138,11 @@
       <input placeholder="Search for guests" bind:value={searchInput} />
 
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-      <a id="right-button" class="wave" onclick={() => ui("#dialog-menu")}>
+      <a
+        id="right-button"
+        class="wave"
+        onclick={() => ui(ui_object.menuDialog)}
+      >
         <i>search</i>
       </a>
     </div>
@@ -108,7 +154,10 @@
         <hr />
       {/if}
 
-      <Guest {guest} />
+      <Guest
+        {guest}
+        onclick={() => ui_object.openDialog({ mode: "check-in", guest })}
+      />
     {/each}
   </div>
 {/if}

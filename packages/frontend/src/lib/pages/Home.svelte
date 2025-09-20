@@ -12,10 +12,10 @@
       "Melde dich gleich für das beste Stüble dieses Semesters an! 🎉\nDas Motto dieser Woche ist “Man in Black”. 🕶️\nSchmeißt euch in Schale, wir freuen uns auf euch!",
     );
 
-    settings.set(
+    /* settings.set(
       "motto",
       await apiClient("ws").sendMessage({ event: "requestMotto" }),
-    );
+    ); */
   });
 </script>
 
@@ -41,7 +41,8 @@
         if (ui_object.user !== undefined) {
           const res = await apiClient("http").addToGuestList(ui_object.user.id);
 
-          if (res != null) ui_object.changePath({ main: "main", sub: "invitation" });
+          if (res != null)
+            ui_object.changePath({ main: "main", sub: "invitation" });
         }
       }}
     >

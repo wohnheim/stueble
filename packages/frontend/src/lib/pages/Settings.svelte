@@ -1,54 +1,14 @@
 <script lang="ts">
-  import ui from "beercss";
-  import dayjs from "dayjs";
-  import { nanoid } from "nanoid";
-
   import { apiClient } from "$lib/api/client";
-  import { ui_object, type RouteSettings } from "$lib/lib/UI.svelte";
+  import { ui_object } from "$lib/lib/UI.svelte";
 
   import Button from "$lib/components/Button.svelte";
-
-  $effect(() => {
-    // Open dialog
-    if (
-      ui_object.layout == "mobile" &&
-      (ui_object.path as RouteSettings).sub &&
-      ui_object.largeDialog &&
-      !ui_object.largeDialog.open
-    )
-      ui("#dialog-large");
-
-    // Close dialogs
-    if (
-      (ui_object.layout == "desktop" ||
-        !(ui_object.path as RouteSettings).sub) &&
-      ui_object.largeDialog &&
-      ui_object.largeDialog.open
-    )
-      ui("#dialog-large");
-    if (
-      ui_object.layout == "desktop" &&
-      ui_object.dialogProperties.mode == "edit" &&
-      ui_object.generalDialog?.open
-    )
-      ui_object.closeDialog();
-  });
 </script>
 
 <div id="scrollable">
   <p id="header" class="bold">User</p>
 
-  <Button
-    onclick={async () =>
-      ui_object.user !== undefined &&
-      apiClient("http").modifyUser({
-        id: ui_object.user.id,
-        firstName: await ui_object.openEditDialog(
-          { title: "Vorname", placeholder: "Vorname", type: "string" },
-          ui_object.user.firstName,
-        ),
-      })}
-  >
+  <Button clickable={false}>
     <div>
       <p id="title">Vorname</p>
       <p id="subtitle">
@@ -57,17 +17,7 @@
     </div>
   </Button>
 
-  <Button
-    onclick={async () =>
-      ui_object.user !== undefined &&
-      apiClient("http").modifyUser({
-        id: ui_object.user.id,
-        lastName: await ui_object.openEditDialog(
-          { title: "Nachname", placeholder: "Nachname", type: "string" },
-          ui_object.user.lastName,
-        ),
-      })}
-  >
+  <Button clickable={false}>
     <div>
       <p id="title">Nachname</p>
       <p id="subtitle">
@@ -97,7 +47,15 @@
   {#if ui_object.capabilities.some((c) => c == "host")}
     <p id="header" class="bold">Administrative Funktionen</p>
 
-    <Button>
+    <Button
+      onclick={async () =>
+        apiClient("http").modifyMotto(
+          await ui_object.openEditDialog(
+            { title: "Motto", placeholder: "Motto", type: "string" },
+            ui_object.motto,
+          ),
+        )}
+    >
       <div>
         <p id="title">Motto</p>
         <p id="subtitle">
@@ -106,24 +64,45 @@
       </div>
     </Button>
 
-    <Button clickable={false}>
-      <div>
-        <p id="title">Maximale Personenanzahl</p>
-        <p id="subtitle">
-          {150}
-        </p>
-      </div>
-    </Button>
+    {#if ui_object.capabilities.some((c) => c == "tutor")}
+      <Button>
+        <div>
+          <p id="title">Wirt*innen</p>
+          <p id="subtitle">Wirt*innen hinzufügen oder entfernen</p>
+        </div>
+      </Button>
+    {/if}
+
+    {#if ui_object.capabilities.some((c) => c == "admin")}
+      <Button
+        onclick={async () => {
+          if (!ui_object.config) return;
+
+          const res = await apiClient("http").modifyConfig({
+            maximumGuests: Number.parseInt(
+              await ui_object.openEditDialog(
+                {
+                  title: "Maximale Personenanzahl",
+                  placeholder: "150",
+                  type: "number",
+                },
+                ui_object.config.maximumGuests.toString(),
+              ),
+            ),
+          });
+
+          if (res != null) ui_object.config = res;
+        }}
+      >
+        <div>
+          <p id="title">Maximale Personenanzahl</p>
+          <p id="subtitle">
+            {ui_object.config?.maximumGuests ?? ""}
+          </p>
+        </div>
+      </Button>
+    {/if}
   {/if}
-
-  <p id="header" class="bold">Devices</p>
-
-  <Button>
-    <div>
-      <p id="title">Devices</p>
-      <p id="subtitle">Manage devices</p>
-    </div>
-  </Button>
 
   <p id="header" class="bold">Account</p>
 
@@ -140,6 +119,7 @@
   #scrollable {
     height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
   #header {

@@ -8,7 +8,7 @@
 <header>
   <nav>
     {#if ui_object.layout == "mobile"}
-      <button class="circle transparent" onclick={() => ui("#dialog-menu")}>
+      <button class="circle transparent" onclick={() => ui(ui_object.menuDialog)}>
         <i>menu</i>
         <div class="tooltip bottom">Menu</div>
       </button>

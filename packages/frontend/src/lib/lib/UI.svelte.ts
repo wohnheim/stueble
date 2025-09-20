@@ -4,6 +4,7 @@ import z from "zod";
 
 import type {
   Capabilities,
+  Config,
   GuestExtern,
   GuestIntern,
   QRCodeData,
@@ -62,6 +63,15 @@ class UI {
 
   // Navigation
   path = $state<Routes>({ main: "main" });
+
+  // Config
+  config = $state<Config>({
+    maximumGuests: 150,
+    sessionExpirationDays: 0,
+    maximumInvitesPerUser: 0,
+    resetCodeExpirationMinutes: 0,
+    qrCodeExpirationMinutes: 0,
+  });
 
   // Persistent properties (using IndexedDB)
   motto = $state("");
@@ -152,7 +162,7 @@ class UI {
   /* Dialogs */
 
   openLargeDialog = async () => {
-    ui("#dialog-large");
+    ui(this.largeDialog);
   };
 
   closeDialog = async (success?: boolean) => {
@@ -162,12 +172,9 @@ class UI {
       }
 
       await new Promise<void>((resolve) => {
-        ui("#dialog-general");
+        ui(this.generalDialog);
 
-        setTimeout(() => {
-          this.dialogProperties = { mode: "unselected" };
-          resolve();
-        }, 400); // BeerCSS: --speed3 + 0.1s
+        setTimeout(() => resolve(), 400); // BeerCSS: --speed3 + 0.1s
       });
     }
   };
@@ -185,7 +192,7 @@ class UI {
       };
 
       this.generalDialog?.addEventListener("close", onClose);
-      ui("#dialog-general");
+      ui(this.generalDialog);
     });
   };
 
@@ -211,7 +218,7 @@ class UI {
       };
 
       this.generalDialog?.addEventListener("close", onClose);
-      ui("#dialog-general");
+      ui(this.generalDialog);
     });
   };
 
@@ -264,17 +271,13 @@ export interface DialogEdit {
 
   length?: number;
   placeholder?: string;
-  type: "string" | "qrcode";
+  type: "string" | "number" | "qrcode";
 }
 
 export interface DialogCheckIn {
   mode: "check-in";
 
-  firstName: string;
-  lastName: string;
-
-  verify: boolean;
-  extern: boolean;
+  guest: GuestExtern | GuestIntern;
 }
 
 export type DialogProperties = (

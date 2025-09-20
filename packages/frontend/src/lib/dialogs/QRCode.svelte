@@ -19,12 +19,12 @@
   onMount(async () => {
     settings.set("qrCodeData", demoData);
 
-    settings.set(
+    /* settings.set(
       "qrCodeData",
       JSON.stringify(
         await apiClient("ws").sendMessage({ event: "requestQRCode" }),
       ),
-    );
+    ); */
   });
 </script>
 
