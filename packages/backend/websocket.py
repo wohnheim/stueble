@@ -180,6 +180,7 @@ async def handle_disconnect(websocket):
     sid_to_websocket.pop(session_id, None)
     return
 
+@DeprecationWarning
 async def handle_ping(websocket, msg):
     """
     handle a ping from the client
