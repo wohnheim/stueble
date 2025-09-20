@@ -59,7 +59,7 @@ class UI {
   layout = $derived(this.width < 840 ? "mobile" : "desktop");
 
   // API Capabilities
-  capabilities = $state<Capabilities>(["host", "admin"]);
+  capabilities = $state<Capabilities>([]);
 
   // Navigation
   path = $state<Routes>({ main: "main" });
@@ -79,31 +79,7 @@ class UI {
   qrCodeData = $state<QRCodeData>();
 
   // Guests (persisted using IndexedDB)
-  guests = $state<(GuestIntern | GuestExtern)[]>([
-    {
-      present: false,
-      extern: false,
-      id: "1234567",
-      verified: true,
-      firstName: "Gerda",
-      lastName: "Huber",
-      roomNumber: 123,
-      residence: "hirte",
-    },
-    {
-      present: false,
-      extern: false,
-      id: "2345678",
-      verified: false,
-      firstName: "Ernst",
-      lastName: "Huber",
-      roomNumber: 301,
-      residence: "altbau",
-    },
-  ]);
-
-  // Setup (mutable)
-  linkingCode = $state("");
+  guests = $state<(GuestIntern | GuestExtern)[]>([]);
 
   // Personal infos (mutable)
   userParams = $state<
