@@ -120,7 +120,7 @@ async def handle_ws(websocket):
     result = sessions.get_session(cursor=cursor, session_id=session_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        await send(websocket=websocket, event="error", req_id=req_id, data=
+        await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500" if result["error"] != "no session found" else "401",
              "message": str(result["error"])})
         return
@@ -283,7 +283,7 @@ async def handle_ping(websocket, req_id):
         req_id (str): the request id from the client
     """
 
-    await send(websocket=websocket, event="pong", req_id=req_id, data=True)
+    await send(websocket=websocket, event="pong", reqId=req_id, data=True)
     return
 
 async def handle_heartbeat(websocket):
@@ -313,11 +313,11 @@ async def request_motto(websocket, msg, req_id):
 
     result = get_motto(date=date)
     if result["success"] is False:
-        await send(websocket=websocket, event="error", req_id=req_id, data=
+        await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500",
              "message": str(result["error"])})
         return
-    await send(websocket=websocket, event="motto", req_id=req_id, data=result["data"])
+    await send(websocket=websocket, event="motto", reqId=req_id, data=result["data"])
     return
 
 '''@DeprecationWarning
@@ -388,7 +388,7 @@ async def verify_guest(websocket, msg):
 
     await send(websocket=websocket, event="guestVerification", data={})
 
-    await broadcast(room=host_upwards_room, websocket=websocket, event="guestVerified", req_id=req_id, data=user_data, skip_sid=session_id)
+    await broadcast(room=host_upwards_room, websocket=websocket, event="guestVerified", reqId=req_id, data=user_data, skip_sid=session_id)
     return'''
 
 async def get_qrcode(websocket, msg, req_id):
@@ -412,7 +412,7 @@ async def get_qrcode(websocket, msg, req_id):
         session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
         result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["user_uuid"])
         if result["success"] is False:
-            await send(websocket=websocket, event="error", req_id=req_id, data=
+            await send(websocket=websocket, event="error", reqId=req_id, data=
                 {"code": "500" if result["error"] != "no matching session and user found" else "401",
                  "message": str(result["error"])})
             return
@@ -426,13 +426,13 @@ async def get_qrcode(websocket, msg, req_id):
                                 stueble_id=stueble_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        await send(websocket=websocket, event="error", req_id=req_id, data=
+        await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500",
              "message": str(result["error"])})
         return
 
     if result["data"] is False:
-        await send(websocket=websocket, event="error", req_id=req_id, data=
+        await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "401",
              "message": "Guest not on guest_list"})
         return
@@ -446,7 +446,7 @@ async def get_qrcode(websocket, msg, req_id):
                  "timestamp": timestamp},
             "signature": signature}
 
-    await send(websocket=websocket, event="requestQRCode", req_id=req_id, data=data)
+    await send(websocket=websocket, event="requestQRCode", reqId=req_id, data=data)
     return
 
 async def get_public_key(websocket, req_id):
@@ -460,7 +460,7 @@ async def get_public_key(websocket, req_id):
 
     public_key = os.getenv("PUBLIC_KEY")
 
-    await send(websocket=websocket, event="publicKey", req_id=req_id, data={
+    await send(websocket=websocket, event="publicKey", reqId=req_id, data={
         "publicKey": public_key
     })
     return
