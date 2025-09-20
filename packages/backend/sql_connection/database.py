@@ -74,7 +74,7 @@ def connect(**kwargs):
     return conn, conn.cursor()
     
 
-def create_pool(max_connections : int = 20):
+def create_pool(max_connections : int = 100):
     """
     create_pool \n
     creates a thread pool safely
