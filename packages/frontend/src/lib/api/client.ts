@@ -459,7 +459,7 @@ class WebSocketClient {
 
       delete this.promises[message.reqId];
     } else {
-      console.log("Error: Type not found");
+      console.warn("Error: Type not found, Message:", message);
     }
   }
 }
