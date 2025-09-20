@@ -18,14 +18,14 @@ def get_motto(cursor, date: date | None=None) -> dict:
     if date is not None:
         result = db.read_table(
             cursor=cursor,
-            keywords=["motto", "date_of_time"],
+            keywords=["motto", "date_of_time", "id"],
             table_name="stueble_motto",
             conditions={"date_of_time": date},
             expect_single_answer=True)
     else:
         result = db.read_table(
             cursor=cursor,
-            keywords=["motto", "date_of_time"],
+            keywords=["motto", "date_of_time", "id"],
             table_name="motto",
             expect_single_answer=True,
             specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
@@ -47,7 +47,7 @@ def get_info(cursor, date: date | None=None) -> dict:
     if date is not None:
         parameters["conditions"] = {"date_of_time": date}
     else:
-        parameters["specific_where"] = "date_of_time = (SELECT date_of_time FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1)"
+        parameters["specific_where"] = "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"
     result = db.read_table(
         cursor=cursor,
         table_name="stueble_motto",
