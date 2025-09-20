@@ -7,8 +7,9 @@ from dotenv import load_dotenv, set_key
 def b64url_encode(data):
     return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
 
-# Path to .env file
-env_file_path = "~/stueble/packages/backend/.env"
+env_file_path = os.path.expanduser("~/stueble/packages/backend/.env")
+with open(env_file_path, "w") as file:
+    pass
 
 # Load existing .env file (if it exists)
 load_dotenv(env_file_path)
