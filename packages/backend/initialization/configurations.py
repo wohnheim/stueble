@@ -37,4 +37,12 @@ public_key_string = pem_public.decode('utf-8')
 set_key(env_file_path, "PRIVATE_KEY", private_key_string)
 set_key(env_file_path, "PUBLIC_KEY", public_key_string)
 
-print("Keys saved to .env file!")
+set_key(env_file_path, "USERDB", "stueble")
+set_key(env_file_path, "HOST", "localhost")
+set_key(env_file_path, "PORT", 5432)
+set_key(env_file_path, "DBNAME", "stueble_data")
+
+inputted_data = input("Enter the password for the postgres user 'stueble': ")
+
+set_key(env_file_path, "PASSWORD", inputted_data)
+print("Keys saved to .env file.")
