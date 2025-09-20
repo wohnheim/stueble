@@ -14,7 +14,7 @@ from packages.backend import websocket
 def run_flask():
     """Run the Flask API server in separate thread"""
     print(f"Starting Flask API server in thread {threading.current_thread().name}...")
-    api.app.run(host="0.0.0.0", port=3000, debug=False, use_reloader=False, threaded=True)
+    api.app.run(host="127:0.0.1", port=3000, debug=False, use_reloader=False, threaded=True)
 
 def run_websocket():
     """Run the WebSocket server in separate thread"""
