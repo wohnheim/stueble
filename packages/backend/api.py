@@ -705,7 +705,7 @@ def guest_change():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -815,7 +815,7 @@ def attend_stueble():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
