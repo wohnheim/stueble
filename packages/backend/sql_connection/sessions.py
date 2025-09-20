@@ -38,6 +38,8 @@ def create_session(connection, cursor, user_id: int) -> dict:
         returning_column="session_id")
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "error occurred"}
+    if result["success"]:
+        result["data"].append(expiration_date)
     return clean_single_data(result)
 
 def get_session(cursor, session_id: str) -> dict:
