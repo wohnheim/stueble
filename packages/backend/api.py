@@ -446,66 +446,6 @@ def delete():
         status=204)
     return response
 
-@DeprecationWarning
-# NOTE: this endpoint is public, since the motto is also shown on the website without logging in
-@app.route("/user/motto", methods=["GET"])
-def get_motto(date: str | None = None):
-    """
-    returns the motto for the next stueble party
-
-    Parameters:
-        date (str | None): the date of the motto
-    """
-
-    if date is None:
-        data = request.get_json()
-        date = data.get("date", None)
-        # load data
-    elif date == "":
-        date = None
-
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
-    # if date is None, return all stuebles
-    if date is None:
-        result = db.read_table(
-            cursor=cursor,
-            table_name="stueble_motto",
-            keywords=["motto", "date_of_time"],
-            order_by=("date_of_time", 0), # descending
-            expect_single_answer=False)
-        close_conn_cursor(conn, cursor) # close conn, cursor
-        if result["success"] is False:
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result["error"])}),
-                status=500,
-                mimetype="application/json")
-            return response
-        data = [{"motto": entry[0], "date": entry[1].isoformat()} for entry in result["data"]]
-        response = Response(
-            response=json.dumps(data),
-            status=200,
-            mimetype="application/json")
-        return response
-
-    # get motto from table
-    result = motto.get_motto(cursor=cursor, date=date)
-    close_conn_cursor(conn, cursor) # close conn, cursor
-    if result["success"] is False:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    data = {"motto": result["data"][0], "date": result["data"][1].isoformat()} if result["data"] is not None else {}
-    response = Response(
-        response=json.dumps(data),
-        status=200,
-        mimetype="application/json")
-    return response
-
 #TODO: work on guest dictionary
 # NOTE: if no stueble is happening today or yesterday, an empty list is returned
 @app.route("/guests", methods=["GET"])
