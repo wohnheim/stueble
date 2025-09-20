@@ -50,7 +50,7 @@
       if (settings.settings["qrCodeData"])
         ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
 
-      // ui_object.guests = await getGuests();
+      ui_object.guests = await getGuests();
 
       // Setup WebSocket connection
       // await apiClient("ws").sendMessage({ event: "ping" });
@@ -68,12 +68,7 @@
   });
 
   $effect(() => {
-    if (
-      false &&
-      browser &&
-      loaded &&
-      ui_object.capabilities.find((c) => c == "host")
-    ) {
+    if (browser && loaded && ui_object.capabilities.find((c) => c == "host")) {
       apiClient("ws")
         .sendMessage({ event: "requestPublicKey" })
         .then(async (key) => {
