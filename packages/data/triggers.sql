@@ -289,6 +289,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION add_hosts()
+RETURNS trigger AS $$
+BEGIN
+IF  NEW.date_of_time = SELECT MIN(date_of_time)
+             FROM ((SELECT date_of_time
+                    FROM stueble_motto
+                    WHERE date_of_time >= CURRENT_DATE)
+                   UNION
+                   SELECT date_of_time
+                    FROM stueble_motto
+                    WHERE CURRENT_TIME < '07:00:00'
+                        AND date_of_time = CURRENT_DATE - 1) as next_or_running_stueble AND NEW.hosts != OLD.hosts
+THEN
+UPDATE users
+SET user_role = USER_ROLE.HOST
+WHERE id = ANY(ARRAY(SELECT jsonb_array_elements_text(NEW.hosts)::INTEGER)) AND user_role = USER_ROLE.USER;
+END IF;
+$$
+
 -- NOTE: DO NOT RENAME THE TRIGGERS, SINCE THEIR ALPHABETICAL ORDER SPECIFIES THE ORDER OF EXECUTION
 CREATE OR REPLACE TRIGGER event_add_invited_by_trigger
 BEFORE INSERT OR UPDATE ON events
@@ -319,3 +338,7 @@ CREATE OR REPLACE TRIGGER set_session_id_trigger
 CREATE OR REPLACE TRIGGER set_reset_code_trigger
     BEFORE INSERT ON verification_codes
     FOR EACH ROW EXECUTE FUNCTION set_reset_code();
+
+CREATE OR REPLACE TRIGGER add_hosts
+    AFTER INSERT OR UPDATE ON stueble_motto
+    FOR EACH ROW EXECUTE FUNCTION add_hosts();
