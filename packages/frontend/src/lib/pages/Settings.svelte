@@ -3,6 +3,7 @@
   import { ui_object } from "$lib/lib/UI.svelte";
 
   import Button from "$lib/components/Button.svelte";
+  import { capitalizeFirstLetter } from "$lib/lib/utils";
 </script>
 
 <div id="scrollable">
@@ -39,7 +40,7 @@
     <div>
       <p id="title">Wohnheim</p>
       <p id="subtitle">
-        {ui_object.user?.residence}
+        {ui_object.user ? capitalizeFirstLetter(ui_object.user.residence) : ""}
       </p>
     </div>
   </Button>
