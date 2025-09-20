@@ -116,9 +116,9 @@ async def handle_ws(websocket):
         return
     
     # get connection and cursor
-    _, cursor = get_conn_cursor()
-
+    conn, cursor = get_conn_cursor()
     result = sessions.get_session(cursor=cursor, session_id=session_id)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         await send(websocket=websocket, event="error", req_id=req_id, data=
             {"code": "500" if result["error"] != "no session found" else "401",
@@ -414,11 +414,12 @@ async def get_qrcode(websocket, msg, req_id):
         user_uuid = result["data"]
 
     # get connection, cursor
-    _, cursor = get_conn_cursor()
+    conn, cursor = get_conn_cursor()
 
     result = events.check_guest(cursor=cursor,
                                 user_uuid=user_uuid,
                                 stueble_id=stueble_id)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         await send(websocket=websocket, event="error", req_id=req_id, data=
             {"code": "500",
