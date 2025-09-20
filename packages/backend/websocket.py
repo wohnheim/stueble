@@ -12,6 +12,9 @@ from packages.backend.data_types import *
 from packages.backend.sql_connection import events, sessions
 from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
+from dotenv import load_dotenv
+
+load_dotenv("~/stueble/packages/backend/.env")
 
 host_upwards_room = set()
 connections = set()
