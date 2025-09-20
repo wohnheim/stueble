@@ -48,7 +48,7 @@ async def broadcast(event, data, skip_sid=None, room=None, **kwargs):
             await ws.send(message)
 
 async def handle_ws(websocket):
-    session_id = parse_cookies(headers=websocket.request_headers.items()).get("SID", None)
+    session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     result = await handle_connect(websocket)
     if result is False:
         return
