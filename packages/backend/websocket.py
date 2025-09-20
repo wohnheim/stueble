@@ -108,9 +108,9 @@ async def handle_ws(websocket):
                          "message": f"unknown event: {event}"})
                     continue
                 data = msg.get("data", None)
-            except:
+            except Exception as e:
                 await send(websocket=websocket, event="error", data={"code": "500",
-                     "message": "Invalid msgpack format"})
+                     "message": "Invalid msgpack format; " + str(e)})
                 continue
             if event == "connect":
                 await handle_connect(websocket=websocket)
