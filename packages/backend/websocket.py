@@ -137,7 +137,7 @@ async def handle_ws(websocket):
                     continue
                 await get_qrcode(websocket=websocket, msg=data)
             elif event == "requestPublicKey":
-                await get_public_key(websocket=websocket, msg=data)
+                await get_public_key(websocket=websocket)
     finally:
         host_upwards_room.discard(session_id)
         connections.discard(websocket)
