@@ -35,12 +35,21 @@
 
   onMount(async () => {
     if (properties.type == "qrcode") {
-      codeReader = new BrowserQRCodeReader();
+      try {
+        // Ask for permission
+        await navigator.mediaDevices.getUserMedia({ video: true });
 
-      const devices = await codeReader.listVideoInputDevices();
-      const selectedDeviceId = devices[0]?.deviceId;
+        // Start QRCode reader
+        codeReader = new BrowserQRCodeReader();
 
-      if (selectedDeviceId !== undefined) decode(codeReader, selectedDeviceId);
+        const devices = await codeReader.listVideoInputDevices();
+        const selectedDeviceId = devices[0]?.deviceId;
+
+        if (selectedDeviceId !== undefined)
+          decode(codeReader, selectedDeviceId);
+      } catch (e) {
+        ui_object.closeDialog(false);
+      }
     }
   });
 
