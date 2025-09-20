@@ -391,7 +391,7 @@ async def get_public_key(websocket):
 
 # Start server
 async def main():
-    async with websockets.serve(handle_ws, "0.0.0.0", 3001, ping_interval=25, ping_timeout=20, close_timeout=9):
+    async with websockets.serve(handle_ws, "127:0.0.1", 3001, ping_interval=25, ping_timeout=20, close_timeout=9):
         await asyncio.Future()
 
 if __name__ == "__main__":
