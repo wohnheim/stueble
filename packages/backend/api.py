@@ -37,7 +37,7 @@ def login():
 
     # load data
     data = request.get_json()
-    # TODO: make user_name and email one parameter user
+    
     name = data.get("user", None)
     password = data.get("password", None)
 
