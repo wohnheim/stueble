@@ -1,8 +1,10 @@
 import asyncio
+import base64
 import os
 import websockets
 import msgpack
 import datetime
+from cryptography.hazmat.primitives import serialization
 
 from packages.backend.sql_connection.common_functions import get_conn_cursor, check_permissions, close_conn_cursor
 from packages.backend.api import get_motto
@@ -460,6 +462,30 @@ async def get_public_key(websocket, req_id):
     """
 
     public_key = os.getenv("PUBLIC_KEY")
+    if not public_key:
+        await send(websocket=websocket, event="error", reqId=req_id, data=
+            {"code": "500",
+             "message": "Public key not found in environment variables."})
+    public_key = serialization.load_pem_public_key(
+        public_key.encode('utf-8')
+    )
+    public_key_bytes = public_key.public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw
+    )
+    
+    # Base64url encode (no padding)
+    def base64url_encode(data):
+        return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
+    
+    # Create JWK
+    jwk = {
+        "kty": "OKP",                           # Key Type: Octet Key Pair
+        "crv": "Ed25519",                       # Curve: Ed25519
+        "x": base64url_encode(public_key_bytes), # Public key value
+        "use": "sig",                           # Usage: signature
+        "key_ops": ["verify"]                   # Key operations
+    }
 
     await send(websocket=websocket, event="publicKey", reqId=req_id, data={
         "publicKey": public_key
