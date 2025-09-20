@@ -12,13 +12,11 @@ from packages.backend.sql_connection import (
     guest_events,
     configs,
     events,
-    database as db)
-from packages.backend.sql_connection import signup_validation as signup_val
-from packages.backend import hash_pwd as hp
+    database as db, signup_validation as signup_val)
+from packages.backend import hash_pwd as hp, websocket as ws
 from packages.backend.google_functions import gmail
 import re
 import asyncio
-import websocket as ws
 
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
 # TODO always close connection after last request
