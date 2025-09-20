@@ -18,6 +18,7 @@ eventlet
 jwcrypto
 websockets
 waitress
+dotenv
 
 h11
 pip
