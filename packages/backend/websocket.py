@@ -5,7 +5,8 @@ import msgpack
 import json
 import datetime
 
-from packages.backend.api import get_conn_cursor, check_permissions, close_conn_cursor, get_motto
+from packages.backend.sql_connection.common_functions import get_conn_cursor, check_permissions, close_conn_cursor
+from packages.backend.api import get_motto
 from packages.backend.data_types import *
 from packages.backend.http_to_websocket import *
 from packages.backend.sql_connection import users, events
