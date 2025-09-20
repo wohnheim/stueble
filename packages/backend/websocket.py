@@ -44,7 +44,7 @@ async def broadcast(event, data, skip_sid=None, room=None, **kwargs):
 
     message = msgpack.packb({"event": event, **kwargs, "data": {"event": event, "data": data}}, use_bin_type=True)
     for ws in list(room):
-        if ws.parse_cookies(ws.request_headers.items()).get("SID", None) != skip_sid:
+        if ws.parse_cookies(ws.request.headers).get("SID", None) != skip_sid:
             await ws.send(message)
 
 async def handle_ws(websocket):
@@ -117,7 +117,7 @@ async def handle_connect(websocket):
         path: the path of the websocket connection
     """
 
-    session_id = parse_cookies(headers=websocket.request_headers.items()).get("SID", None)
+    session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     if session_id is None:
         await send(websocket=websocket, event="error", data={
                      "code": "401",
@@ -169,7 +169,7 @@ async def handle_disconnect(websocket):
     """
     handle a websocket disconnection
     """
-    session_id = parse_cookies(headers=websocket.request_headers.items()).get("SID", None)
+    session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     if session_id is None:
         return
 
@@ -239,7 +239,7 @@ async def verify_guest(websocket, msg):
         return
     user_uuid = msg.get("id", None)
     verification_method = msg.get("method", None)
-    session_id = parse_cookies(headers=websocket.request_headers.items()).get("SID", None)
+    session_id = parse_cookies(headers=websocketrequest.headers).get("SID", None)
     if session_id is None:
         await send(websocket=websocket, event="error", data={
             "code": "401",
