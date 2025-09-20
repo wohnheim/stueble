@@ -24,14 +24,40 @@ def get_websocket_by_sid(sid):
 def parse_cookies(headers):
     """Parse cookies from websocket headers"""
     cookies = {}
-    for header_name, header_value in headers:
-        if header_name.lower() == "cookie":
+    
+    # Check if headers is a dict-like object (common in websockets library)
+    if hasattr(headers, 'get'):
+        cookie_header = headers.get('cookie') or headers.get('Cookie')
+        if cookie_header:
             # Split cookie string by semicolons and parse each pair
-            for cookie_pair in header_value.split(';'):
+            for cookie_pair in cookie_header.split(';'):
                 cookie_pair = cookie_pair.strip()
                 if '=' in cookie_pair:
                     key, value = cookie_pair.split('=', 1)
                     cookies[key.strip()] = value.strip()
+    else:
+        # If headers is an iterable of tuples
+        try:
+            for header_name, header_value in headers:
+                if header_name.lower() == "cookie":
+                    # Split cookie string by semicolons and parse each pair
+                    for cookie_pair in header_value.split(';'):
+                        cookie_pair = cookie_pair.strip()
+                        if '=' in cookie_pair:
+                            key, value = cookie_pair.split('=', 1)
+                            cookies[key.strip()] = value.strip()
+        except ValueError:
+            # If unpacking fails, try to iterate differently
+            for header in headers:
+                if hasattr(header, '__getitem__') and len(header) >= 2:
+                    header_name, header_value = header[0], header[1]
+                    if header_name.lower() == "cookie":
+                        for cookie_pair in header_value.split(';'):
+                            cookie_pair = cookie_pair.strip()
+                            if '=' in cookie_pair:
+                                key, value = cookie_pair.split('=', 1)
+                                cookies[key.strip()] = value.strip()
+    
     return cookies
 
 async def send(websocket, event, data, **kwargs):
