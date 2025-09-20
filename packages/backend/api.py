@@ -1,7 +1,8 @@
 import datetime
 from zoneinfo import ZoneInfo
 
-from flask import Flask, request
+from flask import Flask, request, Response
+import json
 
 from packages.backend.data_types import *
 from packages.backend.sql_connection import (
@@ -9,7 +10,6 @@ from packages.backend.sql_connection import (
     sessions,
     motto,
     guest_events,
-    websocket,
     configs,
     events,
     database as db)
@@ -17,8 +17,8 @@ from packages.backend.sql_connection import signup_validation as signup_val
 from packages.backend import hash_pwd as hp
 from packages.backend.google_functions import gmail
 import re
-from datetime import timedelta
-import msgpack
+import asyncio
+import websocket as ws
 
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
 # TODO always close connection after last request
@@ -29,15 +29,6 @@ pool = db.create_pool()
 # initialize flask app
 app = Flask(__name__)
 app.pool = pool
-
-socketio = SocketIO(app, async_mode="eventlet")
-
-host_upwards_room = "host_upwards"
-
-def valid_session_id(func):
-    def wrapper(*args, **kwargs):
-        pass
-
 
 def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
     """
@@ -499,8 +490,9 @@ def delete():
         status=204)
     return response
 
+@DeprecationWarning
 # NOTE: this endpoint is public, since the motto is also shown on the website without logging in
-@app.route("/motto", methods=["GET"])
+@app.route("/user/motto", methods=["GET"])
 def get_motto(date: str | None = None):
     """
     returns the motto for the next stueble party
@@ -654,14 +646,11 @@ def user():
         mimetype="application/json")
     return response
 
-# DEPRECATED: this function isn't used
-# TODO: add stueble_code search
-@DeprecationWarning
 @app.route("/host/search_guest", methods=["POST"])
-def search():
+def search_intern():
     """
     search for a guest \n
-    allowed keys for searching are first_name, last_name, email, (room, residence)
+    allowed keys for searching are first_name, last_name, email, (room, residence), user_uuid
     """
 
     # load data
@@ -709,7 +698,7 @@ def search():
     # json format data: {"session_id": str, data: {"first_name": str or None, "last_name": str or None, "room": str or None, "residence": str or None, "email": str or None}}
 
     # allowed keys to search for a user
-    allowed_keys = ["first_name", "last_name", "room", "residence", "email"]
+    allowed_keys = ["first_name", "last_name", "room", "residence", "email", "user_uuid"]
 
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
@@ -718,7 +707,8 @@ def search():
             status=400,
             mimetype="application/json")
         return response
-    keywords = ["first_name", "last_name", "email", "user_role"]
+    
+    keywords = ["first_name", "last_name", "user_uuid"]
 
     # if only either room or residence but not both were specified, return error
     if any(key in data.keys() for key in ["room", "residence"]) and not all(key in data.keys() for key in ["room", "residence"]):
@@ -730,25 +720,37 @@ def search():
 
     # search email
     if "email" in data:
+        conditions = {"email": f"{data["email"]} AND user_role != USER_ROLE.EXTERN"}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
             keywords=keywords,
-            conditions={"email": data["email"]},
+            conditions=conditions,
             expect_single_answer=True)
 
     # search room and residence
     elif "room" in data:
+        conditions = {"room": data["room"], "residence": f"{data["residence"]} AND user_role != USER_ROLE.EXTERN"}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
             keywords=keywords,
-            conditions={"room": data["room"], "residence": data["residence"]},
+            conditions=conditions,
+            expect_single_answer=True)
+    
+    # search user_uuid
+    elif "user_uuid" in data:
+        conditions = {"user_uuid": f"{data["user_uuid"]} AND user_role != USER_ROLE.EXTERN"}
+        result = db.read_table(
+            cursor=cursor,
+            table_name="users",
+            keywords=keywords,
+            conditions=conditions,
             expect_single_answer=True)
 
     # search first_name and/or last_name
     else:
-        conditions = {key: value for key, value in data.items() if value is not None}
+        conditions = {key: value if index != (len(data.keys())-1) else f"{value} AND user_role != USER_ROLE.EXTERN" for index, (key, value) in enumerate(data.items()) if value is not None}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
@@ -769,33 +771,11 @@ def search():
         result["data"] = []
 
     users = []
-    if "email" in data or "room" in data:
+    for entry in result["data"]:
 
-        email_key = "email" in data
-        data = result["data"]
-
-        if not email_key:
-            # showing only a part of the email
-            email = data[2]
-            email = email[:2] + "*" * (re.search("@", email).start() - 2) + email[re.search("@", email).start():]
-        else:
-            email = data[2]
-
-        user = {"first_name": data[0],
-                "last_name": data[1],
-                "email": email,
-                "user_role": FrontendUserRole.EXTERN if data[3] == "extern" else FrontendUserRole.INTERN}
-        users.append(user)
-    else:
-        for entry in result["data"]:
-            # showing only a part of the email
-            email = entry[2]
-            email = email[:2] + "*" * (re.search("@", email).start() - 2) + email[re.search("@", email).start():]
-
-            users.append({"first_name": entry[0],
-                          "last_name": entry[1],
-                          "email": email,
-                          "user_role": FrontendUserRole.EXTERN if entry[3] == "extern" else FrontendUserRole.INTERN})
+        users.append({"first_name": entry[0], 
+                      "last_name": entry[1], 
+                      "id": entry[2]})
 
     response = Response(
         response=json.dumps({"users": users}),
@@ -857,18 +837,6 @@ def guest_change():
             mimetype="application/json")
         return response
 
-    # find sid to skip
-    result = websocket.get_sid_by_session_id(cursor=cursor, session_id=session_id)
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    req_id = result["data"]
-
     # get user data
     keywords = ["first_name", "last_name", "room", "residence", "verified", "user_role"]
     result = users.get_user(
@@ -877,8 +845,8 @@ def guest_change():
         keywords=keywords,
         expect_single_answer=True)
 
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -902,36 +870,17 @@ def guest_change():
 
     message = {
         "event": "guestModified",
-        "req_id": req_id,
         "data": user_data}
 
-    action_type = Action_Type("guestArrived") if present else Action_Type("guestLeft")
-    # insert into websocket_log
-    result = websocket.add_websocket_event(
-        connection=conn,
-        cursor=cursor,
-        action_type=action_type,
-        user_id=user_id,
-        message_content=message,
-        required_role=UserRole.HOST)
-
-    close_conn_cursor(conn, cursor)
-    if result["success"] is False:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
     # send a websocket message to all hosts that the guest list changed
-    emit("guestModified", msgpack.packb(message), to=host_upwards_room, skip_sid=result["data"])
+    asyncio.run(ws.broadcast(event="guestModified", data=message, skip_sid=session_id))
 
     # return 204
     response = Response(
         status=204)
     return response
 
-@app.route("/user/stueble_signup", methods=["POST"])
+@app.route("/guests", methods=["PUT", "DELETE"])
 def attend_stueble():
     """
     sign up for a stueble party
@@ -984,11 +933,18 @@ def attend_stueble():
 
     stueble_id = result["data"][0]
 
-    result = events.add_guest(
-        connection=conn,
-        cursor=cursor,
-        user_id=user_id,
-        stueble_id=stueble_id)
+    if request.method == "PUT":
+        result = events.add_guest(
+            connection=conn,
+            cursor=cursor,
+            user_id=user_id,
+            stueble_id=stueble_id)
+    else:
+        result = events.remove_guest(
+            connection=conn,
+            cursor=cursor,
+            user_id=user_id,
+            stueble_id=stueble_id)
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
@@ -1003,27 +959,15 @@ def attend_stueble():
             mimetype="application/json")
         return response
 
-    timestamp = int(datetime.datetime.now().timestamp())
+    if request.method == "PUT":
+        timestamp = int(datetime.datetime.now().timestamp())
 
-    signature = hp.create_signature(cursor=cursor, message=json.dumps({"id": user_uuid,
-                                                                       "timestamp": timestamp}))
+        signature = hp.create_signature(message={"id": user_uuid, "timestamp": timestamp})
 
-    data = {"data":
-                {"id": user_uuid,
-                 "timestamp": timestamp},
-            "signature": signature}
-
-    # find sid to skip
-    result = websocket.get_sid_by_session_id(cursor=cursor, session_id=session_id)
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    req_id = result["data"]
+        data = {"data":
+                    {"id": user_uuid,
+                    "timestamp": timestamp},
+                "signature": signature}
 
     # get user data
     keywords = ["first_name", "last_name", "room", "residence", "verified"]
@@ -1033,8 +977,8 @@ def attend_stueble():
         keywords=keywords,
         expect_single_answer=True)
 
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -1054,31 +998,13 @@ def attend_stueble():
         "residence": user_info["residence"],
         "verified": True if user_info["verified"] is not None else False}
 
-    message = {
-        "event": "guestModified",
-        "req_id": req_id,
-        "data": user_data}
-
-    action_type = Action_Type("guestAdded")
-    # insert into websocket_log
-    result = websocket.add_websocket_event(
-        connection=conn,
-        cursor=cursor,
-        action_type=action_type,
-        user_id=user_id,
-        message_content=user_data,
-        required_role=UserRole.HOST)
-
-    close_conn_cursor(conn, cursor)
-    if result["success"] is False:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
+    if request.method == "PUT":
+        action_type = Action_Type("guestAdded")
+    else:
+        action_type = Action_Type("guestRemoved")
 
     # send a websocket message to all hosts that the guest list changed
-    emit(action_type.value, msgpack.packb(message), to=host_upwards_room, skip_sid=result["data"])
+    asyncio.run(ws.send(event=action_type.value, data=user_data, skip_sid=session_id))
 
     response = Response(
         response=json.dumps(data),
@@ -1087,8 +1013,7 @@ def attend_stueble():
     return response
 
 # NOTE: extern guest can be multiple times in table users since only first_name, last_name are specified, which are not unique
-@app.route("/user/invite_friend", methods=["POST"])
-@app.route("/user/invite_friend", methods=["DELETE"])
+@app.route("/guests/invite_friend", methods=["PUT", "DELETE"])
 def invite_friend():
     """
     invite a friend and share a qr-code
@@ -1144,7 +1069,7 @@ def invite_friend():
 
     stueble_id = result["data"][0]
 
-    if request.method == "POST":
+    if request.method == "PUT":
         # add user to table
         result = users.add_user(
             connection=conn,
@@ -1152,7 +1077,7 @@ def invite_friend():
             user_role=UserRole.EXTERN,
             first_name=invitee_first_name,
             last_name=invitee_last_name,
-            returning="id, user_uuid")
+            returning="id, user_uuid") # id, user_uuid on purpose like that
 
     else:
         # get user to remove
@@ -1241,7 +1166,7 @@ def invite_friend():
         invitee_id = result["data"][0]
         invitee_uuid = result["data"][1]
 
-    if request.method == "POST":
+    if request.method == "PUT":
         result = events.add_guest(
             connection=conn,
             cursor=cursor,
@@ -1268,28 +1193,15 @@ def invite_friend():
             mimetype="application/json")
         return response
 
-    if request.method == "POST":
+    if request.method == "PUT":
         timestamp = int(datetime.datetime.now().timestamp())
 
-        signature = hp.create_signature(cursor=cursor, message=json.dumps({"id": invitee_uuid,
-                                                                "timestamp": timestamp}))
+        signature = hp.create_signature(message={"id": invitee_uuid, "timestamp": timestamp})
 
         data = {"data":
                     {"id": invitee_uuid,
                      "timestamp": timestamp},
                 "signature": signature}
-
-    # find sid to skip
-    result = websocket.get_sid_by_session_id(cursor=cursor, session_id=session_id)
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    req_id = result["data"]
 
     # get user data
     keywords = ["first_name", "last_name", "room", "residence", "verified"]
@@ -1299,8 +1211,8 @@ def invite_friend():
         keywords=keywords,
         expect_single_answer=True)
 
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -1317,32 +1229,10 @@ def invite_friend():
         "lastName": invitee_info["last_name"],
         "extern": True}
 
-    message = {
-        "event": "guestModified",
-        "req_id": req_id,
-        "data": invitee_data}
-
-    action_type = Action_Type("guestAdded") if request.method == "POST" else Action_Type("guestRemoved")
-
-    # insert into websocket_log
-    result = websocket.add_websocket_event(
-        connection=conn,
-        cursor=cursor,
-        action_type=action_type,
-        user_id=user_id,
-        message_content=message,
-        required_role=UserRole.HOST)
-
-    close_conn_cursor(conn, cursor)
-    if result["success"] is False:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
+    action_type = Action_Type("guestModified")
 
     # send a websocket message to all hosts that the guest list changed
-    emit(action_type.value, msgpack.packb(message), to=host_upwards_room, skip_sid=result["data"])
+    asyncio.run(ws.send(event=action_type.value, data=invitee_data, skip_sid=session_id))
 
     if request.method == "DELETE":
         response = Response(
@@ -1725,7 +1615,7 @@ def change_user_role():
         status=204)
     return response
 
-@app.route("/tutor/create_stueble", methods=["POST"])
+@app.route("/motto", methods=["POST"])
 def create_stueble():
     """
     creates a new stueble event
@@ -1761,64 +1651,84 @@ def create_stueble():
     # load data
     data = request.get_json()
     date = data.get("timestamp", None)
-    motto = data.get("motto", None)
+    stueble_motto = data.get("motto", None)
     hosts = data.get("hosts", None)
     shared_apartment = data.get("shared_apartment", None)
 
-    if date is None or motto is None or hosts is None or hosts == [] or motto == "":
+    if stueble_motto is None or stueble_motto == "":
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 400, "message": "date, motto and hosts must be specified"}),
+            response=json.dumps({"code": 400, "message": "motto must be specified"}),
             status=400,
             mimetype="application/json")
         return response
 
-    try:
-        date = datetime.datetime.fromtimestamp(date, tz=ZoneInfo("Europe/Berlin"))
-    except ValueError:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 400, "message": "Invalid timestamp"}),
-            status=400,
-            mimetype="application/json")
-        return response
+    if date is None:
+        date = datetime.date.today()
+        days_ahead = (2 - date.weekday() + 7) % 7
+        date = date + datetime.timedelta(days=days_ahead)
+    else:
+        try:
+            date = datetime.datetime.fromtimestamp(date, tz=ZoneInfo("Europe/Berlin"))
+        except ValueError:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 400, "message": "Invalid timestamp"}),
+                status=400,
+                mimetype="application/json")
+            return response
 
-    user_ids = users.get_users(cursor=cursor, information=hosts)
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-    if len(user_ids["data"]) != len(hosts):
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 400, "message": "One or more hosts not found"}),
-            status=400,
-            mimetype="application/json")
-        return response
-
-    result = motto.create_stueble(connection=conn,
-                                  cursor=cursor,
-                                  date=date,
-                                  motto=motto,
-                                  hosts=hosts,
-                                  shared_apartment=shared_apartment)
+    if hosts is not None and hosts != []:
+        user_ids = users.get_users(cursor=cursor, information=hosts)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        if len(user_ids["data"]) != len(hosts):
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 400, "message": "One or more hosts not found"}),
+                status=400,
+                mimetype="application/json")
+            return response
+    result = motto.update_stueble(connection=conn,
+                                cursor=cursor,
+                                date=date,
+                                motto=stueble_motto,
+                                hosts=hosts,
+                                shared_apartment=shared_apartment)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
+        if result["error"] == "no stueble found":
+            result = motto.create_stueble(connection=conn,
+                                    cursor=cursor,
+                                    date=date,
+                                    motto=stueble_motto,
+                                    hosts=hosts,
+                                    shared_apartment=shared_apartment)
+            if result["success"] is False:
+                result = motto.create_stueble(connection=conn,
+                                    cursor=cursor,
+                                    date=date,
+                                    motto=stueble_motto,
+                                    hosts=hosts,
+                                    shared_apartment=shared_apartment)
+        else:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
 
     response = Response(
         status=204)
     return response
 
 @app.route("/websocket_local", methods=["POST"])
-def websocket_change(websocket):
+def websocket_change():
     """
     receive data from websocket_runner and send it to all connected clients
     """
@@ -1834,7 +1744,7 @@ def websocket_change(websocket):
     data = request.get_json()
     first_name = data.get("firstName", None)
     last_name = data.get("lastName", None)
-    personal_hash = data.get("personalHash", None)
+    user_uuid = data.get("user_uuid", None)
     stueble_id = data.get("stuebleId", None)
     event = data.get("event", None)
     if first_name is None or last_name is None or event is None:
@@ -1844,7 +1754,7 @@ def websocket_change(websocket):
             mimetype="application/json")
         return response
 
-    await send(websocket=websocket, event="guest_list_update", data=, "last_name": last_name, "event": event})
+    asyncio.run(ws.broadcast(event="guest_list_update", data={"first_name": first_name, "last_name": last_name}))
 
     response = Response(
         status=200)
