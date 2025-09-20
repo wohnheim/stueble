@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { apiClient } from "$lib/api/client";
   import { onMount } from "svelte";
+
+  import { apiClient } from "$lib/api/client";
 
   let loading = $state(true);
   let result = $state<boolean>();
@@ -25,8 +26,9 @@
 
       <p>Versuche, dich erneut zu registrieren</p>
 
-      <button class="margin" onclick={() => (location.href = "/setup")}>Zur Login-Seite</button
-      >
+      <button class="margin" onclick={() => (location.href = "/setup")}>
+        Zur Login-Seite
+      </button>
     {:else if page.url.searchParams.get("token") == null}
       <h5>Fehler bei der Verifikation des Accounts</h5>
 
