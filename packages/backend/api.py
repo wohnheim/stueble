@@ -545,7 +545,8 @@ def user():
         mimetype="application/json")
     return response
 
-@app.route("/host/search_guest", methods=["POST"])
+# TODO: replace input data json format with query
+@app.route("/user/search", methods=["GET"])
 def search_intern():
     """
     search for a guest \n
@@ -597,8 +598,9 @@ def search_intern():
 
     # json format data: {"session_id": str, data: {"first_name": str or None, "last_name": str or None, "room": str or None, "residence": str or None, "email": str or None}}
 
+    # TODO: change room to room_number, user_uuid to id, allow only room or only residence, too
     # allowed keys to search for a user
-    allowed_keys = ["first_name", "last_name", "room", "residence", "email", "user_uuid"]
+    allowed_keys = ["first_name", "last_name", "room", "residence", "email"]
 
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
@@ -971,8 +973,9 @@ def attend_stueble():
     return response
 
 # NOTE: extern guest can be multiple times in table users since only first_name, last_name are specified, which are not unique
-@app.route("/guests/invite_friend", methods=["PUT", "DELETE"])
-def invite_friend():
+# TODO: send email
+@app.route("/guests/invitee", methods=["PUT", "DELETE"])
+def invitee():
     """
     invite a friend and share a qr-code
     """
@@ -981,11 +984,13 @@ def invite_friend():
     data = request.get_json()
     session_id = request.cookies.get("SID", None)
     date = data.get("date", None)
-    invitee_first_name = data.get("inviteeFirstName", None)
-    invitee_last_name = data.get("inviteeLastName", None)
-    invitee_email = data.get("inviteeEmail", None)
+    invitee_first_name = data.get("firstName", None)
+    invitee_last_name = data.get("lastName", None)
+    invitee_email = data.get("email", None)
 
-    if any(i is None for i in [session_id,  date,  invitee_first_name,  invitee_last_name]):
+    # TODO: make date optional
+
+    if any(i is None for i in [session_id,  date,  invitee_first_name,  invitee_last_name,  invitee_email]):
         response = Response(
             response=json.dumps({"code": 401,
                 "message": f"session_id, date, invitee_first_name, invitee_last_name, invitee_email must be specified"}),
@@ -1226,8 +1231,8 @@ def reset_password_mail():
             name = Email(email=name)
         except ValueError:
             response = Response(
-                response=json.dumps({"code": 400, "message": "Invalid email format"}),
-                status=400,
+                response=json.dumps({"code": 403, "message": "Invalid email format"}),
+                status=403,
                 mimetype="application/json")
             return response
         value = {"user_email": name}
@@ -1301,12 +1306,12 @@ def confirm_code():
 
     # load data
     data = request.get_json()
-    reset_token = data.get("resetToken", None)
-    new_password = data.get("newPassword", None)
+    reset_token = data.get("token", None)
+    new_password = data.get("password", None)
 
     if reset_token is None or new_password is None:
         response = Response(
-            response=json.dumps({"code": 400, "message": f"The {'reset_token' if reset_token is None else 'new_password' if new_password is None else 'reset_token and new_password'} must be specified"}),
+            response=json.dumps({"code": 400, "message": f"The {'token' if reset_token is None else 'password' if new_password is None else 'token and password'} must be specified"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1477,12 +1482,13 @@ def change_user_data():
     )
     return response
 
-@app.route("/tutor/change_user_role", methods=["POST"])
+@app.route("/user/change_role", methods=["POST"])
 def change_user_role():
     """
-    change the user role of a user (only admin)
+    change the user role of a user (only admin can change user to tutor)
     """
 
+    # load data
     data = request.get_json()
     session_id = request.cookies.get("SID", None)
     if session_id is None:
@@ -1491,12 +1497,20 @@ def change_user_role():
             status=401,
             mimetype="application/json")
         return response
-
+    user_uuid = data.get("id", None)
+    new_role = data.get("role", None)
+    if new_role is None or is_valid_role(new_role) is False or new_role == "admin":
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 400, "message": "The new_role must be specified and needs to be valid and can't be admin"}),
+                status=400,
+                mimetype="application/json")
+            return response
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only tutors or above can change user role
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.TUTOR)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN if new_role == UserRole.TUTOR else UserRole.TUTOR)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1512,50 +1526,8 @@ def change_user_role():
             mimetype="application/json")
         return response
 
-    # load data, part 2
-    name = data.get("user", None)
-    if name is None:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 400, "message": "specify user"}),
-            status=400,
-            mimetype="application/json")
-        return response
-
-    value = {}
-    if "@" in name:
-        try:
-            name = Email(email=name)
-        except ValueError:
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 400, "message": "Invalid email format"}),
-                status=400,
-                mimetype="application/json")
-            return response
-        value = {"user_email": name}
-    else:
-        value = {"user_name": name}
-
-    new_role = data.get("newRole", None)
-
-    if new_role is None:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 400, "message": "The new_role must be specified"}),
-            status=400,
-            mimetype="application/json")
-        return response
-
-    if is_valid_role(new_role) is False or new_role == "admin":
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 400, "message": "The new_role must be a valid role (extern, user, host, tutor) and can't be admin"}),
-            status=400,
-            mimetype="application/json")
-        return response
-
-    data = value
+    # TODO use user_uuid, right now working with user
+    data = {}
     data["user_role"] = UserRole(new_role)
 
     result = users.update_user(
@@ -1622,7 +1594,7 @@ def create_stueble():
     hosts = data.get("hosts", None)
     shared_apartment = data.get("shared_apartment", None)
 
-    if stueble_motto is None or stueble_motto == "":
+    if stueble_motto is None:
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "motto must be specified"}),
@@ -1763,6 +1735,7 @@ def update_hosts():
     response = Response(
         status=204)
     return response
+# TODO update host room and send websocket message
 
 @app.route("/websocket_local", methods=["POST"])
 def websocket_change():
