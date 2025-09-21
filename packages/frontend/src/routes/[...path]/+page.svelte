@@ -153,6 +153,6 @@
   {/if}
 {:else if ui_object.path.main == "host"}
   <Guests />
-{:else if ui_object.path.main == "admin"}
+{:else if ui_object.path.main == "settings"}
   <Settings />
 {/if}
