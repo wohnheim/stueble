@@ -5,6 +5,8 @@ Note: Variables WILL be shared between threads - same memory space
 from packages.backend.sql_connection import database as db
 pool = db.create_pool()
 
+from packages.backend.sql_connection.conn_cursor_functions import *
+
 import asyncio
 import threading
 import time

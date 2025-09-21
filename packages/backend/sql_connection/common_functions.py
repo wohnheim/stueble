@@ -1,5 +1,6 @@
 from packages.backend.sql_connection import sessions, motto, database as db
 from packages.backend.data_types import *
+from packages.backend.sql_connection.conn_cursor_functions import get_conn_cursor, close_conn_cursor
 
 def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
     """
