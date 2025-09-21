@@ -447,8 +447,8 @@ async def get_qrcode(websocket, msg, req_id):
 
     if result["data"] is False:
         await send(websocket=websocket, event="error", reqId=req_id, data=
-            {"code": "401",
-             "message": "Guest not on guest_list"})
+            {"code": "403",
+             "message": "Guest not on guest list"})
         return
 
     timestamp = int(datetime.datetime.now().timestamp())
