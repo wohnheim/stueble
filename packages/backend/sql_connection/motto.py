@@ -1,6 +1,7 @@
 from packages.backend.sql_connection import database as db, users
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
+import psycopg2
 
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
@@ -124,20 +125,23 @@ def update_stueble(connection, cursor, date: date, **kwargs) -> dict:
         return clean_single_data(result)
     return result
 
-def add_hosts(connection, cursor, date: date, user_ids: Annotated[list[int | None], "Explicit with user_uuid"]=None, user_uuids: Annotated[list[str | None], "Explicit with user_id"]=None)->dict:
+def update_hosts(connection, cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[list[int | None], "Explicit with user_uuid"]=None, user_uuids: Annotated[list[str | None], "Explicit with user_id"]=None)->dict:
     """
     adds a host to a stueble
 
     Parameters:
         connection: connection to the database
         cursor: cursor for the connection
-        date (datetime.date): date for which the motto is valid
+        stueble_id (int): id of the stueble
         user_ids (list[int | None]): ids of the users to be added as host, if None user_uuids must be provided
         user_uuids (list[str | None]): uuids of the users to be added as host, if None user_ids must be provided
     """
 
     if user_ids is None and user_uuids is None or (user_ids is not None and user_uuids is not None):
         return {"success": False, "error": "either user_ids or user_uuids must be provided"}
+
+    if method not in ["add", "remove"]:
+        return {"success": False, "error": "invalid method"}
 
     if user_uuids is not None:
         query = """SELECT id FROM users WHERE id IN %s"""
@@ -152,14 +156,16 @@ def add_hosts(connection, cursor, date: date, user_ids: Annotated[list[int | Non
             return {"success": False, "error": "one or more user_uuids are invalid"}
         user_ids = result["data"]
     
-    result = db.update_table(
-        connection=connection, 
-        cursor=cursor, 
-        table_name="stueble_motto",
-        arguments={"hosts": f"hosts || {user_ids}::jsonb"},
-        conditions={"date_of_time": date},
-        returning_column="id"
-    )
-    if result["success"] is True and result["data"] is not None:
-        return {"success": False, "error": "error occurred"}
-    return result    
+    rows = [(user_id, stueble_id) for user_id in user_ids]
+
+    if method == "add":
+        query = """INSERT INTO hosts (user_id, stueble_id) VALUES %s"""
+    else:
+        query = """DELETE FROM hosts WHERE (user_id, stueble_id) IN %s"""
+    try:
+        psycopg2.extras.execute_values(cursor, query, rows)
+        connection.commit()
+    except psycopg2.DatabaseError as e:
+        connection.rollback()
+        return {"success": False, "error": str(e)}
+    return {"success": True}

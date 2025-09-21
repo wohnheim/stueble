@@ -14,6 +14,8 @@ from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
+from packages.backend.main import pool
+
 load_dotenv("~/stueble/packages/backend/.env")
 
 host_upwards_room = set()
@@ -121,9 +123,9 @@ async def handle_ws(websocket):
         return
     
     # get connection and cursor
-    conn, cursor = get_conn_cursor()
+    conn, cursor = get_conn_cursor(pool)
     result = sessions.get_session(cursor=cursor, session_id=session_id)
-    close_conn_cursor(conn, cursor)
+    close_conn_cursor(pool, conn, cursor)
     if result["success"] is False:
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500" if result["error"] != "no session found" else "401",
@@ -218,12 +220,12 @@ async def handle_connect(websocket):
         return False
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor()
+    conn, cursor = get_conn_cursor(pool)
 
     # check permissions
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
 
-    close_conn_cursor(conn, cursor)
+    close_conn_cursor(pool, conn, cursor)
     if result["success"] is False and result["error"] == "no matching session and user found":
         await send(websocket=websocket, event="status", data= {"code": "200",
                           "capabilities": [],
@@ -366,25 +368,25 @@ async def verify_guest(websocket, msg):
     verification_method = VerificationMethod(verification_method)
 
     # get connection, cursor
-    conn, cursor = get_conn_cursor()
+    conn, cursor = get_conn_cursor(pool)
 
     # check permissions
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
+        close_conn_cursor(pool, conn, cursor)
         await send(websocket=websocket, event="error", data=
             {"code": "401",
              "message": str(result["error"])})
         return
     if result["data"]["allowed"] is False:
-        close_conn_cursor(conn, cursor)
+        close_conn_cursor(pool, conn, cursor)
         await send(websocket=websocket, event="error", data=
             {"code": "403",
              "message": "invalid permissions, need role host or above"})
         return
 
     result = users.add_verification_method(connection=conn, cursor=cursor, user_uuid=user_uuid, method=verification_method)
-    close_conn_cursor(conn, cursor)
+    close_conn_cursor(pool, conn, cursor)
     if result["success"] is False:
         await send(websocket=websocket, event="error", data=
             {"code": "500",
@@ -412,11 +414,11 @@ async def get_qrcode(websocket, msg, req_id):
         stueble_id = None
     # get connection, cursor
 
-    conn, cursor = get_conn_cursor()
+    conn, cursor = get_conn_cursor(pool)
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_uuid"])
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
+        close_conn_cursor(pool, conn, cursor)
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500" if result["error"] != "no matching session and user found" else "401",
                 "message": str(result["error"])})
@@ -428,7 +430,7 @@ async def get_qrcode(websocket, msg, req_id):
     result = events.check_guest(cursor=cursor,
                                 user_id=user_id,
                                 stueble_id=stueble_id)
-    close_conn_cursor(conn, cursor)
+    close_conn_cursor(pool, conn, cursor)
     if result["success"] is False and result["error"] == "no stueble party found":
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "404",

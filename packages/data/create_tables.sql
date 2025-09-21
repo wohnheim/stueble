@@ -141,6 +141,14 @@ CREATE TABLE IF NOT EXISTS websocket_log (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS hosts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    stueble_id INTEGER REFERENCES stueble_motto(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, stueble_id)
+);
+
 CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
     SELECT submitted FROM events WHERE id = $1 LIMIT 1;
 $$ LANGUAGE SQL;

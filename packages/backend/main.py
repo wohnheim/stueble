@@ -11,6 +11,9 @@ import sys
 from packages.backend import api
 from packages.backend import websocket
 from waitress import serve
+from packages.backend.sql_connection import database as db
+
+pool = db.create_pool()
 
 def run_flask():
     """Run the Flask API server in separate thread"""
