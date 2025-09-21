@@ -51,23 +51,45 @@
       (s) => s != roomNumber && s != residence && s != email && s != firstName,
     );
 
-    const array = await apiClient("http").searchUsers(
-      Object.assign(query, {
-        firstName,
-        lastName,
-      }),
-    );
+    const array = (
+      await apiClient("http").searchUsers(
+        Object.assign(query, {
+          firstName,
+          lastName,
+        }),
+      )
+    ).filter((u) => !database.hosts.some((h) => u.id == h.id));
 
-    if (firstName !== undefined && lastName === undefined)
-      return array.concat(
-        await apiClient("http").searchUsers(
-          Object.assign(query, {
-            lastName: firstName,
-          }),
+    if (firstName !== undefined && lastName === undefined) {
+      array.push(
+        ...(
+          await apiClient("http").searchUsers(
+            Object.assign(query, {
+              lastName: firstName,
+            }),
+          )
+        ).filter(
+          (u) =>
+            !array.some((u1) => u.id == u1.id) &&
+            !database.hosts.some((h) => u.id == h.id),
         ),
       );
-    else return array;
+    }
+
+    return array;
   };
+
+  const filterHosts = (selectedHosts: Host[], search: Host[]) => {
+    selected = selectedHosts.filter(
+      (h) => !database.hosts.some((h1) => h.id == h1.id),
+    );
+
+    searchResults = search.filter(
+      (u) => !database.hosts.some((h) => u.id == h.id),
+    );
+  };
+
+  $effect(() => filterHosts(selected, searchResults));
 </script>
 
 {#if page == "list"}
@@ -92,7 +114,11 @@
     {/each}
 
     {#snippet footerSnippet()}
-      <button id="next-button" class="square round extra">
+      <button
+        id="next-button"
+        class="square round extra"
+        onclick={() => (page = "add")}
+      >
         <i>add</i>
       </button>
     {/snippet}
@@ -140,8 +166,12 @@
         id="next-button"
         class="square round extra"
         disabled={selected.length < 1}
+        onclick={async () => {
+          await apiClient("http").addHosts(selected.map((s) => s.id));
+          page = "list";
+        }}
       >
-        <i>arrow_forward</i>
+        <i>check</i>
       </button>
     {/snippet}
   </Fullscreen>

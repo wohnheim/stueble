@@ -60,7 +60,7 @@
         }}
       >
         <i>admin_panel_settings</i>
-        <span>Admin</span>
+        <span>Settings</span>
       </li>
     {/if}
     <li class="wave round">
