@@ -51,10 +51,10 @@
 
     {#if ui_object.capabilities.find((c) => c == "admin")}
       <li
-        class="wave round {ui_object.path.main == 'admin' ? 'fill' : ''}"
+        class="wave round {ui_object.path.main == 'settings' ? 'fill' : ''}"
         onclick={() => {
           ui_object.changePath({
-            main: "admin",
+            main: "settings",
           });
           ui(ui_object.menuDialog);
         }}

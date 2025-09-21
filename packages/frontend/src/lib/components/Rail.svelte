@@ -37,10 +37,10 @@
   {/if}
   {#if ui_object.capabilities.find((c) => c == "admin")}
     <a
-      class={ui_object.path.main == "admin" ? "active" : ""}
+      class={ui_object.path.main == "settings" ? "active" : ""}
       onclick={() =>
         ui_object.changePath({
-          main: "admin",
+          main: "settings",
         })}
     >
       <i>admin_panel_settings</i>
