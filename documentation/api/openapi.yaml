@@ -183,15 +183,19 @@ paths:
       tags:
         - guests
       summary: Add to guest list.
-      description: Adds a specified user to the guest list.
+      description: |
+        Adds a specified user to the guest list.\
+        To register yourself don't send a request body.
       operationId: addToGuestList
       requestBody:
-        required: true
-        description: A JSON string specifying the user.
+        required: false
+        description: |
+          A JSON object specifying the user and date.\
+          A request body is only allowed if host capability exists.
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UUID"
+              $ref: "#/components/requestBodies/GuestAddition"
       responses:
         "201":
           description: Success.
@@ -470,14 +474,14 @@ paths:
       operationId: modifyMotto
       requestBody:
         required: true
-        description: A JSON string containing the new motto.
+        description: A JSON object containing the new motto and a date.
         content:
           application/json:
             schema:
-              type: string
+              $ref: "#/components/requestBodies/MottoModificationRequest"
       responses:
         "204":
-          description: Motto Successfully updated.
+          description: Motto successfully updated.
         "403":
           description: Authorization failure (not a host).
         "401":
@@ -490,6 +494,69 @@ paths:
                 $ref: "#/components/responses/Error"
       security:
         - host_sid: []
+
+  /hosts:
+    put:
+      tags:
+        - hosts
+      summary: Add hosts.
+      description: |
+        Add the host capability to the specified users.\
+        Only the tutors are allowed to change the hosts.
+      operationId: addHosts
+      requestBody:
+        required: true
+        description: A JSON object containing the new hosts and a date.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/HostsModificationRequest"
+      responses:
+        "204":
+          description: Hosts successfully updated.
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - tutor_sid: []
+
+    delete:
+      tags:
+        - hosts
+      summary: Remove hosts.
+      description: |
+        Remove the host capability from the specified users.\
+        Only the tutors are allowed to change the hosts.
+      operationId: removeHosts
+      requestBody:
+        required: true
+        description: A JSON object containing the hosts to be removed and a date.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/HostsModificationRequest"
+      responses:
+        "204":
+          description: Hosts successfully updated.
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - tutor_sid: []
 
   /config:
     get:
@@ -562,6 +629,12 @@ components:
       format: uuid
       description: UUID conforming to RFC4122
       example: 1d419481-4fab-4170-acd9-bc20dcbf224a
+
+    Date:
+      type: string
+      format: date
+      description: Date notation as defined by RFC 3339
+      example: 2025-09-21
 
     UserProperties:
       type: object
@@ -706,6 +779,38 @@ components:
           description: Guest is present
       required:
         - id
+
+    GuestAddition:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        date:
+          $ref: "#/components/schemas/Date"
+      required:
+        - id
+
+    MottoModificationRequest:
+      type: object
+      properties:
+        motto:
+          type: string
+        date:
+          $ref: "#/components/schemas/Date"
+      required:
+        - motto
+
+    HostsModificationRequest:
+      type: object
+      properties:
+        hosts:
+          type: array
+          items:
+            $ref: "#/components/schemas/UUID"
+        date:
+          $ref: "#/components/schemas/Date"
+      required:
+        - hosts
 
   responses:
     Error:
