@@ -124,11 +124,17 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  async addToGuestList(uuid: string) {
+  async addToGuestList(id?: string, date?: Date) {
     const res = await fetch("/api/guests", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(uuid),
+      body:
+        id !== undefined
+          ? JSON.stringify({
+              id,
+              date: date?.toISOString(),
+            })
+          : undefined,
     });
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
@@ -152,11 +158,17 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  async removeFromGuestList(uuid: string) {
+  async removeFromGuestList(id?: string, date?: Date) {
     const res = await fetch("/api/guests", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(uuid),
+      body:
+        id !== undefined
+          ? JSON.stringify({
+              id,
+              date: date?.toISOString(),
+            })
+          : undefined,
     });
 
     if (res.ok) return true;
@@ -241,11 +253,50 @@ class HTTPClient {
 
   /* Motto */
 
-  async modifyMotto(motto: string) {
+  async modifyMotto(motto: string, date?: Date) {
     const res = await fetch("/api/motto", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(motto),
+      body: JSON.stringify({
+        motto,
+        date: date?.toISOString(),
+      }),
+    });
+
+    if (res.ok) return true;
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return false;
+  }
+
+  /* Hosts */
+
+  async addHosts(hosts: string[], date?: Date) {
+    const res = await fetch("/api/hosts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        hosts,
+        date: date?.toISOString(),
+      }),
+    });
+
+    if (res.ok) return true;
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return false;
+  }
+
+  async removeHosts(hosts: string[], date?: Date) {
+    const res = await fetch("/api/hosts", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        hosts,
+        date: date?.toISOString(),
+      }),
     });
 
     if (res.ok) return true;

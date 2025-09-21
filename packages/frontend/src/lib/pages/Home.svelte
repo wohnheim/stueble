@@ -24,7 +24,7 @@
       class="top-margin-small"
       onclick={async () => {
         if (ui_object.user !== undefined) {
-          const res = await apiClient("http").addToGuestList(ui_object.user.id);
+          const res = await apiClient("http").addToGuestList();
 
           if (res != null)
             ui_object.changePath({ main: "main", sub: "invitation" });
@@ -62,9 +62,7 @@
       class="large-margin"
       onclick={async () => {
         if (ui_object.user !== undefined) {
-          const res = await apiClient("http").removeFromGuestList(
-            ui_object.user.id,
-          );
+          const res = await apiClient("http").removeFromGuestList();
 
           if (res != null) ui_object.changePath({ main: "main" });
         }
