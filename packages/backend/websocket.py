@@ -13,8 +13,7 @@ from packages.backend.sql_connection import events, sessions
 from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-
-from packages.backend.main import get_conn_cursor, close_conn_cursor
+from packages.backend.sql_connection.conn_cursor_functions import *
 
 load_dotenv("~/stueble/packages/backend/.env")
 
