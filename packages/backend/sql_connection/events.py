@@ -59,21 +59,17 @@ def remove_guest(connection, cursor, user_id: int, stueble_id: int) -> dict:
         return {"success": False, "error": "error occurred"}
     return clean_single_data(result)
 
-def check_guest(cursor, stueble_id: int | None=None, user_id: Annotated[int | None, "Explicit with user_uuid"]=None, user_uuid: Annotated[str | None, "Explicit with user_id"]=None) -> dict:
+def check_guest(cursor, user_id: int, stueble_id: int | None=None) -> dict:
     """
     checks if a user is currently a guest at a stueble party
 
     Parameters:
         cursor: cursor for the connection
-        user_id (int | None): id of the user
-        user_uuid (str | None): uuid of the user
+        user_id (int): id of the user
         stueble_id (int | None): id of the stueble party
     Returns:
         dict: {"success": bool, "data": bool} if successful, {"success": False, "error": e} if error occurred
     """
-
-    if (user_uuid is not None and user_id is not None) or (user_uuid is None and user_id is None):
-        return {"success": False, "error": "either user_id or user_uuid must be specified"}
 
     if stueble_id is None:
         query = """
@@ -95,7 +91,7 @@ def check_guest(cursor, stueble_id: int | None=None, user_id: Annotated[int | No
             SELECT 'add' =
                    COALESCE((SELECT event_type
                              FROM events
-                             WHERE {'id' if user_id is not None else 'user_uuid'} = %s
+                             WHERE id = %s
                                AND stueble_id = %s
                                AND event_type IN ('add', 'remove')
                              ORDER BY submitted DESC
