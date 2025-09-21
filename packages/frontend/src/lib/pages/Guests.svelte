@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GuestExtern, GuestIntern, QRCodeData } from "$lib/api/types";
+  import { database } from "$lib/lib/database.svelte";
   import { ui_object, type RouteHost } from "$lib/lib/UI.svelte";
   import { stringToArrayBuffer } from "$lib/lib/utils";
 
@@ -70,7 +71,7 @@
       return;
     }
 
-    const guest = ui_object.guests.find((g) => g.id == data.data.id);
+    const guest = database.guests.find((g) => g.id == data.data.id);
     if (guest === undefined) {
       console.log("Failed to find guest");
       return;
@@ -78,16 +79,7 @@
 
     await ui_object.openDialog({
       mode: "check-in",
-      guest: {
-        present: false,
-        extern: false,
-        id: "1234567",
-        verified: true,
-        firstName: "Gerda",
-        lastName: "Huber",
-        roomNumber: 123,
-        residence: "hirte",
-      },
+      guest,
     });
   };
 </script>
@@ -147,7 +139,7 @@
   </header>
 
   <div id="guests">
-    {#each filterGuests(searchInput, ui_object.guests) as guest, i}
+    {#each filterGuests(searchInput, database.guests) as guest, i}
       {#if i != 0}
         <hr />
       {/if}

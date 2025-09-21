@@ -218,12 +218,13 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  async searchUsers(props: Partial<UserProperties>) {
+  async searchUsers(props: Partial<UserProperties & { email: string }>) {
     console.assert(
       props.firstName !== undefined ||
         props.lastName !== undefined ||
         props.roomNumber !== undefined ||
-        props.residence !== undefined,
+        props.residence !== undefined ||
+        props.email !== undefined,
     );
 
     const params = new URLSearchParams();
@@ -235,6 +236,7 @@ class HTTPClient {
       params.append("room_number", props.roomNumber.toString());
     if (props.residence !== undefined)
       params.append("residence", props.residence);
+    if (props.email !== undefined) params.append("email", props.email);
 
     const res = await fetch("/api/user/search?" + params.toString());
 
@@ -483,6 +485,10 @@ class WebSocketClient {
     } else if (message.event == "guestRemoved") {
       database.deleteGuestExtern(message.data);
       database.deleteGuestInternById(message.data);
+    } else if (message.event == "hostAdded") {
+      database.addHost(message.data);
+    } else if (message.event == "hostRemoved") {
+      database.deleteHost(message.data);
     } else if (message.event == "error") {
       if (message.reqId !== undefined) {
         const promise = this.promises[message.reqId];

@@ -124,6 +124,20 @@ export const acknowledgment = z.object({
   resId,
 });
 
+/* Operation: receiveHostChanges */
+
+export const hostAdded = z.object({
+  event: constant("hostAdded"),
+  resId,
+  data: host,
+});
+
+export const hostRemoved = z.object({
+  event: constant("hostRemoved"),
+  resId,
+  data: z.string(),
+});
+
 /* Operation: requestMotto */
 
 export const requestMotto = z.object({
@@ -230,6 +244,8 @@ export const messageFromServer = z.union([
   guestAdded,
   guestRemoved,
   guestModified,
+  hostAdded,
+  hostRemoved,
   motto,
   qrCode,
   publicKey,
