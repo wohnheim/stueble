@@ -14,7 +14,7 @@ import type {
 /* Site navigation */
 
 const routesTop = z.object({
-  main: z.enum(["admin"]),
+  main: z.enum([]),
 });
 
 const routeMain = z.object({
