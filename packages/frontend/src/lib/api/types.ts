@@ -44,6 +44,14 @@ export const guestExtern = z.object({
 
 export type GuestExtern = z.infer<typeof guestExtern>;
 
+export const host = z.object({
+  id: uuid,
+  firstName: z.string(),
+  lastName: z.string(),
+});
+
+export type Host = z.infer<typeof host>;
+
 export const config = z.object({
   maximumGuests: z.int32(),
   sessionExpirationDays: z.int32(),
