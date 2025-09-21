@@ -19,8 +19,7 @@ from packages.backend import hash_pwd as hp, websocket as ws
 from packages.backend.google_functions import gmail
 import re
 import asyncio
-
-from packages.backend.main import get_conn_cursor, close_conn_cursor
+from packages.backend.sql_connection.conn_cursor_functions import *
 
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
 # TODO always close connection after last request
