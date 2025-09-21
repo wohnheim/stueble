@@ -499,7 +499,7 @@ async def get_public_key(websocket, req_id):
         "key_ops": ["verify"]                   # Key operations
     }
 
-    await send(websocket=websocket, event="publicKey", reqId=req_id, data={jwk})
+    await send(websocket=websocket, event="publicKey", reqId=req_id, data=jwk)
     return
 
 # Start server
