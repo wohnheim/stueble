@@ -431,7 +431,17 @@ async def get_qrcode(websocket, msg, req_id):
                                 user_uuid=user_uuid,
                                 stueble_id=stueble_id)
     close_conn_cursor(conn, cursor)
-    if result["success"] is False:
+    if result["success"] is False and result["error"] == "no stueble party found":
+        await send(websocket=websocket, event="error", reqId=req_id, data=
+            {"code": "404",
+             "message": result["error"]})
+        return
+    elif result["success"] is False and result["error"] == "user not on guest_list":
+        await send(websocket=websocket, event="error", reqId=req_id, data=
+            {"code": "403",
+             "message": "Guest not on guest list"})
+        return
+    elif result["success"] is False:
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500",
              "message": str(result["error"])})
