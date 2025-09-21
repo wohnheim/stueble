@@ -1142,6 +1142,7 @@ def invite_friend():
         error = str(result["error"])
         if "; code: " in str(result["error"]):
             error, status_code = str(result["error"]).split("; code: ")
+            status_code = status_code.split("\n")[0]
             status_code = int(status_code)
         response = Response(
             response=json.dumps({"code": status_code, "message": error}),
