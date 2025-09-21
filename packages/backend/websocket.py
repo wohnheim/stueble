@@ -407,28 +407,26 @@ async def get_qrcode(websocket, msg, req_id):
     """
 
     if msg is not None:
-        user_uuid = msg.get("id", None)
         stueble_id = msg.get("stuebleId", None)
     else:
-        user_uuid = None
         stueble_id = None
     # get connection, cursor
 
     conn, cursor = get_conn_cursor()
+    session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_uuid"])
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        await send(websocket=websocket, event="error", reqId=req_id, data=
+            {"code": "500" if result["error"] != "no matching session and user found" else "401",
+                "message": str(result["error"])})
+        return
+    user_id = result["data"][0]
+    user_uuid = result["data"][1]
 
-    if user_uuid is None:
-        session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
-        result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["user_uuid"])
-        if result["success"] is False:
-            close_conn_cursor(conn, cursor)
-            await send(websocket=websocket, event="error", reqId=req_id, data=
-                {"code": "500" if result["error"] != "no matching session and user found" else "401",
-                 "message": str(result["error"])})
-            return
-        user_uuid = result["data"]
 
     result = events.check_guest(cursor=cursor,
-                                user_uuid=user_uuid,
+                                user_id=user_id,
                                 stueble_id=stueble_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False and result["error"] == "no stueble party found":

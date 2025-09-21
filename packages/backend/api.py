@@ -1610,7 +1610,7 @@ def create_stueble():
 
     # load data
     data = request.get_json()
-    date = data.get("timestamp", None)
+    date = data.get("date", None)
     stueble_motto = data.get("motto", None)
     hosts = data.get("hosts", None)
     shared_apartment = data.get("shared_apartment", None)
@@ -1627,16 +1627,6 @@ def create_stueble():
         date = datetime.date.today()
         days_ahead = (2 - date.weekday() + 7) % 7
         date = date + datetime.timedelta(days=days_ahead)
-    else:
-        try:
-            date = datetime.datetime.fromtimestamp(date, tz=ZoneInfo("Europe/Berlin"))
-        except ValueError:
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 400, "message": "Invalid timestamp"}),
-                status=400,
-                mimetype="application/json")
-            return response
 
     if hosts is not None and hosts != []:
         user_ids = users.get_users(cursor=cursor, information=hosts)
