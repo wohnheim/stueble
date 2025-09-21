@@ -23,6 +23,7 @@
     <i>home</i>
     <span>Home</span>
   </a>
+
   {#if ui_object.capabilities.find((c) => c == "host")}
     <a
       class={ui_object.path.main == "host" ? "active" : ""}
@@ -35,16 +36,15 @@
       <span>Wirte</span>
     </a>
   {/if}
-  {#if ui_object.capabilities.find((c) => c == "admin")}
-    <a
-      class={ui_object.path.main == "settings" ? "active" : ""}
-      onclick={() =>
-        ui_object.changePath({
-          main: "settings",
-        })}
-    >
-      <i>admin_panel_settings</i>
-      <span>Admin</span>
-    </a>
-  {/if}
+
+  <a
+    class={ui_object.path.main == "settings" ? "active" : ""}
+    onclick={() =>
+      ui_object.changePath({
+        main: "settings",
+      })}
+  >
+    <i>admin_panel_settings</i>
+    <span>Settings</span>
+  </a>
 </nav>
