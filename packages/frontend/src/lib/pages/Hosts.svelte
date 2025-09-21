@@ -10,21 +10,28 @@
 
   let {
     page = $bindable(),
+    selectedUnfiltered = $bindable(),
     selected = $bindable(),
   }: {
     page: "list" | "add";
+    selectedUnfiltered: Host[];
     selected: Host[];
   } = $props();
 
   let searchInput = $state("");
-  let searchResults = $state<Host[]>([]);
+  let searchResultsUnfiltered = $state<Host[]>([]);
+  let searchResults = $derived(
+    searchResultsUnfiltered.filter(
+      (u) => !database.hosts.some((h) => u.id == h.id),
+    ),
+  );
 
   const select = (host: Host) => {
-    const index = selected.findIndex((s) => s.id == host.id);
-    if (index === -1) selected.push(host);
-    else selected.splice(index, 1);
+    const index = selectedUnfiltered.findIndex((s) => s.id == host.id);
+    if (index === -1) selectedUnfiltered.push(host);
+    else selectedUnfiltered.splice(index, 1);
 
-    selected = selected;
+    selectedUnfiltered = selectedUnfiltered;
   };
 
   const search = async (input: string) => {
@@ -78,18 +85,6 @@
 
     return array;
   };
-
-  const filterHosts = (selectedHosts: Host[], search: Host[]) => {
-    selected = selectedHosts.filter(
-      (h) => !database.hosts.some((h1) => h.id == h1.id),
-    );
-
-    searchResults = search.filter(
-      (u) => !database.hosts.some((h) => u.id == h.id),
-    );
-  };
-
-  $effect(() => filterHosts(selected, searchResults));
 </script>
 
 {#if page == "list"}
@@ -128,6 +123,7 @@
     header="Wirt*innen"
     subheader="Hinzufügen"
     forceHeaderVisible={false}
+    backAction={() => (page = "list")}
   >
     <header>
       <div id="search" class="field large round fill">
@@ -138,8 +134,11 @@
           id="right-button"
           class="wave"
           onclick={() => {
-            if (searchInput == "") searchResults = [];
-            else search(searchInput).then((res) => (searchResults = res));
+            if (searchInput == "") searchResultsUnfiltered = [];
+            else
+              search(searchInput).then(
+                (res) => (searchResultsUnfiltered = res),
+              );
           }}
         >
           <i>search</i>
@@ -156,7 +155,7 @@
     {/each}
 
     {#if selected.length === 0 && searchResults.length === 0}
-      <div class="centered">
+      <div class="center-align">
         <p class="large-text">No users found</p>
       </div>
     {/if}
@@ -185,6 +184,12 @@
 
   #search.field > a#right-button {
     inset: 50% 0.4rem auto auto;
+  }
+
+  #right-button {
+    block-size: 2.5rem;
+    inline-size: 2.5rem;
+    z-index: 1;
   }
 
   #next-button {
