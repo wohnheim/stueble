@@ -808,7 +808,7 @@ def attend_stueble():
         data = request.get_json()
         date = data.get("date", None)
         user_uuid = data.get("id", None)
-    except AttributeError:
+    except:
         date = None
         user_uuid = None
     
