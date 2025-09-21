@@ -835,8 +835,7 @@ def attend_stueble():
                 status=400,
                 mimetype="application/json")
             return response
-    
-    date = result["data"]    
+        date = result["data"][1]
 
     if session_id is None or date is None:
         response = Response(
