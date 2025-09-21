@@ -13,6 +13,14 @@
       !ui_object.largeDialog.open
     )
       ui(ui_object.largeDialog);
+
+    // Close dialog
+    if (
+      (ui_object.path as RouteSettings).sub === undefined &&
+      ui_object.largeDialog &&
+      ui_object.largeDialog.open
+    )
+      ui(ui_object.largeDialog);
   });
 </script>
 
@@ -119,19 +127,22 @@
     {/if}
   {/if}
 
-  <p id="header" class="bold">Account</p>
+  <!-- Admin accounts can't be deleted -->
+  {#if ui_object.capabilities.some((c) => c != "admin")}
+    <p id="header" class="bold">Account</p>
 
-  <!-- svelte-ignore a11y_missing_attribute a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <Button
-    onclick={async () =>
-      (await ui_object.openDialog({ mode: "delete" })) &&
-      apiClient("http").deleteAccount(true)}
-  >
-    <div style="color: red;">
-      <p id="title">Delete account</p>
-      <p id="subtitle">Removes user from database</p>
-    </div>
-  </Button>
+    <!-- svelte-ignore a11y_missing_attribute a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <Button
+      onclick={async () =>
+        (await ui_object.openDialog({ mode: "delete" })) &&
+        apiClient("http").deleteAccount(true)}
+    >
+      <div style="color: red;">
+        <p id="title">Delete account</p>
+        <p id="subtitle">Removes user from database</p>
+      </div>
+    </Button>
+  {/if}
 </div>
 
 <style>
