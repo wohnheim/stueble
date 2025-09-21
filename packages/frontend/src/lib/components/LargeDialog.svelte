@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   import { ui_object } from "$lib/lib/UI.svelte";
+  import Hosts from "$lib/pages/Hosts.svelte";
 
   let groupPropertiesPage: "main" | "members" | "requests" | "add" =
     $state("main");
@@ -37,6 +38,9 @@
 </script>
 
 <dialog id="dialog-large" bind:this={ui_object.largeDialog} class="right large">
+  {#if ui_object.path.main == "settings"}
+    <Hosts />
+  {/if}
 </dialog>
 
 <style>

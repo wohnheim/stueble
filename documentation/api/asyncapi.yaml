@@ -35,6 +35,10 @@ channels:
         $ref: "#/components/messages/guestModified"
       guestVerification:
         $ref: "#/components/messages/guestVerification"
+      hostAdded:
+        $ref: "#/components/messages/hostAdded"
+      hostRemoved:
+        $ref: "#/components/messages/hostRemoved"
       requestMotto:
         $ref: "#/components/messages/requestMotto"
       motto:
@@ -88,6 +92,19 @@ operations:
       - $ref: "#/channels/primary/messages/guestAdded"
       - $ref: "#/channels/primary/messages/guestRemoved"
       - $ref: "#/channels/primary/messages/guestModified"
+    reply:
+      messages:
+        - $ref: "#/channels/primary/messages/acknowledgement"
+
+  receiveHostsChanges:
+    summary: Notify host clients about changes to the hosts.
+    description: "Important: Changes are not sent to the client that caused the change."
+    action: receive
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/hostAdded"
+      - $ref: "#/channels/primary/messages/hostRemoved"
     reply:
       messages:
         - $ref: "#/channels/primary/messages/acknowledgement"
@@ -275,6 +292,42 @@ components:
       correlationId:
         location: "$message.payload#/reqId"
 
+    hostAdded:
+      name: hostAdded
+      title: Guest added
+      summary: |-
+        A host was added.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: hostAdded
+          resId:
+            $ref: "#/components/schemas/resId"
+          data:
+            $ref: "#/components/schemas/Guest"
+      correlationId:
+        location: "$message.payload#/resId"
+
+    guestRemoved:
+      name: guestRemoved
+      title: Guest removed
+      summary: |-
+        A host was removed.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: guestRemoved
+          resId:
+            $ref: "#/components/schemas/resId"
+          data:
+            $ref: "#/components/schemas/UUID"
+      correlationId:
+        location: "$message.payload#/resId"
+
     requestMotto:
       name: requestMotto
       title: Request the motto.
@@ -308,6 +361,26 @@ components:
             type: string
             description: String containing the weekly motto.
             example: "Freue dich auf unser Men-In-Black Stüble!"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    hosts:
+      name: hosts
+      title: Contains the hosts.
+      summary: |-
+        Response to the `requestHosts` request.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: hosts
+          reqId:
+            $ref: "#/components/schemas/reqId"
+          data:
+            type: array
+            items:
+              $ref: "#/components/schemas/Host"
       correlationId:
         location: "$message.payload#/reqId"
 
@@ -493,6 +566,18 @@ components:
           enum:
             - idCard
             - roomKey
+
+    Host:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Smith
 
     UUID:
       type: string

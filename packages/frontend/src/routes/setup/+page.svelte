@@ -2,12 +2,12 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
 
+  import { apiClient } from "$lib/api/client";
+  import { database } from "$lib/lib/database.svelte";
+  import { settings } from "$lib/lib/settings.svelte";
   import { ui_object, WohnheimType } from "$lib/lib/UI.svelte";
 
   import logo from "$lib/assets/Fileplay.svg";
-  import { apiClient } from "$lib/api/client";
-  import { clearObjectStores } from "$lib/lib/database";
-  import { settings } from "$lib/lib/settings.svelte";
 
   let progress = $state(0);
   let progress2Mode = $state<"login" | "register">("login");
@@ -38,7 +38,8 @@
 
       await settings.init();
       await settings.clear();
-      await clearObjectStores();
+      await database.init();
+      await database.clear();
       location.href = "/";
     }
   };
@@ -61,7 +62,8 @@
 
       await settings.init();
       await settings.clear();
-      await clearObjectStores();
+      await database.init();
+      await database.clear();
       location.href = "/";
     }
   };

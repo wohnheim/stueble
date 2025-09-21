@@ -2,10 +2,6 @@ import { browser } from "$app/environment";
 import { pack, unpack } from "msgpackr";
 import { derived, get, readable, writable } from "svelte/store";
 
-import { error } from "$lib/lib/error";
-import { ui_object } from "$lib/lib/UI.svelte";
-import { timeoutPromise } from "$lib/lib/utils";
-
 import type {
   Config,
   GuestExtern,
@@ -16,12 +12,10 @@ import type {
   User,
   UserProperties,
 } from "$lib/api/types";
-import {
-  addGuestExtern,
-  addGuestIntern,
-  deleteGuestExtern,
-  deleteGuestInternById,
-} from "$lib/lib/database";
+import { database } from "$lib/lib/database.svelte";
+import { error } from "$lib/lib/error";
+import { ui_object } from "$lib/lib/UI.svelte";
+import { timeoutPromise } from "$lib/lib/utils";
 
 class HTTPClient {
   /* Auth */
@@ -129,7 +123,7 @@ class HTTPClient {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body:
-        id !== undefined
+        id !== undefined || date !== undefined
           ? JSON.stringify({
               id,
               date: date?.toISOString(),
@@ -163,7 +157,7 @@ class HTTPClient {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body:
-        id !== undefined
+        id !== undefined || date !== undefined
           ? JSON.stringify({
               id,
               date: date?.toISOString(),
@@ -484,17 +478,11 @@ class WebSocketClient {
       message.event == "guestAdded" ||
       message.event == "guestModified"
     ) {
-      if (message.data.extern) addGuestExtern(message.data);
-      else addGuestIntern(message.data);
-
-      ui_object.guests = ui_object.guests
-        .filter((g) => g.id != message.data.id)
-        .concat([message.data]);
+      if (message.data.extern) database.addGuestExtern(message.data);
+      else database.addGuestIntern(message.data);
     } else if (message.event == "guestRemoved") {
-      deleteGuestExtern(message.data);
-      deleteGuestInternById(message.data);
-
-      ui_object.guests = ui_object.guests.filter((g) => g.id != message.data);
+      database.deleteGuestExtern(message.data);
+      database.deleteGuestInternById(message.data);
     } else if (message.event == "error") {
       if (message.reqId !== undefined) {
         const promise = this.promises[message.reqId];

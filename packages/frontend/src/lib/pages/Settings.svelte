@@ -1,9 +1,19 @@
 <script lang="ts">
   import { apiClient } from "$lib/api/client";
-  import { ui_object } from "$lib/lib/UI.svelte";
+  import { ui_object, type RouteSettings } from "$lib/lib/UI.svelte";
+  import { capitalizeFirstLetter } from "$lib/lib/utils";
 
   import Button from "$lib/components/Button.svelte";
-  import { capitalizeFirstLetter } from "$lib/lib/utils";
+
+  $effect(() => {
+    // Open dialog
+    if (
+      (ui_object.path as RouteSettings).sub &&
+      ui_object.largeDialog &&
+      !ui_object.largeDialog.open
+    )
+      ui(ui_object.largeDialog);
+  });
 </script>
 
 <div id="scrollable">
@@ -66,7 +76,11 @@
     </Button>
 
     {#if ui_object.capabilities.some((c) => c == "tutor")}
-      <Button>
+      <Button
+        onclick={() => {
+          ui_object.changePath({ main: "settings", sub: "hosts" });
+        }}
+      >
         <div>
           <p id="title">Wirt*innen</p>
           <p id="subtitle">Wirt*innen hinzufügen oder entfernen</p>
@@ -108,7 +122,11 @@
   <p id="header" class="bold">Account</p>
 
   <!-- svelte-ignore a11y_missing_attribute a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <Button onclick={() => apiClient("http").deleteAccount(true)}>
+  <Button
+    onclick={async () =>
+      (await ui_object.openDialog({ mode: "delete" })) &&
+      apiClient("http").deleteAccount(true)}
+  >
     <div style="color: red;">
       <p id="title">Delete account</p>
       <p id="subtitle">Removes user from database</p>

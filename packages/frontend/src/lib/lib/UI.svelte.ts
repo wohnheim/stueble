@@ -14,7 +14,7 @@ import type {
 /* Site navigation */
 
 const routesTop = z.object({
-  main: z.enum(["admin", "settings"]),
+  main: z.enum(["admin"]),
 });
 
 const routeMain = z.object({
@@ -33,12 +33,12 @@ export type RouteHost = z.infer<typeof routeHost>;
 
 const routeSettings = z.object({
   main: z.enum(["settings"]),
-  sub: z.enum(["devices"]).optional(),
+  sub: z.enum(["hosts"]).optional(),
 });
 
 export type RouteSettings = z.infer<typeof routeSettings>;
 
-const routes = z.union([routesTop, routeMain, routeHost]);
+const routes = z.union([routesTop, routeMain, routeHost, routeSettings]);
 
 export type Routes = z.infer<typeof routes>;
 
@@ -77,9 +77,6 @@ class UI {
   motto = $state("");
   publicKey = $state<CryptoKey>();
   qrCodeData = $state<QRCodeData>();
-
-  // Guests (persisted using IndexedDB)
-  guests = $state<(GuestIntern | GuestExtern)[]>([]);
 
   // Personal infos (mutable)
   userParams = $state<
@@ -260,7 +257,7 @@ export type DialogProperties = (
   | DialogEdit
   | DialogCheckIn
   | {
-      mode: "qrcode" | "unselected";
+      mode: "delete" | "qrcode" | "unselected";
     }
 ) & { success?: boolean };
 

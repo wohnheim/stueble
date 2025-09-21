@@ -3,7 +3,7 @@
   import { onMount, untrack } from "svelte";
 
   import { apiClient } from "$lib/api/client";
-  import { getGuests } from "$lib/lib/database";
+  import { database } from "$lib/lib/database.svelte";
   import { settings } from "$lib/lib/settings.svelte";
   import { ui_object } from "$lib/lib/UI.svelte";
 
@@ -72,8 +72,7 @@
     if (localStorage.getItem("loggedIn")) {
       // Initialize IndexedDB mapping
       await settings.init();
-
-      ui_object.guests = await getGuests();
+      await database.init();
 
       // Load via WebSocket
       ui_object.user = await apiClient("http").getUser();
