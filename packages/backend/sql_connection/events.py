@@ -113,6 +113,6 @@ def check_guest(cursor, stueble_id: int | None=None, user_id: Annotated[int | No
         return result
 
     if result["data"] is None:
-        return {"success": False, "error": "error occurred"}
+        return {"success": False, "error": "user not on guest_list"}
 
     return result
