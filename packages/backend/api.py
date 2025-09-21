@@ -806,6 +806,13 @@ def attend_stueble():
     data = request.get_json()
     session_id = request.cookies.get("SID", None)
     date = data.get("date", None)
+    user_uuid = data.get("id", None)
+    required_role = UserRole.USER
+    if user_uuid is not None:
+        required_role = UserRole.HOST
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
 
     if date is None:
         result = motto.get_motto(cursor=cursor)
@@ -833,11 +840,9 @@ def attend_stueble():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=required_role)
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -854,8 +859,20 @@ def attend_stueble():
             mimetype="application/json")
         return response
 
-    user_id = result["data"]["user_id"]
-    user_uuid = result["data"]["user_uuid"]
+    if user_uuid is None:
+        user_id = result["data"]["user_id"]
+        user_uuid = result["data"]["user_uuid"]
+    else:
+        result = users.get_user(cursor=cursor, user_uuid=user_uuid, keywords=["id", "user_uuid"], expect_single_answer=True)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        user_id = result["data"][0]
+        user_uuid = result["data"][1]
 
     result = motto.get_info(cursor=cursor, date=date)
     if result["success"] is False:
