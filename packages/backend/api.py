@@ -803,10 +803,15 @@ def attend_stueble():
     """
 
     # load data
-    data = request.get_json()
     session_id = request.cookies.get("SID", None)
-    date = data.get("date", None)
-    user_uuid = data.get("id", None)
+    try:
+        data = request.get_json()
+        date = data.get("date", None)
+        user_uuid = data.get("id", None)
+    except AttributeError:
+        date = None
+        user_uuid = None
+    
     required_role = UserRole.USER
     if user_uuid is not None:
         required_role = UserRole.HOST
