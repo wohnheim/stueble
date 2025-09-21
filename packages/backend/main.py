@@ -3,7 +3,6 @@ Main runner using threading for Flask API and WebSocket server
 Note: Variables WILL be shared between threads - same memory space
 """
 from packages.backend.sql_connection import database as db
-pool = db.create_pool()
 
 from packages.backend.sql_connection.conn_cursor_functions import *
 
@@ -15,7 +14,7 @@ import sys
 from packages.backend import api
 from packages.backend import websocket
 from waitress import serve
-
+from packages.backend.sql_connection.pool import pool
 
 def run_flask():
     """Run the Flask API server in separate thread"""

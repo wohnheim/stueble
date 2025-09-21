@@ -1,4 +1,4 @@
-from packages.backend.main import pool
+from packages.backend.sql_connection.pool import pool
 
 def get_conn_cursor():
     """

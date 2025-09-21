@@ -1,5 +1,4 @@
 import psycopg2 as pg
-from psycopg2 import pool
 from functools import wraps
 import os
 from dotenv import load_dotenv
@@ -72,32 +71,6 @@ def connect(**kwargs):
     conn = pg.connect(user=USER, password=PASSWORD, host=HOST,
                                  port=PORT, database=DBNAME)
     return conn, conn.cursor()
-    
-
-def create_pool(max_connections: int = 100, min_connections: int=20):
-    """
-    create_pool \n
-    creates a thread pool safely
-
-    Parameters:
-    max_connections (int): maximum number of connections
-    min_connections (int): minimum number of connections
-    Returns:
-        connection_pool:connection_pool
-    """
-    connection_pool = pool.ThreadedConnectionPool(
-        minconn=min_connections,
-        maxconn=max_connections,
-        user=USER,
-        password=PASSWORD,
-        host=HOST,
-        port=PORT,
-        database=DBNAME
-    )
-
-    if not connection_pool:
-        raise Exception("Creation of connection pool failed")
-    return connection_pool
 
 # TODO can't return success: False right now
 # TODO for arguments as list might not be completely implemented
