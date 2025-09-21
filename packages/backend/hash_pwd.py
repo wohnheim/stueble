@@ -1,3 +1,4 @@
+import base64
 import bcrypt
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
@@ -37,6 +38,7 @@ def create_signature(message: str | dict) -> dict:
         password=None,
     )
     signature = private_key.sign(message)
+    signature = base64.b64encode(signature).decode()
     return {"success": True, "data": signature}
 
 @DeprecationWarning
