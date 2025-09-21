@@ -26,7 +26,7 @@ def get_motto(cursor, date: date | None=None) -> dict:
         result = db.read_table(
             cursor=cursor,
             keywords=["motto", "date_of_time", "id"],
-            table_name="motto",
+            table_name="stueble_motto",
             expect_single_answer=True,
             specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
 
