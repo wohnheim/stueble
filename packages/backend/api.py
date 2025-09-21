@@ -520,15 +520,17 @@ def user():
 
     # get user id from session id
     result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid", "user_name"])
-    close_conn_cursor(conn, cursor)
     if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
-
     data = result["data"]
+
+    # TODO: add on guest list
+    result = None
 
     # initialize user
     user = {"firstName": data[0],
