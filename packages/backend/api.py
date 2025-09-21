@@ -20,7 +20,7 @@ from packages.backend.google_functions import gmail
 import re
 import asyncio
 
-from packages.backend.main import pool
+from packages.backend.main import get_conn_cursor, close_conn_cursor
 
 # TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
 # TODO always close connection after last request
@@ -81,14 +81,14 @@ def login():
         return response
     
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # get user data from table
     result = users.get_user(cursor=cursor, keywords=["id", "password_hash", "user_role"], expect_single_answer=True, **value)
 
     # return error
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -99,7 +99,7 @@ def login():
     user = result["data"]
 
     if user[1] is None:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "account was deleted, can be reactivated by signup"}),
             status=401,
@@ -108,7 +108,7 @@ def login():
 
     # if passwords don't match return error
     if not hp.match_pwd(password, user[1]):
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "invalid password"}),
             status=401,
@@ -118,7 +118,7 @@ def login():
     # create a new session
     result = sessions.create_session(connection=conn, cursor=cursor, user_id=user[0])
 
-    close_conn_cursor(pool, conn, cursor) # close conn, cursor
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -203,7 +203,7 @@ def signup_data():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     user_role = UserRole.USER
     user_info["user_role"] = user_role
@@ -213,7 +213,7 @@ def signup_data():
     # check whether user data is unique
     result = signup_val.validate_user_data(cursor=cursor, **check_info)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": result["status"], "message": str(result["error"])}),
             status=result["status"],
@@ -234,7 +234,7 @@ def signup_data():
 
     result = users.create_verification_code(connection=conn, cursor=cursor, user_id=None, additional_data=additional_data)
 
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -276,11 +276,11 @@ def verify_signup():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # verify token
     result = users.confirm_verification_code(cursor=cursor, reset_code=token, additional_data=True)
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -327,7 +327,7 @@ def verify_signup():
     # create a new session
     result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
 
-    close_conn_cursor(pool, conn, cursor)  # close conn, cursor
+    close_conn_cursor(conn, cursor)  # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -365,12 +365,12 @@ def logout():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # remove session from table
     result = sessions.remove_session(connection=conn, cursor=cursor, session_id=session_id)
 
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
 
     # if nothing could be removed, return error
     if result["success"] is False:
@@ -400,13 +400,13 @@ def delete():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # get user id from session id
     result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_role"])
 
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
@@ -414,7 +414,7 @@ def delete():
         return response
 
     if result["data"][1] == UserRole.ADMIN.value:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "Admins cannot be deleted"}),
             status=403,
@@ -427,7 +427,7 @@ def delete():
     # remove user from table
     result = users.remove_user(connection=conn, cursor=cursor, user_id=user_id)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -436,7 +436,7 @@ def delete():
 
     # remove session from table
     result = sessions.remove_session(connection=conn, cursor=cursor, session_id=session_id)
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -466,19 +466,19 @@ def guests():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "invalid permissions, need role host or above"}),
             status=401,
@@ -487,7 +487,7 @@ def guests():
 
     # get guest list
     result = guest_events.guest_list(cursor=cursor)
-    close_conn_cursor(pool, conn, cursor) # close conn, cursor
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -517,11 +517,11 @@ def user():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # get user id from session id
     result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid", "user_name"])
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
@@ -567,18 +567,18 @@ def search_intern():
     # check permissions, since only hosts can see guests
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "invalid permissions, need at least role host"}),
             status=401,
@@ -589,7 +589,7 @@ def search_intern():
     data = data.get("data", None)
 
     if data is None or not isinstance(data, dict):
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "The data must be a valid json object"}),
             status=400,
@@ -603,7 +603,7 @@ def search_intern():
 
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": f"Only the following keys are allowed: {', '.join(allowed_keys)}"}),
             status=400,
@@ -614,7 +614,7 @@ def search_intern():
 
     # if only either room or residence but not both were specified, return error
     if any(key in data.keys() for key in ["room", "residence"]) and not all(key in data.keys() for key in ["room", "residence"]):
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "If room or residence is specified, both must be specified"}),
             status=400,
@@ -661,7 +661,7 @@ def search_intern():
             keywords=keywords,
             expect_single_answer=False)
 
-    close_conn_cursor(pool, conn, cursor) # close conn, cursor
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -707,19 +707,19 @@ def guest_change():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
             status=403,
@@ -738,7 +738,7 @@ def guest_change():
         expect_single_answer=True)
 
     if data["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -753,7 +753,7 @@ def guest_change():
                                        user_id=user_id, 
                                        verified=True)
             if result["success"] is False:
-                close_conn_cursor(pool, conn, cursor)
+                close_conn_cursor(conn, cursor)
                 response = Response(
                     response=json.dumps({"code": 500, "message": str(result["error"])}),
                     status=500,
@@ -763,7 +763,7 @@ def guest_change():
 
     # change guest status to arrive / leave
     result = guest_events.change_guest(connection=conn, cursor=cursor, user_uuid=user_uuid, event_type=event_type)
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -819,19 +819,19 @@ def attend_stueble():
         required_role = UserRole.HOST
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     if date is None:
         result = motto.get_motto(cursor=cursor)
         if result["success"] is False:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
             return response
         if result["data"] is None:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "No stueble is happening in the next time"}),
                 status=400,
@@ -851,14 +851,14 @@ def attend_stueble():
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=required_role)
 
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
             status=403,
@@ -871,7 +871,7 @@ def attend_stueble():
     else:
         result = users.get_user(cursor=cursor, user_uuid=user_uuid, keywords=["id", "user_uuid"], expect_single_answer=True)
         if result["success"] is False:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
@@ -882,7 +882,7 @@ def attend_stueble():
 
     result = motto.get_info(cursor=cursor, date=date)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -904,7 +904,7 @@ def attend_stueble():
             user_id=user_id,
             stueble_id=stueble_id)
 
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         status_code = 500
         error = str(result["error"])
@@ -936,7 +936,7 @@ def attend_stueble():
         keywords=keywords,
         expect_single_answer=True)
 
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -995,20 +995,20 @@ def invite_friend():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
 
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
             status=403,
@@ -1019,7 +1019,7 @@ def invite_friend():
 
     result = motto.get_info(cursor=cursor, date=date)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -1047,7 +1047,7 @@ def invite_friend():
             expect_single_answer=False)
 
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -1057,7 +1057,7 @@ def invite_friend():
     if request.method == "DELETE":
         possible_users = result["data"]
         if len(possible_users) == 0:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 404, "message": "No such user found"}),
                 status=404,
@@ -1075,7 +1075,7 @@ def invite_friend():
                                     type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
                                     variables=[i[0], stueble_id, user_id])
             if result["success"] is False:
-                close_conn_cursor(pool, conn, cursor)
+                close_conn_cursor(conn, cursor)
                 response = Response(
                     response=json.dumps({"code": 500, "message": str(result["error"])}),
                     status=500,
@@ -1090,14 +1090,14 @@ def invite_friend():
                                     keywords=["user_uuid"],
                                     expect_single_answer=True)
             if result["success"] is False:
-                close_conn_cursor(pool, conn, cursor)
+                close_conn_cursor(conn, cursor)
                 response = Response(
                     response=json.dumps({"code": 500, "message": str(result["error"])}),
                     status=500,
                     mimetype="application/json")
                 return response
             if result["data"] is None:
-                close_conn_cursor(pool, conn, cursor)
+                close_conn_cursor(conn, cursor)
                 response = Response(
                     response=json.dumps({"code": 500, "message": "Data integrity error, user not found"}),
                     status=500,
@@ -1106,14 +1106,14 @@ def invite_friend():
             possible_invitee_uuid = result["data"][0]
             users_list.append({"invitee_id": possible_invitee_id, "invitee_uuid": possible_invitee_uuid})
         if len(users_list) == 0:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 401, "message": "No such user found"}),
                 status=401,
                 mimetype="application/json")
             return response
         if len(users_list) > 1:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 409, "message": "Multiple users found, please contact an admin"}),
                 status=409,
@@ -1139,7 +1139,7 @@ def invite_friend():
             user_id=invitee_id,
             stueble_id=stueble_id)
 
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         status_code = 500
         error = str(result["error"])
@@ -1171,7 +1171,7 @@ def invite_friend():
         keywords=keywords,
         expect_single_answer=True)
 
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -1236,19 +1236,19 @@ def reset_password_mail():
         value = {"user_name": name}
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # check whether user with email exists
     result = users.get_user(cursor=cursor, keywords=["id", "first_name", "last_name", "email", "password_hash"], expect_single_answer=True, **value)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response
     if result["data"] is None:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 404, "message": "No user with the given email exists"}),
             status=404,
@@ -1261,7 +1261,7 @@ def reset_password_mail():
     password_hash = result["data"][4]
 
     if password_hash is None or password_hash == "":
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "User was deleted, needs to signup again."}),
             status=400,
@@ -1271,7 +1271,7 @@ def reset_password_mail():
     email = Email(email=email)
 
     result = users.create_verification_code(connection=conn, cursor=cursor, user_id=user_id)
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -1320,12 +1320,12 @@ def confirm_code():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # check whether reset token exists
     result = users.confirm_verification_code(cursor=cursor, reset_code=reset_token)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -1340,7 +1340,7 @@ def confirm_code():
     # set new password
     result = users.update_user(connection=conn, cursor=cursor, user_id=user_id, password_hash=hashed_password)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -1351,7 +1351,7 @@ def confirm_code():
     result = sessions.remove_user_sessions(connection=conn, cursor=cursor, user_id=user_id)
     if result["success"] is False:
         if result["error"] != "no sessions found":
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
@@ -1360,7 +1360,7 @@ def confirm_code():
 
     # create a new session
     result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -1398,19 +1398,19 @@ def change_user_data():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # check permissions
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
             status=403,
@@ -1423,14 +1423,14 @@ def change_user_data():
     if request.path == "/user/change_password":
         new_pwd = data.get("newPassword", None)
         if new_pwd is None:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "The new_password must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
         if new_pwd == "":
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Password cannot be empty"}),
                 status=400,
@@ -1440,14 +1440,14 @@ def change_user_data():
     elif request.path == "/user/change_username":
         username = data.get("username", None)
         if username is None:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": f"Username must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
         if username == "":
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Username cannot be empty"}),
                 status=400,
@@ -1458,7 +1458,7 @@ def change_user_data():
     # get user id from session id
     result = users.update_user(connection=conn, cursor=cursor, session_id=session_id,
                                user_id=user_id, **data)
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False and ("user_name" in data.keys()):
         error = result["error"]
         if f"Key (user_name)=({data['user_name']}) already exists." in error:
@@ -1494,19 +1494,19 @@ def change_user_role():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # check permissions, since only tutors or above can change user role
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.TUTOR)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
@@ -1516,7 +1516,7 @@ def change_user_role():
     # load data, part 2
     name = data.get("user", None)
     if name is None:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "specify user"}),
             status=400,
@@ -1528,7 +1528,7 @@ def change_user_role():
         try:
             name = Email(email=name)
         except ValueError:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Invalid email format"}),
                 status=400,
@@ -1541,7 +1541,7 @@ def change_user_role():
     new_role = data.get("newRole", None)
 
     if new_role is None:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "The new_role must be specified"}),
             status=400,
@@ -1549,7 +1549,7 @@ def change_user_role():
         return response
 
     if is_valid_role(new_role) is False or new_role == "admin":
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "The new_role must be a valid role (extern, user, host, tutor) and can't be admin"}),
             status=400,
@@ -1564,7 +1564,7 @@ def change_user_role():
         cursor=cursor,
         **data)
 
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if user["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -1597,19 +1597,19 @@ def create_stueble():
         return response
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # check permissions, since only tutors or above can change user role
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.TUTOR)
     if result["success"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
@@ -1624,7 +1624,7 @@ def create_stueble():
     shared_apartment = data.get("shared_apartment", None)
 
     if stueble_motto is None or stueble_motto == "":
-        close_conn_cursor(pool, conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "motto must be specified"}),
             status=400,
@@ -1639,14 +1639,14 @@ def create_stueble():
     if hosts is not None and hosts != []:
         user_ids = users.get_users(cursor=cursor, information=hosts)
         if result["success"] is False:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
             return response
         if len(user_ids["data"]) != len(hosts):
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "One or more hosts not found"}),
                 status=400,
@@ -1658,7 +1658,7 @@ def create_stueble():
                                 motto=stueble_motto,
                                 hosts=hosts,
                                 shared_apartment=shared_apartment)
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         if result["error"] == "no stueble found":
             result = motto.create_stueble(connection=conn,
@@ -1710,19 +1710,19 @@ def update_hosts():
         return response
     
     # get conn, cursor
-    conn, cursor = db.get_conn_cursor(pool)
+    conn, cursor = db.get_conn_cursor()
 
     # check permissions, since only tutors or above can change user role
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.TUTOR)
     if result["success"] is False:
-        db.close_conn_cursor(pool, conn, cursor)
+        db.close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        db.close_conn_cursor(pool, conn, cursor)
+        db.close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
@@ -1732,14 +1732,14 @@ def update_hosts():
     if date is None:
         result = motto.get_motto(cursor=cursor)
         if result["success"] is False:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
             return response
         if result["data"] is None:
-            close_conn_cursor(pool, conn, cursor)
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 404, "message": "no stueble party found"}),
                 status=404,
@@ -1753,7 +1753,7 @@ def update_hosts():
                                 user_uuids=user_uuids, 
                                 method="add" if request.method == "PUT" else "remove")
 
-    close_conn_cursor(pool, conn, cursor)
+    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),

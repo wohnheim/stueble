@@ -1,21 +1,5 @@
 from packages.backend.sql_connection import sessions, motto, database as db
 from packages.backend.data_types import *
-from packages.backend.main import pool
-
-def get_conn_cursor(pool):
-    """
-    gets a connection and a cursor from the connection pool
-    """
-    conn = pool.getconn()
-    cursor = conn.cursor()
-    return conn, cursor
-
-def close_conn_cursor(pool, connection, cursor):
-    """
-    closes the cursor and returns the connection to the pool
-    """
-    cursor.close()
-    pool.putconn(connection)
 
 def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
     """
@@ -53,7 +37,7 @@ def get_motto(date: str | None = None):
         date = None
 
     # get connection and cursor
-    conn, cursor = get_conn_cursor(pool)
+    conn, cursor = get_conn_cursor()
 
     # if date is None, return all stuebles
     if date is None:
@@ -63,7 +47,7 @@ def get_motto(date: str | None = None):
             keywords=["motto", "date_of_time"],
             order_by=("date_of_time", 0), # descending
             expect_single_answer=False)
-        close_conn_cursor(pool, conn, cursor) # close conn, cursor
+        close_conn_cursor(conn, cursor) # close conn, cursor
         if result["success"] is False:
             return result
         data = [{"motto": entry[0], "date": entry[1].isoformat()} for entry in result["data"]]
@@ -71,7 +55,7 @@ def get_motto(date: str | None = None):
 
     # get motto from table
     result = motto.get_motto(cursor=cursor, date=date)
-    close_conn_cursor(pool, conn, cursor) # close conn, cursor
+    close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         return result
 
