@@ -294,7 +294,7 @@ components:
 
     hostAdded:
       name: hostAdded
-      title: Guest added
+      title: Host added
       summary: |-
         A host was added.
       payload:
@@ -306,13 +306,13 @@ components:
           resId:
             $ref: "#/components/schemas/resId"
           data:
-            $ref: "#/components/schemas/Guest"
+            $ref: "#/components/schemas/Host"
       correlationId:
         location: "$message.payload#/resId"
 
-    guestRemoved:
-      name: guestRemoved
-      title: Guest removed
+    hostRemoved:
+      name: hostRemoved
+      title: Host removed
       summary: |-
         A host was removed.
       payload:
@@ -320,7 +320,7 @@ components:
         properties:
           event:
             type: string
-            const: guestRemoved
+            const: hostRemoved
           resId:
             $ref: "#/components/schemas/resId"
           data:
@@ -361,26 +361,6 @@ components:
             type: string
             description: String containing the weekly motto.
             example: "Freue dich auf unser Men-In-Black Stüble!"
-      correlationId:
-        location: "$message.payload#/reqId"
-
-    hosts:
-      name: hosts
-      title: Contains the hosts.
-      summary: |-
-        Response to the `requestHosts` request.
-      payload:
-        type: object
-        properties:
-          event:
-            type: string
-            const: hosts
-          reqId:
-            $ref: "#/components/schemas/reqId"
-          data:
-            type: array
-            items:
-              $ref: "#/components/schemas/Host"
       correlationId:
         location: "$message.payload#/reqId"
 

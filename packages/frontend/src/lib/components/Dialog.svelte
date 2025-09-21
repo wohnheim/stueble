@@ -6,6 +6,7 @@
   import Edit from "$lib/dialogs/Edit.svelte";
   import QrCode from "$lib/dialogs/QRCode.svelte";
   import CheckIn from "$lib/dialogs/CheckIn.svelte";
+  import Delete from "$lib/dialogs/Delete.svelte";
 
   const onClose = () => {
     if (ui_object.dialogProperties.mode !== "unselected")
@@ -31,7 +32,9 @@
       ? "width: 357px;"
       : undefined}
 >
-  {#if ui_object.dialogProperties.mode == "qrcode"}
+  {#if ui_object.dialogProperties.mode == "delete"}
+    <Delete />
+  {:else if ui_object.dialogProperties.mode == "qrcode"}
     <QrCode />
   {:else if ui_object.dialogProperties.mode == "edit"}
     <Edit bind:properties={ui_object.dialogProperties} />

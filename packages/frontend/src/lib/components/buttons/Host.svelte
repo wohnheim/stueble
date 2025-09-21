@@ -1,22 +1,19 @@
 <script lang="ts">
   import type { MouseEventHandler } from "svelte/elements";
 
-  import { getDicebearUrl } from "../../../../../common/common";
-  import { ui_object } from "$lib/lib/UI.svelte";
+  import type { Host } from "$lib/api/types";
 
   import Badge from "../Badge.svelte";
   import Button from "../Button.svelte";
 
   let {
-    user,
+    host,
     subtitle = "",
-    lastSeen = false,
     selected = false,
     onclick,
   }: {
-    user: { uid: number; avatar_seed: string; display_name: string };
+    host: Host;
     subtitle?: string;
-    lastSeen?: boolean;
     selected?: boolean;
     onclick?: MouseEventHandler<HTMLAnchorElement>;
   } = $props();
@@ -26,7 +23,6 @@
   <div>
     <img
       class="circle medium"
-      src={getDicebearUrl(user.avatar_seed)}
       style="height: 45px; width: 45px;"
       alt="Avatar"
       draggable="false"
@@ -38,23 +34,7 @@
   </div>
 
   <div>
-    <p id="title">{user.display_name}</p>
+    <p id="title">{host.firstName} {host.lastName}</p>
     <p id="subtitle">{subtitle}</p>
   </div>
-
-  {#if lastSeen}
-    <div class="max"></div>
-    <div id="last-seen" class="bold">
-      {#await ui_object.getLastSend("contact", user.uid) then lastSend}
-        {lastSend}
-      {/await}
-    </div>
-  {/if}
 </Button>
-
-<style>
-  #last-seen {
-    font-size: small;
-    padding-bottom: 18px;
-  }
-</style>
