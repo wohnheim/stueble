@@ -1,25 +1,25 @@
+import asyncio
 import datetime
-from zoneinfo import ZoneInfo
-
-from flask import Flask, request, Response
 import json
 
-from packages.backend.data_types import *
-from packages.backend.sql_connection.common_functions import *
-from packages.backend.sql_connection.ultimate_functions import *
-from packages.backend.sql_connection import (
-    users,
-    sessions,
-    motto,
-    guest_events,
-    configs,
-    events,
-    database as db, signup_validation as signup_val)
+from flask import Flask, Response, request
+
 from packages.backend import hash_pwd as hp, websocket as ws
+from packages.backend.data_types import *
 from packages.backend.google_functions import gmail
-import re
-import asyncio
+from packages.backend.sql_connection import (
+    configs,
+    database as db,
+    events,
+    guest_events,
+    motto,
+    sessions,
+    signup_validation as signup_val,
+    users,
+)
+from packages.backend.sql_connection.common_functions import *
 from packages.backend.sql_connection.conn_cursor_functions import *
+from packages.backend.sql_connection.ultimate_functions import *
 
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
 # Initialize connections to database
@@ -1721,6 +1721,14 @@ def update_hosts():
     return response
 # TODO update host room and send websocket message
 
+# TODO: Move to other file
+def snake_case_to_camel_case(snake_case_string: str):
+   words = snake_case_string.split('_')
+   return words[0].lower() + ''.join(word.capitalize() for word in words[1:])
+
+def camel_case_to_snake_case(camel_case_string: str):
+    return ''.join(['_' + c.lower() if c.isupper() else c for c in camel_case_string]).lstrip('_')
+
 @app.route("/config", methods=["GET", "POST"])
 def config():
     """
@@ -1730,22 +1738,10 @@ def config():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
+            response=json.dumps({"code": 401, "message": "A session id needs to be specified"}),
             status=401,
             mimetype="application/json")
-        return response
-    
-    # load data
-    if request.method == "POST":
-        data = request.get_json()
-        key = data.get("name", None)
-        value = data.get("value", None)
-        if value is None or key is None:
-            response = Response(
-                response=json.dumps({"code": 400, "message": "key and value must be specified"}),
-                status=400,
-                mimetype="application/json")
-            return response
+        return response        
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
@@ -1767,33 +1763,40 @@ def config():
             mimetype="application/json")
         return response
 
-    if request.method == "GET":
-        result = configs.get_all_configurations(cursor=cursor)
-        close_conn_cursor(conn, cursor)
-        if result["success"] is False:
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result["error"])}),
-                status=500,
+    if request.method == "POST":
+        data = request.get_json()
+
+        if isinstance(data, dict) and len(data) != 0:
+            for key, value in data.items():
+                result = configs.change_configuration(connection=conn, cursor=cursor, key=camel_case_to_snake_case(key), value=value)
+
+                if result["success"] is False:
+                    close_conn_cursor(conn, cursor)
+                    return Response(
+                        response=json.dumps({"code": 500, "message": str(result["error"])}),
+                        status=500,
+                        mimetype="application/json")
+        else:
+            close_conn_cursor(conn, cursor)
+            return Response(
+                response=json.dumps({"code": 400, "message": "at least one property needs to be specified"}),
+                status=400,
                 mimetype="application/json")
-            return response
-        response = Response(
-            response=json.dumps({"configs": {key: value for key, value in result["data"]}}),
-            status=200,
+
+    # Method GET & POST
+    result = configs.get_all_configurations(cursor=cursor)
+    close_conn_cursor(conn, cursor)
+
+    if result["success"] is False:
+        return Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
             mimetype="application/json")
-        return response
-    else:
-        result = configs.change_configuration(cursor=cursor, key=key, value=value)
-        close_conn_cursor(conn, cursor)
-        if result["success"] is False:
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result["error"])}),
-                status=500,
-                mimetype="application/json")
-            return response
-        
-        response = Response(
-            status=204)
-        return response
+
+    return Response(
+        response=json.dumps({snake_case_to_camel_case(key): value for key, value in result.get("data")}),
+        status=200,
+        mimetype="application/json")
 
 @app.route("/websocket_local", methods=["POST"])
 def websocket_change():

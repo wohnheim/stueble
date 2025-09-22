@@ -6,8 +6,7 @@ import msgpack
 import datetime
 from cryptography.hazmat.primitives import serialization
 
-from packages.backend.sql_connection.common_functions import check_permissions
-from packages.backend.api import get_motto
+from packages.backend.sql_connection.common_functions import check_permissions, get_motto
 from packages.backend.data_types import *
 from packages.backend.sql_connection import events, sessions
 from packages.backend import hash_pwd as hp
