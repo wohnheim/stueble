@@ -89,7 +89,7 @@ def create_stueble(connection, cursor, date: date, motto: str, hosts: list[int]=
         arguments=arguments,
         returning_column="id"
     )
-    if result["success"] is True and result["data"] is not None:
+    if result["success"] is True and result["data"] is None:
         return {"success": False, "error": "error occurred"}
     if result["success"] is True:
         return clean_single_data(result)
