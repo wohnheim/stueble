@@ -19,6 +19,8 @@ channels:
     messages:
       status:
         $ref: "#/components/messages/status"
+      stuebleStatus:
+        $ref: "#/components/messages/stuebleStatus"
       ping:
         $ref: "#/components/messages/ping"
       pong:
@@ -39,6 +41,10 @@ channels:
         $ref: "#/components/messages/hostAdded"
       hostRemoved:
         $ref: "#/components/messages/hostRemoved"
+      requestInvitees:
+        $ref: "#/components/messages/requestInvitees"
+      invitees:
+        $ref: "#/components/messages/invitees"
       requestMotto:
         $ref: "#/components/messages/requestMotto"
       motto:
@@ -62,6 +68,14 @@ operations:
       $ref: "#/channels/primary"
     messages:
       - $ref: "#/channels/primary/messages/status"
+
+  receiveStuebleStatus:
+    summary: Notifies the client about the stueble status.
+    action: receive
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/stuebleStatus"
 
   sendPing:
     summary: Request the server to send a pong message.
@@ -108,6 +122,18 @@ operations:
     reply:
       messages:
         - $ref: "#/channels/primary/messages/acknowledgement"
+
+  requestInvitees:
+    summary: Request the server to send the invited guests.
+    action: send
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/requestInvitees"
+    reply:
+      messages:
+        - $ref: "#/channels/primary/messages/invitees"
+        - $ref: "#/channels/primary/messages/error"
 
   requestMotto:
     summary: Request the server to send the weekly motto.
@@ -168,6 +194,32 @@ components:
                   enum:
                     - host
                     - admin
+
+    stuebleStatus:
+      summary: Shows stueble status.
+      description: Contains data about the next stueble.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: stuebleStatus
+          data:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                description: As defined by full-date - RFC3339
+              registrationStartsAt:
+                type: string
+                format: date-time
+                description: As defined by date-time - RFC3339
+              registered:
+                type: boolean
+              present:
+                type: boolean
+                description: Depends on registered
 
     ping:
       summary: Ping server to check connection health (Application-Level).
@@ -327,6 +379,42 @@ components:
             $ref: "#/components/schemas/UUID"
       correlationId:
         location: "$message.payload#/resId"
+
+    requestInvitees:
+      name: requestInvitees
+      title: Request the invitees.
+      summary: |-
+        Request the currently invited guests.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: requestInvitees
+          reqId:
+            $ref: "#/components/schemas/reqId"
+      correlationId:
+        location: "$message.payload#/reqId"
+
+    invitees:
+      name: invitees
+      title: Contains the invitees.
+      summary: |-
+        Response to the `requestInvitees` request.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: invitees
+          reqId:
+            $ref: "#/components/schemas/reqId"
+          data:
+            type: array
+            items:
+              $ref: "#/components/schemas/GuestExtern"
+      correlationId:
+        location: "$message.payload#/reqId"
 
     requestMotto:
       name: requestMotto

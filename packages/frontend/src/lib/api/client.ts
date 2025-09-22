@@ -172,7 +172,7 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  async inviteGuest(
+  async inviteExtern(
     firstName: string,
     lastName: string,
     email: string,
@@ -500,6 +500,12 @@ class WebSocketClient {
           error.unauthorized();
         }
       }
+    } else if (message.event == "stuebleStatus") {
+      ui_object.status = {
+        ...message.data,
+        date: new Date(message.data.date),
+        registrationStartsAt: new Date(message.data.date),
+      };
     } else if (
       message.event == "guestAdded" ||
       message.event == "guestModified"
