@@ -96,8 +96,11 @@
 
       <Button
         onclick={async () =>
-          (await ui_object.openDialog({ mode: "delete" })) &&
-          apiClient("http").removeHosts([host.id])}
+          (await ui_object.openDialog({
+            mode: "confirm",
+            title: "Confirm deletion",
+            confirm: "Delete",
+          })) && apiClient("http").removeHosts([host.id])}
       >
         <div>
           <p id="title">
