@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { apiClient } from "$lib/api/client";
   import { ui_object } from "$lib/lib/UI.svelte";
 
   let vornameValid = $state(true);
@@ -77,6 +78,12 @@
       ui_object.userParams.lastName == "" ||
       ui_object.userParams.email == "" ||
       !emailInput.validity.valid}
+    onclick={() =>
+      apiClient("http").inviteGuest(
+        ui_object.userParams.firstName,
+        ui_object.userParams.lastName,
+        ui_object.userParams.email,
+      )}
   >
     <i>send</i>
     <span>Einladen</span>
