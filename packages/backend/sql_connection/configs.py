@@ -21,3 +21,38 @@ def get_configuration(cursor, key: str) -> dict:
     if result["success"] and result["data"] is None:
         return {"success": False, "error": f"no configuration for {key} found"}
     return clean_single_data(result)
+
+def get_all_configurations(cursor) -> dict:
+    """
+    gets all configuration values from the table configurations
+    Parameters:
+        cursor: cursor for the connection
+    Returns:
+        dict: {"success": bool, "data": value}, {"success": False, "error": e} if error occurred
+    """
+    result = db.read_table(
+        cursor=cursor,
+        keywords=["key", "value"],
+        table_name="configurations",
+        expect_single_answer=False)
+    return result
+
+def change_configuration(cursor, key: str, value) -> dict:
+    """
+    changes a configuration value from the table configurations
+    Parameters:
+        cursor: cursor for the connection
+        key (str): key of the configuration
+        value: new value of the configuration
+    """
+    result = db.update_table(
+        cursor=cursor,
+        table_name="configurations",
+        conditions={"key": key},
+        values={"value": value}, 
+        returning_column="key"
+    )
+
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": f"no configuration for {key} found"}
+    return result

@@ -12,7 +12,7 @@ def add_user(connection,
              user_role: UserRole,
              first_name: str,
              last_name: str,
-             returning: str="",
+             returning_column: str="",
              room: str | int | None=None,
              residence: Residence | None=None,
              email: Email | None=None,
@@ -60,8 +60,8 @@ def add_user(connection,
         cursor=cursor,
         table_name="users",
         arguments=arguments,
-        returning_column=returning)
-    if returning != "" and result["success"]:
+        returning_column=returning_column)
+    if returning_column != "" and result["success"]:
         return clean_single_data(result)
     return result
 
