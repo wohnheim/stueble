@@ -127,15 +127,24 @@
     {/if}
   {/if}
 
+  <p id="header" class="bold">Account</p>
+
+  <Button onclick={async () => apiClient("http").logout(true)}>
+    <div>
+      <p id="title">Logout</p>
+      <p id="subtitle">Terminates current session</p>
+    </div>
+  </Button>
+
   <!-- Admin accounts can't be deleted -->
   {#if ui_object.capabilities.some((c) => c != "admin")}
-    <p id="header" class="bold">Account</p>
-
-    <!-- svelte-ignore a11y_missing_attribute a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <Button
       onclick={async () =>
-        (await ui_object.openDialog({ mode: "delete" })) &&
-        apiClient("http").deleteAccount(true)}
+        (await ui_object.openDialog({
+          mode: "confirm",
+          title: "Confirm deletion",
+          confirm: "Delete",
+        })) && apiClient("http").deleteAccount(true)}
     >
       <div style="color: red;">
         <p id="title">Delete account</p>

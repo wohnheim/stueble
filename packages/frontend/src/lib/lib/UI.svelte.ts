@@ -236,6 +236,14 @@ class UI {
 }
 
 /* Dialog types */
+export interface DialogConfirm {
+  mode: "confirm";
+
+  title: string;
+  confirm?: string;
+  cancel?: string;
+}
+
 export interface DialogEdit {
   mode: "edit";
 
@@ -254,10 +262,11 @@ export interface DialogCheckIn {
 }
 
 export type DialogProperties = (
+  | DialogConfirm
   | DialogEdit
   | DialogCheckIn
   | {
-      mode: "delete" | "qrcode" | "unselected";
+      mode: "qrcode" | "unselected";
     }
 ) & { success?: boolean };
 
