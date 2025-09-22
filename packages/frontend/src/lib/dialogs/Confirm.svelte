@@ -15,6 +15,6 @@
     {properties.cancel === undefined ? "Cancel" : properties.cancel}
   </button>
   <button class="transparent link" onclick={() => ui_object.closeDialog(true)}>
-    {properties.confirm === undefined ? "Confirm" : properties.cancel}
+    {properties.confirm === undefined ? "Confirm" : properties.confirm}
   </button>
 </nav>

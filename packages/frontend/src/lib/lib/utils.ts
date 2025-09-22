@@ -4,6 +4,8 @@ export type MaybePromise<T> = T | Promise<T>;
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
+export type Overwrite<T, U> = Omit<T, keyof U> & U;
+
 export const onGuestPage = () =>
   browser && window.location.pathname.slice(0, 6) == "/guest";
 

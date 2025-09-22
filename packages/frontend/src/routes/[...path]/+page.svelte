@@ -98,6 +98,9 @@
     if (settings.settings["user"])
       ui_object.user = JSON.parse(settings.settings["user"]);
 
+    if (settings.settings["status"])
+      ui_object.status = JSON.parse(settings.settings["status"]);
+
     if (settings.settings["qrCodeData"])
       ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
 
@@ -134,6 +137,12 @@
         untrack(() =>
           loadAdminDataFromServer().catch(() => loadAdminDataFromDatabase()),
         );
+    }
+  });
+
+  $effect(() => {
+    if (browser && loaded && ui_object.status !== undefined) {
+      untrack(() => settings.set("status", JSON.stringify(ui_object.status)));
     }
   });
 </script>

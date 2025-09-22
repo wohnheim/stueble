@@ -195,7 +195,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/requestBodies/GuestAddition"
+              $ref: "#/components/requestBodies/GuestAdditionRequest"
       responses:
         "201":
           description: Success.
@@ -269,6 +269,73 @@ paths:
           description: Authentication failure.
         "403":
           description: Authorization failure (not a host).
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - guest_sid: []
+
+  /guests/invitee:
+    put:
+      tags:
+        - guests
+      summary: Invite friend
+      description: |-
+        Invite a friend and optionally send an email with a qr code.
+        The inviting person needs to be registered for the stueble.
+      operationId: inviteExtern
+      requestBody:
+        required: true
+        description: A JSON object specifying the guest.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/InviteExternRequest"
+      responses:
+        "201":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestExtern"
+        "401":
+          description: Authentication failure.
+        "403":
+          description: Authorization failure (not registered).
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - guest_sid: []
+
+    delete:
+      tags:
+        - guests
+      summary: Disinvite friend
+      description: |-
+        Removes a previously invited friend from the guest list.
+        The disinviting person needs to be registered for the stueble.
+      operationId: inviteExtern
+      requestBody:
+        required: true
+        description: A JSON string specifying the guest.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: Success.
+        "401":
+          description: Authentication failure.
+        "403":
+          description: Authorization failure (not registered).
         "5xx":
           description: Unexpected error
           content:
@@ -780,7 +847,7 @@ components:
       required:
         - id
 
-    GuestAddition:
+    GuestAdditionRequest:
       type: object
       properties:
         id:
@@ -789,6 +856,24 @@ components:
           $ref: "#/components/schemas/Date"
       required:
         - id
+
+    InviteExternRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Smith
+        email:
+          type: string
+          example: john.smith@example.com
+        date:
+          $ref: "#/components/schemas/Date"
+      required:
+        - firstName
+        - lastName
 
     MottoModificationRequest:
       type: object
@@ -835,8 +920,13 @@ components:
       type: apiKey
       name: SID
       in: cookie
+    tutor_sid:
+      description: Session id of an tutor user (includes host rights)
+      type: apiKey
+      name: SID
+      in: cookie
     admin_sid:
-      description: Session id of an admin user (includes host rights)
+      description: Session id of an admin user (includes tutor rights)
       type: apiKey
       name: SID
       in: cookie

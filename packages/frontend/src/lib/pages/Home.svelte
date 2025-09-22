@@ -1,7 +1,7 @@
 <script lang="ts">
   import { apiClient } from "$lib/api/client";
   import { settings } from "$lib/lib/settings.svelte";
-  import { ui_object, type RouteMain } from "$lib/lib/UI.svelte";
+  import { ui_object } from "$lib/lib/UI.svelte";
 </script>
 
 <div id="center-container" class="middle-align center-align">
@@ -9,7 +9,7 @@
 
   <h4 class="no-margin">Willkommen Stüble-Besucher*in!</h4>
 
-  {#if (ui_object.path as RouteMain).sub === undefined}
+  {#if !ui_object.status?.registered}
     <p class="margin-left margin-right">
       {#if settings.settings["motto"]}
         {#each settings.settings["motto"].split("\n") as line}
@@ -20,20 +20,15 @@
       {/if}
     </p>
 
-    <button
-      class="top-margin-small"
-      onclick={async () => {
-        if (ui_object.user !== undefined) {
-          const res = await apiClient("http").addToGuestList();
-
-          if (res != null)
-            ui_object.changePath({ main: "main", sub: "invitation" });
-        }
-      }}
-    >
-      <i>event</i>
-      <span>Anmelden</span>
-    </button>
+    {#if ui_object.status !== undefined && ui_object.status.registrationStartsAt <= new Date()}
+      <button
+        class="top-margin-small"
+        onclick={() => apiClient("http").addToGuestList()}
+      >
+        <i>event</i>
+        <span>Anmelden</span>
+      </button>
+    {/if}
 
     <span class="expand"></span>
   {:else}
@@ -50,7 +45,11 @@
         <i>qr_code</i>
         <span>QR-Code anzeigen</span>
       </button>
-      <button class="top-margin-small secondary">
+      <button
+        class="top-margin-small secondary"
+        onclick={() =>
+          ui_object.changePath({ main: "main", sub: "invitation" })}
+      >
         <i>person_add</i>
         <span>Gast einladen</span>
       </button>
@@ -58,19 +57,15 @@
 
     <span class="expand"></span>
 
-    <button
-      class="large-margin"
-      onclick={async () => {
-        if (ui_object.user !== undefined) {
-          const res = await apiClient("http").removeFromGuestList();
-
-          if (res != null) ui_object.changePath({ main: "main" });
-        }
-      }}
-    >
-      <i>cancel</i>
-      <span>Abmelden</span>
-    </button>
+    {#if ui_object.status !== undefined && !ui_object.status.present}
+      <button
+        class="large-margin"
+        onclick={() => apiClient("http").removeFromGuestList()}
+      >
+        <i>cancel</i>
+        <span>Abmelden</span>
+      </button>
+    {/if}
   {/if}
 </div>
 
