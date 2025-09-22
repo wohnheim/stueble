@@ -524,9 +524,8 @@ def user():
             mimetype="application/json")
         return response
     data = result["data"]
-    # extract and remove user_id
+    # extract user_id
     user_id = data[-1]
-    del data[-1] # deletion is unnecessary
 
     # check, whether user is guest for the next stueble
     result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
