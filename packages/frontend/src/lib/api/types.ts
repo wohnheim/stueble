@@ -79,6 +79,21 @@ export const status = z.object({
 
 export type Capabilities = z.infer<typeof status>["data"]["capabilities"];
 
+/* Operation: receiveStuebleStatus */
+
+export const stuebleStatus = z.object({
+  event: constant("stuebleStatus"),
+  data: z.object({
+    date: z.iso.date(),
+    registrationStartsAt: z.iso.datetime(),
+    registered: z.boolean(),
+    present: z.boolean(),
+  }),
+  // reqId,
+});
+
+export type StuebleStatus = z.infer<typeof stuebleStatus>["data"];
+
 /* Operation: sendPing */
 
 export const ping = z.object({
@@ -240,6 +255,7 @@ export type MessageFromClient = z.infer<typeof messageFromClient>;
 
 export const messageFromServer = z.union([
   status,
+  stuebleStatus,
   pong,
   guestAdded,
   guestRemoved,

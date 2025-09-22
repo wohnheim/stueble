@@ -8,8 +8,10 @@ import type {
   GuestExtern,
   GuestIntern,
   QRCodeData,
+  StuebleStatus as StuebleStatusUnparsed,
   User,
 } from "$lib/api/types";
+import type { Overwrite } from "$lib/lib/utils";
 
 /* Site navigation */
 
@@ -50,6 +52,15 @@ export enum WohnheimType {
   Neubau = "neubau",
 }
 
+/* Parsed API types */
+export type StuebleStatus = Overwrite<
+  StuebleStatusUnparsed,
+  {
+    date: Date;
+    registrationStartsAt: Date;
+  }
+>;
+
 /* Global UI state */
 
 class UI {
@@ -64,19 +75,12 @@ class UI {
   // Navigation
   path = $state<Routes>({ main: "main" });
 
-  // Config
-  config = $state<Config>({
-    maximumGuests: 150,
-    sessionExpirationDays: 0,
-    maximumInvitesPerUser: 0,
-    resetCodeExpirationMinutes: 0,
-    qrCodeExpirationMinutes: 0,
-  });
-
   // Persistent properties (using IndexedDB)
   motto = $state("");
   publicKey = $state<CryptoKey>();
   qrCodeData = $state<QRCodeData>();
+  config = $state<Config>();
+  status = $state<StuebleStatus>();
 
   // Personal infos (mutable)
   userParams = $state<

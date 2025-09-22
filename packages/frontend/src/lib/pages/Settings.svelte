@@ -4,6 +4,7 @@
   import { capitalizeFirstLetter } from "$lib/lib/utils";
 
   import Button from "$lib/components/Button.svelte";
+  import { settings } from "$lib/lib/settings.svelte";
 
   $effect(() => {
     // Open dialog
@@ -114,7 +115,10 @@
             ),
           });
 
-          if (res != null) ui_object.config = res;
+          if (res != null) {
+            ui_object.config = res;
+            settings.set("config", JSON.stringify(res));
+          }
         }}
       >
         <div>
