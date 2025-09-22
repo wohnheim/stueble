@@ -24,6 +24,7 @@ websockets_info = {}
 
 allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey"]
 
+# add archievements
 def get_websocket_by_sid(sid: str):
     """
     Get the websocket connection by session id (SID)

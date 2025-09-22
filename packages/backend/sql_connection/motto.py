@@ -87,7 +87,7 @@ def create_stueble(connection, cursor, date: date, motto: str, hosts: list[int]=
         cursor=cursor,
         table_name="stueble_motto",
         arguments=arguments,
-        returning="id"
+        returning_column="id"
     )
     if result["success"] is True and result["data"] is not None:
         return {"success": False, "error": "error occurred"}
@@ -117,7 +117,7 @@ def update_stueble(connection, cursor, date: date, **kwargs) -> dict:
         table_name="stueble_motto",
         arguments=kwargs, 
         conditions={"date_of_time": date},
-        returning="id"
+        returning_column="id"
     )
     if result["success"] is True and result["data"] is None:
         return {"success": False, "error": "no stueble found"}
