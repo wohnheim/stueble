@@ -105,9 +105,10 @@ def remove_user(connection, cursor, user_id: Annotated[int | None, "set EITHER u
 def update_user(
         connection,
         cursor,
-        user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name"] = None,
-        user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name"] = None,
-        user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name"] = None,
+        user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
+        user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
+        user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
+        user_uuid: Annotated[str | None, "Explicit with user_id, user_email OR user_name OR user_uuid"] = None,
         **kwargs) -> dict:
     """
     updates a user in the table users
@@ -118,23 +119,26 @@ def update_user(
         user_id (int | None): id of the user to be updated
         user_email (Email | None): email of the user to be updated
         user_name (str | None): username of the user to be updated
+        user_uuid (str | None): uuid of the user to be updated
         **kwargs: fields to update
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
     """
 
     allowed_fields = ["user_role", "first_name", "last_name", "email", "password_hash", "user_name"]
-    for k, v in kwargs.items():
+    for k in kwargs.keys():
         if k not in allowed_fields:
             return {"success": False, "error": ValueError(f"Field {k} is not allowed to be updated.")}
 
-    if user_id is None and user_email is None and user_name is None:
-        return {"success": False, "error": ValueError("Either user_id or user_email or user_name must be set.")}
+    if all(i is None for i in [user_id, user_email, user_name, user_uuid]):
+        return {"success": False, "error": ValueError("Either user_id or user_email or user_name or user_uuid must be set.")}
     conditions = {}
     if user_id is not None:
         conditions["id"] = user_id
     elif user_email is not None:
         conditions["email"] = user_email.email
+    elif user_uuid is not None:
+        conditions["user_uuid"] = user_uuid
     else:
         conditions["user_name"] = user_name
     result = db.update_table(connection=connection, cursor=cursor, table_name="users", arguments=kwargs,
@@ -145,9 +149,10 @@ def update_user(
 
 def get_user(
         cursor,
-        user_id: Annotated[int | None, "set EITHER user_id OR user_email or user_name"] = None,
-        user_email: Annotated[Email | None, "set EITHER user_id OR user_email or user_name"] = None,
-        user_name: Annotated[str | None, "set EITHER user_id OR user_email or user_name"] = None,
+        user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
+        user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
+        user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
+        user_uuid: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         keywords: tuple[str] | list[str] = ("*",),
         conditions: Annotated[dict | None, "Explicit with user_id, user_email, select_max_of_key, specific_where"] = None,
         expect_single_answer=True,
@@ -162,6 +167,7 @@ def get_user(
         user_id (int | None): id of the user to be retrieved
         user_email (Email | None): email of the user to be retrieved
         user_name (str | None): username of the user to be retrieved
+        user_uuid (str | None): uuid of the user to be retrieved
         keywords (tuple[str] | list[str]): list of fields to be retrieved, defaults to ["*"]
         conditions (dict | None): additional conditions for the query
         expect_single_answer (bool): whether to expect a single user or multiple users
@@ -185,12 +191,13 @@ def get_user(
     if user_id is not None: conditions_counter += 1
     if user_email is not None: conditions_counter += 1
     if user_name is not None: conditions_counter += 1
+    if user_uuid is not None: conditions_counter += 1
     if select_max_of_key != "": conditions_counter += 1
     if specific_where != "": conditions_counter += 1
     if conditions != {}: conditions_counter += 1
     if conditions_counter > 1:
         return {"success": False, "error": ValueError(
-            "user_id, user_email, select_max_of_key, specific_where and conditions are explicit. Therefore just one of them can be set.")}
+            "user_id, user_email, user_uuid, user_name, select_max_of_key, specific_where and conditions are explicit. Therefore just one of them can be set.")}
 
     if user_id is not None:
         conditions["id"] = user_id
@@ -198,6 +205,8 @@ def get_user(
         conditions["email"] = user_email.email
     elif user_name is not None:
         conditions["user_name"] = user_name
+    elif user_uuid is not None:
+        conditions["user_uuid"] = user_uuid
     value = {}
     if order_by is not None:
         value["order_by"] = order_by
@@ -409,4 +418,42 @@ def get_users(cursor,
 
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "No users found."}
+    return result
+
+def check_user_guest_list(cursor, user_id: int) -> dict:
+    """
+    checks, whether the user is on the guest list for the latest stueble
+
+    Parameters:
+        cursor: cursor for the connection
+        user_id (int): id of the user
+    """
+
+    query = """SELECT (COALESCE(
+  (SELECT event_type
+   FROM events
+   WHERE user_id = %s
+     AND stueble_id = (
+       SELECT id
+       FROM stueble_motto
+       WHERE date_of_time >= CURRENT_DATE
+          OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1)
+       ORDER BY date_of_time ASC
+       LIMIT 1
+     )
+   ORDER BY submitted DESC
+   LIMIT 1
+  ),
+  'remove'
+) AS event_type) != 'remove' AS is_registered"""
+
+    result = db.custom_call(
+        connection=None,
+        cursor=cursor,
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+        variables=[user_id])
+    
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "User or stueble doesn't exist."}
     return result
