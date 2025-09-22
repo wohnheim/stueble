@@ -307,7 +307,7 @@ def verify_signup():
         result = users.add_user(
             connection=conn,
             cursor=cursor,
-            returning="id",
+            returning_column="id",
             **user_info)
     close_conn_cursor(conn, cursor)
     # if server error occurred, return error
@@ -1048,7 +1048,7 @@ def invitee():
             user_role=UserRole.EXTERN,
             first_name=invitee_first_name,
             last_name=invitee_last_name,
-            returning="id, user_uuid") # id, user_uuid on purpose like that
+            returning_column="id, user_uuid") # id, user_uuid on purpose like that
 
     else:
         # get user to remove
@@ -1393,6 +1393,7 @@ def confirm_code():
                         samesite='Lax')
     return response
 
+# TODO websocket change update user
 @app.route("/user/change_password", methods=["POST"])
 @app.route("/user/change_username", methods=["POST"])
 def change_user_data():
@@ -1490,6 +1491,7 @@ def change_user_data():
     )
     return response
 
+# TODO websocket change update user
 @app.route("/user/change_role", methods=["POST"])
 def change_user_role():
     """
@@ -1744,6 +1746,80 @@ def update_hosts():
         status=204)
     return response
 # TODO update host room and send websocket message
+
+@app.route("/config", methods=["GET", "POST"])
+def config():
+    """
+    get or update config values
+    """
+
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+    
+    # load data
+    if request.method == "POST":
+        data = request.get_json()
+        key = data.get("name", None)
+        value = data.get("value", None)
+        if value is None or key is None:
+            response = Response(
+                response=json.dumps({"code": 400, "message": "key and value must be specified"}),
+                status=400,
+                mimetype="application/json")
+            return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only admins can change config values
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role admin"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    if request.method == "GET":
+        result = configs.get_all_configurations(cursor=cursor)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        response = Response(
+            response=json.dumps({"configs": {key: value for key, value in result["data"]}}),
+            status=200,
+            mimetype="application/json")
+        return response
+    else:
+        result = configs.change_configuration(cursor=cursor, key=key, value=value)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        
+        response = Response(
+            status=204)
+        return response
 
 @app.route("/websocket_local", methods=["POST"])
 def websocket_change():
