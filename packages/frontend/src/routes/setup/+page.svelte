@@ -9,8 +9,12 @@
 
   import logo from "$lib/assets/Fileplay.svg";
 
+  /* Navigation */
+
   let progress = $state(0);
   let progress2Mode = $state<"login" | "register">("login");
+
+  /* Input state */
 
   let firstNameValid = $state(true);
   let lastNameValid = $state(true);
@@ -23,9 +27,33 @@
 
   let privacyPolicy = $state(false);
 
-  onMount(() => {
-    progress = 1;
-  });
+  /* Input validation */
+
+  let registerButtonDisabled = $derived(
+    ui_object.userParams.firstName == "" ||
+      ui_object.userParams.lastName == "" ||
+      ui_object.userParams.email == "" ||
+      !emailInput?.validity.valid ||
+      ui_object.userParams.roomNumber == 0 ||
+      ui_object.userParams.roomNumber % 1 != 0 ||
+      ui_object.userParams.password == "" ||
+      ui_object.userParams.username == "" ||
+      ui_object.userParams.username.includes("@") ||
+      !privacyPolicy,
+  );
+  let loginButtonDisabled = $derived(
+    ui_object.userParams.username == "" || ui_object.userParams.password == "",
+  );
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter" && progress == 2) {
+      if (progress2Mode == "register" && !registerButtonDisabled) {
+        register();
+      } else if (progress2Mode == "login" && !loginButtonDisabled) {
+        login();
+      }
+    }
+  };
 
   const login = async () => {
     const res = await apiClient("http").login(
@@ -67,7 +95,13 @@
       location.href = "/";
     }
   };
+
+  onMount(() => {
+    progress = 1;
+  });
 </script>
+
+<svelte:window on:dragover|preventDefault on:keydown={handleKeyDown} />
 
 {#if progress == 1}
   <div id="logo" in:fade={{ duration: 200 }}>
@@ -139,11 +173,8 @@
           {/if}
         </div>
 
-        <button
-          class="large"
-          disabled={ui_object.userParams.username == "" ||
-            ui_object.userParams.password == ""}
-          onclick={login}>Anmelden</button
+        <button class="large" disabled={loginButtonDisabled} onclick={login}
+          >Anmelden</button
         >
       {:else}
         <h5>Registrieren</h5>
@@ -299,15 +330,7 @@
 
         <button
           class="large"
-          disabled={ui_object.userParams.firstName == "" ||
-            ui_object.userParams.lastName == "" ||
-            ui_object.userParams.email == "" ||
-            !emailInput?.validity.valid ||
-            ui_object.userParams.roomNumber == 0 ||
-            ui_object.userParams.roomNumber % 1 != 0 ||
-            ui_object.userParams.password == "" ||
-            ui_object.userParams.username == "" ||
-            !privacyPolicy}
+          disabled={registerButtonDisabled}
           onclick={register}>Registrieren</button
         >
       {/if}

@@ -8,11 +8,23 @@
 <header>
   <nav>
     {#if ui_object.layout == "mobile"}
-      <button class="circle transparent" onclick={() => ui(ui_object.menuDialog)}>
+      <button
+        class="circle transparent"
+        onclick={() => ui(ui_object.menuDialog)}
+      >
         <i>menu</i>
         <div class="tooltip bottom">Menu</div>
       </button>
+    {/if}
 
+    {#if ui_object.path.main == "main" && ui_object.path.sub == "invitation"}
+      <button class="circle transparent" onclick={ui_object.pathBackwards}>
+        <i>arrow_back</i>
+        <div class="tooltip bottom">Back</div>
+      </button>
+    {/if}
+
+    {#if ui_object.layout == "mobile"}
       <p style="font-size: large; font-weight: 600;">
         {capitalizeFirstLetter(
           ui_object.path.main == "main" ? "home" : ui_object.path.main,

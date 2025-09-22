@@ -172,6 +172,30 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
+  async inviteGuest(
+    firstName: string,
+    lastName: string,
+    email: string,
+    date?: Date,
+  ) {
+    const res = await fetch("/api/guests/invitee", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        email,
+        date: date?.toISOString(),
+      }),
+    });
+
+    if (res.ok) return true;
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    throw new Error(res.status.toString());
+  }
+
   /* Users */
 
   async createUser(user: UserProperties) {
