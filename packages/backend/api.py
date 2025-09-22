@@ -21,15 +21,12 @@ import re
 import asyncio
 from packages.backend.sql_connection.conn_cursor_functions import *
 
-# TODO code isn't written nicely, e.g. in logout and delete there are big code overlaps
-# TODO always close connection after last request
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
 # Initialize connections to database
 
 # initialize flask app
 app = Flask(__name__)
 
-# TODO: decide, whether to handle deleted accounts with password reset or signup
 @app.route("/auth/login", methods=["POST"])
 def login():
     """
@@ -279,8 +276,8 @@ def verify_signup():
 
     # verify token
     result = users.confirm_verification_code(cursor=cursor, reset_code=token, additional_data=True)
-    close_conn_cursor(conn, cursor)
     if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -312,7 +309,7 @@ def verify_signup():
             cursor=cursor,
             returning="id",
             **user_info)
-
+    close_conn_cursor(conn, cursor)
     # if server error occurred, return error
     if result["success"] is False:
         response = Response(
@@ -448,7 +445,6 @@ def delete():
         status=204)
     return response
 
-#TODO: work on guest dictionary
 # NOTE: if no stueble is happening today or yesterday, an empty list is returned
 @app.route("/guests", methods=["GET"])
 def guests():
@@ -519,7 +515,7 @@ def user():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid", "user_name"])
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid", "user_name", "id"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -528,9 +524,20 @@ def user():
             mimetype="application/json")
         return response
     data = result["data"]
+    # extract and remove user_id
+    user_id = data[-1]
+    del data[-1] # deletion is unnecessary
 
-    # TODO: add on guest list
-    result = None
+    # check, whether user is guest for the next stueble
+    result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    is_guest = result["data"]
 
     # initialize user
     user = {"firstName": data[0],
@@ -539,7 +546,8 @@ def user():
             "residence": data[3],
             "email": data[4],
             "id": data[5], 
-            "username": data[6]}
+            "username": data[6], 
+            "registered": is_guest}
 
     response = Response(
         response=json.dumps(user),
@@ -547,7 +555,6 @@ def user():
         mimetype="application/json")
     return response
 
-# TODO: replace input data json format with query
 @app.route("/user/search", methods=["GET"])
 def search_intern():
     """
@@ -588,7 +595,7 @@ def search_intern():
         return response
 
     # load data
-    data = data.get("data", None)
+    data = request.args.to_dict()
 
     if data is None or not isinstance(data, dict):
         close_conn_cursor(conn, cursor)
@@ -600,9 +607,8 @@ def search_intern():
 
     # json format data: {"session_id": str, data: {"first_name": str or None, "last_name": str or None, "room": str or None, "residence": str or None, "email": str or None}}
 
-    # TODO: change room to room_number, user_uuid to id, allow only room or only residence, too
     # allowed keys to search for a user
-    allowed_keys = ["first_name", "last_name", "room", "residence", "email"]
+    allowed_keys = ["first_name", "last_name", "room_number", "residence", "email", "id", "username"]
 
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
@@ -613,20 +619,9 @@ def search_intern():
             mimetype="application/json")
         return response
     
-    keywords = ["first_name", "last_name", "user_uuid"]
-
-    # if only either room or residence but not both were specified, return error
-    if any(key in data.keys() for key in ["room", "residence"]) and not all(key in data.keys() for key in ["room", "residence"]):
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 400, "message": "If room or residence is specified, both must be specified"}),
-            status=400,
-            mimetype="application/json")
-        return response
-
-    # search email
-    if "email" in data:
-        conditions = {"email": f"{data["email"]} AND user_role != USER_ROLE.EXTERN"}
+    keywords = ["first_name", "last_name", "id"]
+    if "username" in data:
+        conditions = {"user_name": f"{data["username"]} AND user_role != USER_ROLE.EXTERN"}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
@@ -634,9 +629,11 @@ def search_intern():
             conditions=conditions,
             expect_single_answer=True)
 
-    # search room and residence
-    elif "room" in data:
-        conditions = {"room": data["room"], "residence": f"{data["residence"]} AND user_role != USER_ROLE.EXTERN"}
+    # search room and / or residence
+    elif "room" in data or "residence" in data:
+        conditions = [(key, value) for key, value in data.items() if key in ["room", "residence"]]
+        conditions[-1] = conditions[-1] + " AND user_role != USER_ROLE.EXTERN"
+        conditions = dict(conditions)
         result = db.read_table(
             cursor=cursor,
             table_name="users",
@@ -645,8 +642,8 @@ def search_intern():
             expect_single_answer=True)
     
     # search user_uuid
-    elif "user_uuid" in data:
-        conditions = {"user_uuid": f"{data["user_uuid"]} AND user_role != USER_ROLE.EXTERN"}
+    elif "id" in data:
+        conditions = {"user_uuid": f"{data["id"]} AND user_role != USER_ROLE.EXTERN"}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
@@ -654,6 +651,16 @@ def search_intern():
             conditions=conditions,
             expect_single_answer=True)
 
+    # search email
+    elif "email" in data:
+        conditions = {"email": f"{data["email"]} AND user_role != USER_ROLE.EXTERN"}
+        result = db.read_table(
+            cursor=cursor,
+            table_name="users",
+            keywords=keywords,
+            conditions=conditions,
+            expect_single_answer=True)
+        
     # search first_name and/or last_name
     else:
         conditions = {key: value if index != (len(data.keys())-1) else f"{value} AND user_role != USER_ROLE.EXTERN" for index, (key, value) in enumerate(data.items()) if value is not None}
@@ -907,8 +914,8 @@ def attend_stueble():
             user_id=user_id,
             stueble_id=stueble_id)
 
-    close_conn_cursor(conn, cursor)
     if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         status_code = 500
         error = str(result["error"])
         if "; code: " in str(result["error"]):
@@ -975,7 +982,6 @@ def attend_stueble():
     return response
 
 # NOTE: extern guest can be multiple times in table users since only first_name, last_name are specified, which are not unique
-# TODO: send email
 @app.route("/guests/invitee", methods=["PUT", "DELETE"])
 def invitee():
     """
@@ -1145,8 +1151,8 @@ def invitee():
             user_id=invitee_id,
             stueble_id=stueble_id)
 
-    close_conn_cursor(conn, cursor)
     if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         status_code = 500
         error = str(result["error"])
         if "; code: " in str(result["error"]):
@@ -1528,13 +1534,13 @@ def change_user_role():
             mimetype="application/json")
         return response
 
-    # TODO use user_uuid, right now working with user
     data = {}
     data["user_role"] = UserRole(new_role)
 
     result = users.update_user(
         connection=conn,
         cursor=cursor,
+        user_uuid=user_uuid,
         **data)
 
     close_conn_cursor(conn, cursor)
@@ -1631,7 +1637,6 @@ def create_stueble():
                                 motto=stueble_motto,
                                 hosts=hosts,
                                 shared_apartment=shared_apartment)
-    close_conn_cursor(conn, cursor)
     if result["success"] is False:
         if result["error"] == "no stueble found":
             result = motto.create_stueble(connection=conn,
@@ -1648,12 +1653,13 @@ def create_stueble():
                                     hosts=hosts,
                                     shared_apartment=shared_apartment)
         else:
+            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
             return response
-
+    close_conn_cursor(conn, cursor)
     response = Response(
         status=204)
     return response
