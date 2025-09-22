@@ -37,7 +37,7 @@ def get_all_configurations(cursor) -> dict:
         expect_single_answer=False)
     return result
 
-def change_configuration(cursor, key: str, value) -> dict:
+def change_configuration(connection, cursor, key: str, value) -> dict:
     """
     changes a configuration value from the table configurations
     Parameters:
@@ -46,10 +46,11 @@ def change_configuration(cursor, key: str, value) -> dict:
         value: new value of the configuration
     """
     result = db.update_table(
+        connection=connection,
         cursor=cursor,
         table_name="configurations",
+        arguments={"value": value}, 
         conditions={"key": key},
-        values={"value": value}, 
         returning_column="key"
     )
 
