@@ -83,7 +83,7 @@ def check_guest(cursor, user_id: int, stueble_id: int | None=None) -> dict:
         if not result["success"]:
             return result
         if result["data"] is None:
-            return {"success": False, "error": "no stueble party found"}
+            return {"success": False, "error": "no stueble paruser_ty found"}
         stueble_id = result["data"]
 
 
@@ -91,7 +91,7 @@ def check_guest(cursor, user_id: int, stueble_id: int | None=None) -> dict:
             SELECT 'add' =
                    COALESCE((SELECT event_type
                              FROM events
-                             WHERE id = %s
+                             WHERE user_id = %s
                                AND stueble_id = %s
                                AND event_type IN ('add', 'remove')
                              ORDER BY submitted DESC
