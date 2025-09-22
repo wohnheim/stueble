@@ -1572,7 +1572,7 @@ def create_stueble():
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
-            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
+            response=json.dumps({"code": 401, "message": "A session id needs to be specified"}),
             status=401,
             mimetype="application/json")
         return response
@@ -1580,91 +1580,65 @@ def create_stueble():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    # check permissions, since only tutors or above can change user role
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.TUTOR)
+    # check permissions, since only hosts or above can change the motto
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
-        response = Response(
+        return Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
-        return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
-        response = Response(
+        return Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
             mimetype="application/json")
-        return response
 
     # load data
     data = request.get_json()
     date = data.get("date", None)
     stueble_motto = data.get("motto", None)
-    hosts = data.get("hosts", None)
-    shared_apartment = data.get("shared_apartment", None)
 
     if stueble_motto is None:
         close_conn_cursor(conn, cursor)
-        response = Response(
+        return Response(
             response=json.dumps({"code": 400, "message": "motto must be specified"}),
             status=400,
             mimetype="application/json")
-        return response
 
     if date is None:
         date = datetime.date.today()
         days_ahead = (2 - date.weekday() + 7) % 7
         date = date + datetime.timedelta(days=days_ahead)
 
-    if hosts is not None and hosts != []:
-        user_ids = users.get_users(cursor=cursor, information=hosts)
-        if result["success"] is False:
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result["error"])}),
-                status=500,
-                mimetype="application/json")
-            return response
-        if len(user_ids["data"]) != len(hosts):
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 400, "message": "One or more hosts not found"}),
-                status=400,
-                mimetype="application/json")
-            return response
     result = motto.update_stueble(connection=conn,
                                 cursor=cursor,
                                 date=date,
-                                motto=stueble_motto,
-                                hosts=hosts,
-                                shared_apartment=shared_apartment)
+                                motto=stueble_motto)
+
     if result["success"] is False:
         if result["error"] == "no stueble found":
             result = motto.create_stueble(connection=conn,
                                     cursor=cursor,
                                     date=date,
-                                    motto=stueble_motto,
-                                    hosts=hosts,
-                                    shared_apartment=shared_apartment)
+                                    motto=stueble_motto)
+
             if result["success"] is False:
-                result = motto.create_stueble(connection=conn,
-                                    cursor=cursor,
-                                    date=date,
-                                    motto=stueble_motto,
-                                    hosts=hosts,
-                                    shared_apartment=shared_apartment)
+                close_conn_cursor(conn, cursor)
+                return Response(
+                    response=json.dumps({"code": 500, "message": str(result["error"])}),
+                    status=500,
+                    mimetype="application/json")
         else:
             close_conn_cursor(conn, cursor)
-            response = Response(
+            return Response(
                 response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
-            return response
+
     close_conn_cursor(conn, cursor)
-    response = Response(
-        status=204)
-    return response
+    return Response(status=204)
 
 @app.route("/hosts", methods=["PUT", "DELETE"])
 def update_hosts():
