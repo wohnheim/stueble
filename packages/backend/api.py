@@ -1053,7 +1053,7 @@ def attend_stueble():
         action_type = Action_Type("guestRemoved")
 
     # send a websocket message to all hosts that the guest list changed
-    asyncio.run(ws.send(event=action_type.value, data=user_data, skip_sid=session_id))
+    asyncio.run(ws.broadcast(event=action_type.value, data=user_data, skip_sid=session_id))
 
     response = Response(
         response=json.dumps(data),
@@ -1866,6 +1866,7 @@ def config():
         response=json.dumps({snake_case_to_camel_case(key): value for key, value in result.get("data")}),
         status=200,
         mimetype="application/json")
+
 
 """
 Internal
