@@ -1325,10 +1325,11 @@ def user():
     result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid", "user_name", "id"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
-        return Response(
+        response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
+        return response
     data = result["data"]
 
     # initialize user
@@ -1341,10 +1342,11 @@ def user():
             "username": data[6]}
 
     close_conn_cursor(conn, cursor)
-    return Response(
+    response = Response(
         response=json.dumps(user),
         status=200,
         mimetype="application/json")
+    return response
 
 # TODO: PUT /user missing
 
@@ -1587,16 +1589,18 @@ def create_stueble():
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
-        return Response(
+        response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
+        return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
-        return Response(
+        response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
             mimetype="application/json")
+        return response
 
     # load data
     data = request.get_json()
@@ -1605,10 +1609,11 @@ def create_stueble():
 
     if stueble_motto is None:
         close_conn_cursor(conn, cursor)
-        return Response(
+        response = Response(
             response=json.dumps({"code": 400, "message": "motto must be specified"}),
             status=400,
             mimetype="application/json")
+        return response
 
     if date is None:
         date = datetime.date.today()
@@ -1629,19 +1634,22 @@ def create_stueble():
 
             if result["success"] is False:
                 close_conn_cursor(conn, cursor)
-                return Response(
+                response = Response(
                     response=json.dumps({"code": 500, "message": str(result["error"])}),
                     status=500,
                     mimetype="application/json")
+                return response
         else:
             close_conn_cursor(conn, cursor)
-            return Response(
+            response = Response(
                 response=json.dumps({"code": 500, "message": str(result["error"])}),
                 status=500,
                 mimetype="application/json")
+            return response
 
     close_conn_cursor(conn, cursor)
-    return Response(status=204)
+    response = Response(status=204)
+    return response
 
 """
 Hosts management (Changes via WebSocket)
@@ -1925,31 +1933,35 @@ def config():
 
                 if result["success"] is False:
                     close_conn_cursor(conn, cursor)
-                    return Response(
+                    respnse = Response(
                         response=json.dumps({"code": 500, "message": str(result["error"])}),
                         status=500,
                         mimetype="application/json")
+                    return response
         else:
             close_conn_cursor(conn, cursor)
-            return Response(
+            respnse = Response(
                 response=json.dumps({"code": 400, "message": "at least one property needs to be specified"}),
                 status=400,
                 mimetype="application/json")
+            return response
 
     # Method GET & POST
     result = configs.get_all_configurations(cursor=cursor)
     close_conn_cursor(conn, cursor)
 
     if result["success"] is False:
-        return Response(
+        response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
+        return response
 
-    return Response(
+    response = Response(
         response=json.dumps({snake_case_to_camel_case(key): value for key, value in result.get("data")}),
         status=200,
         mimetype="application/json")
+    return response
 
 
 """
