@@ -5,7 +5,10 @@ DECLARE inviter_role USER_ROLE;
 DECLARE inviter_users INTEGER;
 DECLARE automatically_removed_users INTEGER;
 BEGIN
-
+    -- skip for force insert
+    IF current_setting('additional.skip_triggers', true) = 'on' THEN
+        RETURN NEW;
+    END IF;
     -- check, whether admins are trying to arrive / leave
     IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
     THEN

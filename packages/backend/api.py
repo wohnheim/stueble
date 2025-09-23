@@ -1750,44 +1750,125 @@ def get_hosts():
     date = data.get("date", None)
     
     # get conn, cursor
-    conn, cursor = db.get_conn_cursor()
+    conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts or above can change user role
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
-        db.close_conn_cursor(conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        db.close_conn_cursor(conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
             status=403,
             mimetype="application/json")
         return response
-    
-    if date is None:
-        result = motto.get_motto(cursor=cursor)
-        if result["success"] is False:
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result["error"])}),
-                status=500,
-                mimetype="application/json")
-            return response
-        if result["data"] is None:
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 404, "message": "no stueble party found"}),
-                status=404,
-                mimetype="application/json")
-            return response
-        stueble_id = result["data"][2]
 
+    result = motto.get_motto(cursor=cursor, date=date)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    if result["data"] is None:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 404, "message": "no stueble party found"}),
+            status=404,
+            mimetype="application/json")
+        return response
+    stueble_id = result["data"][2]
+    result = motto.get_hosts(cursor=cursor, stueble_id=stueble_id)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    response = Response(
+        response=json.dumps(result["data"]),
+        status=200,
+        mimetype="application/json")
+    return response
 
+def force_add_guest():
+    """
+    force add guest to current stueble
+    """
+
+    # load data
+    data = request.get_json()
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 400, "message": "The session id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+    user_uuid = data.get("id", None)
+    if user_uuid is None:
+        response = Response(
+            response=json.dumps({"code": 400, "message": "The user_uuid must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only hosts and above can add guests
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    # get user_id from user_uuid
+    result = users.get_user(cursor=cursor, user_uuid=user_uuid, keywords=["id"])
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    user_id = result["data"][0]
+    query = """SET additional.skip_triggers = 'on';
+INSERT INTO events (user_id, stueble_id, event_type) VALUES (%s, %s, %s), (%s, %s, %s);  -- Triggers will be skipped
+RESET additional.skip_triggers;"""
+    result = db.custom_call(connection=conn,
+                            cursor=cursor,
+                            query=query,
+                            type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
+                            variables=[user_id, 1, 'add', user_id, 1, 'arrive'])
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    response = Response(
+        status=204)
+    return response
 
 """
 Config management

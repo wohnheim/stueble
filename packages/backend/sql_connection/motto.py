@@ -179,10 +179,16 @@ def get_hosts(cursor, stueble_id: int) -> dict:
         stueble_id (int): id of the stueble
     """
 
-    query = """SELECT u.user_uuid, u.first_name, u.last_name, u.user_name FROM hosts h JOIN users u ON u.id = h.user_id WHERE h.stueble_id = %s"""
+    params = ["user_uuid", "first_name", "last_name", "user_name"]
+
+    query = f"""SELECT {', '.join(['u.' + i for i in params])} FROM hosts h JOIN users u ON u.id = h.user_id WHERE h.stueble_id = %s"""
     result = db.custom_call(connection=None, 
                    cursor=cursor, 
                    query=query, 
                    type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
                    variables=[stueble_id])
-    return result
+    if result["success"] is False:
+        return result
+    hosts = result["data"]
+    hosts = [dict(zip(params, host)) for host in hosts]
+    return {"success": True, "data": hosts}
