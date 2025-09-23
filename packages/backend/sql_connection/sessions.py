@@ -129,3 +129,23 @@ def remove_user_sessions(connection, cursor, user_id: int) -> dict:
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "no sessions found"}
     return result
+
+def check_session_id(cursor, session_id: int) -> dict:
+    """
+    checks, whether a session_id is valid
+
+    Parameters:
+        cursor: cursor for the db connection
+        session_id: id of the session
+    """
+
+    result = db.read_table(cursor=cursor, 
+                           table_name="sessions", 
+                           conditions={"id": session_id}, 
+                           expect_single_answer=True)
+    if result["success"] and result["data"] is None:
+        return {"success": True, "data": False}
+    elif result["success"] is True:
+        return {"success": True, "data": True}
+    else:
+        return result
