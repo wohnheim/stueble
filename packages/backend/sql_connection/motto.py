@@ -169,3 +169,20 @@ def update_hosts(connection, cursor, stueble_id: str, method: Literal["add", "re
         connection.rollback()
         return {"success": False, "error": str(e)}
     return {"success": True}
+
+def get_hosts(cursor, stueble_id: int) -> dict:
+    """
+    gets the hosts for a stueble
+
+    Parameters:
+        cursor: cursor for the connection
+        stueble_id (int): id of the stueble
+    """
+
+    query = """SELECT u.user_uuid, u.first_name, u.last_name, u.user_name FROM hosts h JOIN users u ON u.id = h.user_id WHERE h.stueble_id = %s"""
+    result = db.custom_call(connection=None, 
+                   cursor=cursor, 
+                   query=query, 
+                   type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
+                   variables=[stueble_id])
+    return result
