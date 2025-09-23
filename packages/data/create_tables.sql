@@ -104,15 +104,6 @@ CREATE TABLE IF NOT EXISTS verification_codes (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- saves the specific sids for a websocket connection for a user and their device
-CREATE TABLE IF NOT EXISTS websocket_sids (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE UNIQUE NOT NULL,
-    sid TEXT UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
 -- error table
 CREATE TABLE IF NOT EXISTS error_logs (
     id SERIAL PRIMARY KEY,
@@ -124,21 +115,21 @@ CREATE TABLE IF NOT EXISTS error_logs (
     actions_taken BOOLEAN DEFAULT FALSE
 );
 
--- table for timestamps from websocket connections
-CREATE TABLE IF NOT EXISTS websocket_timestamps (
+CREATE TABLE IF NOT EXISTS websocket_messages (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    last_timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS websocket_log (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) NOT NULL,
+    session_id INTEGER REFERENCES sessions(id) NOT NULL,
     action ACTION_TYPE NOT NULL,
     message_content JSONB,
     required_role USER_ROLE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS websockets_affected (
+    id SERIAL PRIMARY KEY, 
+    message_id REFERENCES websocket_messages(id) NOT NULL,
+    session_id INTEGER REFERENCES sessions(id) NOT NULL, 
+    received NOT NULL DEFAULT FALSE, 
+    created_at TIMESTAMPTZ DEFAULT CURRENT_DATE
 );
 
 CREATE TABLE IF NOT EXISTS hosts (

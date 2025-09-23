@@ -5,10 +5,12 @@ import websockets
 import msgpack
 import datetime
 from cryptography.hazmat.primitives import serialization
+import inspect
+from functools import wraps
 
 from packages.backend.sql_connection.common_functions import check_permissions, get_motto
 from packages.backend.data_types import *
-from packages.backend.sql_connection import events, sessions
+from packages.backend.sql_connection import events, sessions, websocket_db as wsdb, database as db
 from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -20,6 +22,9 @@ host_upwards_room = set()
 connections = set()
 sid_to_websocket = {}
 websockets_info = {}
+message_log = {}
+
+# handle websocket_info and sid_to_websocket garbage collection
 
 allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey"]
 
@@ -77,6 +82,50 @@ def parse_cookies(headers):
     
     return cookies
 
+# gives each message a unique id and therefore allows tracking, which websocket has already received the message
+def add_to_message_log(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # bind parameter names to values
+        sig = inspect.signature(func)
+        bound = sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        params = bound.arguments
+
+        # initialize room
+        room = set()
+
+        # set room based on function
+        if func.__name__ == "broadcast":
+            if params.get("room", None) is None:
+                room = host_upwards_room
+            if "skip_sids" in params:
+                room.discard(params["skip_sid"])
+        elif func.__name__ == "send":
+            if "websocket" in kwargs:
+                room = {kwargs["websocket"]}
+            else:
+                room = {args[0]} if len(args) > 0 else None
+
+        # retrieve session_ids that receive the message
+        session_ids = [websockets_info.get(i, {}).get("session_id", None) for i in room]
+        session_ids = [i for i in session_ids if i is not None]
+        if "room" in params:
+            del params["room"]
+        if len(message_log.keys()) == 0:
+            message_id = 0
+        else:
+            message_id = max(list(message_log.keys())) + 1
+
+        # set message log
+        message_log[message_id] = {"params": params, "session_ids": session_ids}
+
+        result = func(*args, message_id=message_id, **kwargs)
+
+        return {"result": result, "message_id": message_id}
+    return wrapper
+
+@add_to_message_log
 async def send(websocket, event, data, **kwargs):
     """
     sends an event to a websocket
@@ -90,7 +139,8 @@ async def send(websocket, event, data, **kwargs):
     message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
     await websocket.send(message)
 
-async def broadcast(event, data, skip_sid=None, room=None, **kwargs):
+@add_to_message_log
+async def broadcast(event, data, room=None, skip_sid=None, **kwargs):
     """
     broadcasts an event to a room
 
@@ -104,7 +154,7 @@ async def broadcast(event, data, skip_sid=None, room=None, **kwargs):
     if room is None:
         room = host_upwards_room
 
-    message = msgpack.packb({"event": event, **kwargs, "data": {"event": event, "data": data}}, use_bin_type=True)
+    message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
     for ws in list(room):
         if ws.parse_cookies(ws.request.headers).get("SID", None) != skip_sid:
             await ws.send(message)
@@ -132,16 +182,15 @@ async def handle_ws(websocket):
         return
     
     _, expiration_date = result["data"]
-    websockets_info[id(websocket)] = expiration_date
+    websockets_info[id(websocket)] = {"expiration_date": expiration_date, "session_id": session_id}
 
     sid_to_websocket[session_id] = websocket
 
     connections.add(websocket)
 
-
     try:
         async for message in websocket:
-            expiration_date = websockets_info.get(id(websocket), None)
+            expiration_date = websockets_info.get(id(websocket), {}).get("expiration_date", None)
             if expiration_date is None:
                 await send(websocket=websocket, event="error", data={"code": "500",
                     "message": "Internal server error"})
@@ -201,6 +250,26 @@ async def handle_ws(websocket):
         host_upwards_room.discard(session_id)
         connections.discard(websocket)
         sid_to_websocket.pop(session_id, None)
+
+        # get connection, cursor
+        conn, cursor = get_conn_cursor()
+
+        # get all valid session_ids
+        result = db.read_table(cursor=cursor, 
+                               table_name="sessions", 
+                               keywords=["id"], 
+                               expect_single_answer=False)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            # remove after debugging
+            print("ERROR OCCURRED")
+        if result["success"] is True:
+            allowed_session_ids = result["data"]
+            for key, value in message_log.items():
+                if any(i not in allowed_session_ids for i in value["session_ids"]):
+                    message_log[key]["session_ids"] = [i for i in value["session_ids"] if i in allowed_session_ids]
+                    if message_log[key]["session_ids"] == []:
+                        del message_log[key]
 
 
 async def handle_connect(websocket):
