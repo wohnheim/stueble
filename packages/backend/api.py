@@ -1017,6 +1017,13 @@ def attend_stueble():
                     {"id": user_uuid,
                     "timestamp": timestamp},
                 "signature": signature}
+        response = Response(
+            response=json.dumps(data),
+            status=200,
+            mimetype="application/json")
+    else:
+        response = Response(
+            status=204)
 
     # get user data
     keywords = ["first_name", "last_name", "room", "residence", "verified"]
@@ -1055,10 +1062,6 @@ def attend_stueble():
     # send a websocket message to all hosts that the guest list changed
     asyncio.run(ws.broadcast(event=action_type.value, data=user_data, skip_sid=session_id))
 
-    response = Response(
-        response=json.dumps(data),
-        status=200,
-        mimetype="application/json")
     return response
 
 # NOTE: extern guest can be multiple times in table users since only first_name, last_name are specified, which are not unique
@@ -1364,12 +1367,12 @@ def change_user_role():
     user_uuid = data.get("id", None)
     new_role = data.get("role", None)
     if new_role is None or is_valid_role(new_role) is False or new_role == "admin":
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "The new_role must be specified and needs to be valid and can't be admin"}),
                 status=400,
                 mimetype="application/json")
             return response
+
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
@@ -1495,7 +1498,7 @@ def search_intern():
     # search room and / or residence
     elif "room" in data or "residence" in data:
         conditions = [(key, value) for key, value in data.items() if key in ["room", "residence"]]
-        conditions[-1] = conditions[-1] + " AND user_role != USER_ROLE.EXTERN"
+        conditions[-1][1] = conditions[-1][1] + " AND user_role != USER_ROLE.EXTERN"
         conditions = dict(conditions)
         result = db.read_table(
             cursor=cursor,
