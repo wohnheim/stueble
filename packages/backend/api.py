@@ -1933,14 +1933,14 @@ def config():
 
                 if result["success"] is False:
                     close_conn_cursor(conn, cursor)
-                    respnse = Response(
+                    response = Response(
                         response=json.dumps({"code": 500, "message": str(result["error"])}),
                         status=500,
                         mimetype="application/json")
                     return response
         else:
             close_conn_cursor(conn, cursor)
-            respnse = Response(
+            response = Response(
                 response=json.dumps({"code": 400, "message": "at least one property needs to be specified"}),
                 status=400,
                 mimetype="application/json")
