@@ -1690,6 +1690,82 @@ def update_hosts():
             mimetype="application/json")
         return response
     
+    result = motto.get_motto(cursor=cursor, date=date)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    if result["data"] is None:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 404, "message": "no stueble party found"}),
+            status=404,
+            mimetype="application/json")
+        return response
+    stueble_id = result["data"][2]
+
+    result = motto.get_hosts(cursor=cursor, stueble_id=stueble_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    hosts = result["data"]
+
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    response = Response(
+        status=204)
+    return response
+# TODO update host room and send websocket message
+
+@app.route("/hosts", methods=["GET"])
+def get_hosts():
+    """
+    Get hosts for a stueble.
+    """
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+    
+    data = request.get_json()
+    date = data.get("date", None)
+    
+    # get conn, cursor
+    conn, cursor = db.get_conn_cursor()
+
+    # check permissions, since only hosts or above can change user role
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    if result["success"] is False:
+        db.close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        db.close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+    
     if date is None:
         result = motto.get_motto(cursor=cursor)
         if result["success"] is False:
@@ -1708,24 +1784,7 @@ def update_hosts():
             return response
         stueble_id = result["data"][2]
 
-    result = motto.update_hosts(connection=conn,
-                                cursor=cursor,
-                                stueble_id=stueble_id,
-                                user_uuids=user_uuids, 
-                                method="add" if request.method == "PUT" else "remove")
 
-    close_conn_cursor(conn, cursor)
-    if result["success"] is False:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    response = Response(
-        status=204)
-    return response
-# TODO update host room and send websocket message
 
 """
 Config management

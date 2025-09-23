@@ -247,8 +247,8 @@ def get_invited_friends(cursor, user_id: int, stueble_id: int) -> dict:
                   AND event_type IN ('add', 'remove')
                 ORDER BY user_id, submitted DESC) as latest_event
           WHERE latest_event = 'add'
-          ORDER BY user_id) as invitees
-    JOIN users AS u ON invitees.user_id = u.id;
+          ORDER BY user_id) AS invitees
+    JOIN users u ON invitees.user_id = u.id;
     """
 
     # check how many friends were invited by the user to a specific stueble party
