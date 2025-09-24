@@ -10,7 +10,7 @@ from functools import wraps
 
 from packages.backend.sql_connection.common_functions import check_permissions, get_motto
 from packages.backend.data_types import *
-from packages.backend.sql_connection import events, sessions, websocket_db as wsdb, database as db
+from packages.backend.sql_connection import events, sessions, database as db, users
 from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -28,7 +28,7 @@ message_log = {}
 
 allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey"]
 
-# add archievements
+# add achievements
 def get_websocket_by_sid(sid: str):
     """
     Get the websocket connection by session id (SID)
@@ -86,6 +86,13 @@ def parse_cookies(headers):
 def add_to_message_log(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+        # get name of the function, that called this function
+        caller_name = inspect.stack()[1].function
+
+        # since these messages have a req_id, ignore them
+        if caller_name in allowed_events:
+            return func(*args, **kwargs)
+
         # bind parameter names to values
         sig = inspect.signature(func)
         bound = sig.bind(*args, **kwargs)
@@ -121,19 +128,18 @@ def add_to_message_log(func):
         message_log[message_id] = {"params": params, "session_ids": session_ids}
 
         result = func(*args, message_id=message_id, **kwargs)
-
-        return {"result": result, "message_id": message_id}
+        return result
     return wrapper
 
 @add_to_message_log
-async def send(websocket, event, data, **kwargs):
+async def send(websocket, event: str, data: dict | bool, **kwargs):
     """
     sends an event to a websocket
 
     Parameters:
         websocket: the websocket connection
         event (str): the event to send
-        data (dict): the data to send
+        data (dict | bool): the data to send
         **kwargs: additional keyword arguments to send
     """
     message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
@@ -176,7 +182,7 @@ async def handle_ws(websocket):
     result = sessions.get_session(cursor=cursor, session_id=session_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        await send(websocket=websocket, event="error", reqId=req_id, data=
+        await send(websocket=websocket, event="error", data=
             {"code": "500" if result["error"] != "no session found" else "401",
              "message": str(result["error"])})
         return
@@ -187,6 +193,11 @@ async def handle_ws(websocket):
     sid_to_websocket[session_id] = websocket
 
     connections.add(websocket)
+
+    # for each unsuccessfully past sent message, send it again
+    unsent_messages = [value["params"] for key, value in message_log.items() if session_id in value["session_ids"]]
+    for message in unsent_messages:
+        await send(websocket=websocket, **message)
 
     try:
         async for message in websocket:
@@ -226,7 +237,7 @@ async def handle_ws(websocket):
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "reqId must be specified"})
                     continue
-                await handle_ping(websocket=websocket, msg=data, req_id=req_id)
+                await handle_ping(websocket=websocket, req_id=req_id)
             elif event == "heartbeat":
                 await handle_heartbeat(websocket=websocket)
             elif event == "requestMotto":
@@ -395,7 +406,7 @@ async def request_motto(websocket, msg, req_id):
     await send(websocket=websocket, event="motto", reqId=req_id, data=result["data"])
     return
 
-'''@DeprecationWarning
+
 async def verify_guest(websocket, msg):
     """
     sets guest verified to True
@@ -414,7 +425,7 @@ async def verify_guest(websocket, msg):
         return
     user_uuid = msg.get("id", None)
     verification_method = msg.get("method", None)
-    session_id = parse_cookies(headers=websocketrequest.headers).get("SID", None)
+    session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     if session_id is None:
         await send(websocket=websocket, event="error", data={
             "code": "401",
@@ -464,7 +475,7 @@ async def verify_guest(websocket, msg):
     await send(websocket=websocket, event="guestVerification", data={})
 
     await broadcast(room=host_upwards_room, websocket=websocket, event="guestVerified", reqId=req_id, data=user_data, skip_sid=session_id)
-    return'''
+    return
 
 async def get_qrcode(websocket, msg, req_id):
     """
