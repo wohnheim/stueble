@@ -57,3 +57,16 @@ def change_configuration(connection, cursor, key: str, value) -> dict:
     if result["success"] and result["data"] is None:
         return {"success": False, "error": f"no configuration for {key} found"}
     return result
+
+def change_multiple_configurations(connection, cursor, configurations: dict) -> dict:
+    """
+    changes multiple configuration values from the table configurations
+    Parameters:
+        cursor: cursor for the connection
+        configurations (dict): dictionary of key-value pairs to change
+    """
+    for key, value in configurations.items():
+        result = change_configuration(connection, cursor, key, value)
+        if not result["success"]:
+            return result
+    return {"success": True, "data": f"changed {len(configurations)} configurations"}
