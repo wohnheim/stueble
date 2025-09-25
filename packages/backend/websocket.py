@@ -7,6 +7,7 @@ import datetime
 from cryptography.hazmat.primitives import serialization
 import inspect
 from functools import wraps
+import re
 
 from packages.backend.sql_connection.common_functions import check_permissions, get_motto
 from packages.backend.data_types import *
@@ -15,6 +16,7 @@ from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from packages.backend.sql_connection.conn_cursor_functions import *
+from packages.backend.sql_connection.database import connect
 
 load_dotenv("~/stueble/packages/backend/.env")
 
@@ -26,7 +28,7 @@ message_log = {}
 
 # handle websocket_info and sid_to_websocket garbage collection
 
-allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey"]
+allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey", "acknowledgement"]
 
 # add achievements
 def get_websocket_by_sid(sid: str):
@@ -89,8 +91,14 @@ def add_to_message_log(func):
         # get name of the function, that called this function
         caller_name = inspect.stack()[1].function
 
+        # excluded_functions
+        excluded_functions = allowed_events.copy() + ["handle_ws"]
+        excluded_functions = [re.sub(r'(?<!^)(?=[A-Z])', '_', i).lower() for i in excluded_functions]
+        excluded_functions.remove("request_q_r_code")
+        excluded_functions.append("request_qr_code")
+
         # since these messages have a req_id, ignore them
-        if caller_name in allowed_events:
+        if caller_name in excluded_functions:
             return func(*args, **kwargs)
 
         # bind parameter names to values
@@ -127,7 +135,7 @@ def add_to_message_log(func):
         # set message log
         message_log[message_id] = {"params": params, "session_ids": session_ids}
 
-        result = func(*args, message_id=message_id, **kwargs)
+        result = func(*args, resId=message_id, **kwargs)
         return result
     return wrapper
 
@@ -173,7 +181,7 @@ async def handle_ws(websocket):
         websocket: the websocket connection
     """
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
-    result = await handle_connect(websocket)
+    result = await connect(websocket)
     if result is False:
         return
     
@@ -209,7 +217,7 @@ async def handle_ws(websocket):
                 await send(websocket=websocket, event="error", data={"code": "401",
                         "message": "Session expired"})
                 await websocket.close(code="1000", reason="Session expired")
-                await handle_disconnect(websocket=websocket)
+                await disconnect(websocket=websocket)
                 return
             try:
                 msg = msgpack.unpackb(message)
@@ -229,17 +237,17 @@ async def handle_ws(websocket):
                      "message": "Invalid msgpack format"})
                 continue
             if event == "connect":
-                await handle_connect(websocket=websocket)
+                await connect(websocket=websocket)
             elif event == "disconnect":
-                await handle_disconnect(websocket=websocket)
+                await disconnect(websocket=websocket)
             elif event == "ping":
                 if req_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "reqId must be specified"})
                     continue
-                await handle_ping(websocket=websocket, req_id=req_id)
+                await ping(websocket=websocket, req_id=req_id)
             elif event == "heartbeat":
-                await handle_heartbeat(websocket=websocket)
+                await heartbeat(websocket=websocket)
             elif event == "requestMotto":
                 if req_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
@@ -251,12 +259,12 @@ async def handle_ws(websocket):
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "reqId must be specified"})
                     continue
-                await get_qrcode(websocket=websocket, msg=data, req_id=req_id)
+                await request_qrcode(websocket=websocket, msg=data, req_id=req_id)
             elif event == "requestPublicKey":
                 if req_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "reqId must be specified"})
-                await get_public_key(websocket=websocket, req_id=req_id)
+                await request_public_key(websocket=websocket, req_id=req_id)
     finally:
         host_upwards_room.discard(session_id)
         connections.discard(websocket)
@@ -282,8 +290,37 @@ async def handle_ws(websocket):
                     if message_log[key]["session_ids"] == []:
                         del message_log[key]
 
+async def acknowledgement(websocket, res_id: str | int):
+    """
+    handle acknowledgement
 
-async def handle_connect(websocket):
+    Parameters:
+        websocket (websocket): websocket connection
+        res_id (str | int): response id of the message called message_id in backend
+    """
+    session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
+    if session_id is None:
+        await send(websocket=websocket, event="error", data={
+                     "code": "401",
+                     "message": "missing SID cookie"})
+        return False
+    message_id = res_id
+    if message_id is None:
+        await send(websocket=websocket, event="error", data={
+            "code": "400",
+            "message": "missing resId"
+        })
+    try:
+        message_log[message_id]["session_ids"].remove(session_id)
+    except ValueError:
+        await send(websocket=websocket, event="error", data={
+            "code": "400",
+            "message": "invalid resId"
+        })
+    return True
+
+
+async def connect(websocket):
     """
     handle a new websocket connection
 
@@ -340,7 +377,7 @@ async def handle_connect(websocket):
                 "status_code": "200"})
         return True
 
-async def handle_disconnect(websocket):
+async def disconnect(websocket):
     """
     handle a websocket disconnection
 
@@ -360,7 +397,7 @@ async def handle_disconnect(websocket):
     del websockets_info[id(websocket)]
     return
 
-async def handle_ping(websocket, req_id):
+async def ping(websocket, req_id):
     """
     handle a ping from the client
 
@@ -372,7 +409,7 @@ async def handle_ping(websocket, req_id):
     await send(websocket=websocket, event="pong", reqId=req_id, data=True)
     return
 
-async def handle_heartbeat(websocket):
+async def heartbeat(websocket):
     """
     handle a heartbeat from the client
 
@@ -477,7 +514,7 @@ async def verify_guest(websocket, msg):
     await broadcast(room=host_upwards_room, websocket=websocket, event="guestVerified", reqId=req_id, data=user_data, skip_sid=session_id)
     return
 
-async def get_qrcode(websocket, msg, req_id):
+async def request_qrcode(websocket, msg, req_id):
     """
     get a new qr-code for a guest
 
@@ -544,7 +581,7 @@ async def get_qrcode(websocket, msg, req_id):
     await send(websocket=websocket, event="requestQRCode", reqId=req_id, data=data)
     return
 
-async def get_public_key(websocket, req_id):
+async def request_public_key(websocket, req_id):
     """
     sends the public key
 
