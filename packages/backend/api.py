@@ -716,6 +716,24 @@ def change_user_data():
             status=401,
             mimetype="application/json")
         return response
+
+    user_info = {key: value for key, value in zip(keywords, data["data"])}
+    user_info["user_role"] = FrontendUserRole.EXTERN if user_info["user_role"] == "extern" else FrontendUserRole.INTERN
+
+    user_data = {
+        "id": user_uuid,
+        "present": present,
+        "firstName": user_info["first_name"],
+        "lastName": user_info["last_name"],
+        "extern": user_info["user_role"] == FrontendUserRole.EXTERN}
+
+    if user_info["user_role"] == FrontendUserRole.INTERN:
+        user_data["roomNumber"] = user_info["room"]
+        user_data["residence"] = user_info["residence"]
+        user_data["verified"] = True
+
+    asyncio.run(ws.broadcast(event="userModified", data=message, skip_sid=session_id))
+
     response = Response(
         status=204
     )
@@ -1287,7 +1305,7 @@ def invitee():
     action_type = Action_Type("guestModified")
 
     # send a websocket message to all hosts that the guest list changed
-    asyncio.run(ws.send(event=action_type.value, data=invitee_data, skip_sid=session_id))
+    asyncio.run(ws.broadcast(event=action_type.value, data=invitee_data, skip_sid=session_id))
 
     if request.method == "DELETE":
         response = Response(
@@ -1926,25 +1944,16 @@ def config():
 
     if request.method == "POST":
         data = request.get_json()
+        for key, value in data.items():
+            result = configs.change_configuration(connection=conn, cursor=cursor, key=camel_case_to_snake_case(key), value=value)
 
-        if isinstance(data, dict) and len(data) != 0:
-            for key, value in data.items():
-                result = configs.change_configuration(connection=conn, cursor=cursor, key=camel_case_to_snake_case(key), value=value)
-
-                if result["success"] is False:
-                    close_conn_cursor(conn, cursor)
-                    response = Response(
-                        response=json.dumps({"code": 500, "message": str(result["error"])}),
-                        status=500,
-                        mimetype="application/json")
-                    return response
-        else:
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 400, "message": "at least one property needs to be specified"}),
-                status=400,
-                mimetype="application/json")
-            return response
+            if result["success"] is False:
+                close_conn_cursor(conn, cursor)
+                response = Response(
+                    response=json.dumps({"code": 500, "message": str(result["error"])}),
+                    status=500,
+                    mimetype="application/json")
+                return response
 
     # Method GET & POST
     result = configs.get_all_configurations(cursor=cursor)

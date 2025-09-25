@@ -7,7 +7,6 @@ import datetime
 from cryptography.hazmat.primitives import serialization
 import inspect
 from functools import wraps
-import re
 
 from packages.backend.sql_connection.common_functions import check_permissions, get_motto
 from packages.backend.data_types import *
@@ -16,7 +15,6 @@ from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from packages.backend.sql_connection.conn_cursor_functions import *
-from packages.backend.sql_connection.database import connect
 
 load_dotenv("~/stueble/packages/backend/.env")
 
@@ -114,7 +112,7 @@ def add_to_message_log(func):
         if func.__name__ == "broadcast":
             if params.get("room", None) is None:
                 room = host_upwards_room
-            if "skip_sids" in params:
+            if "skip_sid" in params:
                 room.discard(params["skip_sid"])
         elif func.__name__ == "send":
             if "websocket" in kwargs:
