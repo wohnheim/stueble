@@ -4,9 +4,9 @@
   "short_name": "Stüble",
   "start_url": "/",
   "scope": "/",
-  "theme_color": "#ffb4a4",
+  "theme_color": "#80d4d6",
   "display": "standalone",
-  "background_color": "#201a19",
+  "background_color": "#0e1415",
   "description": "Melde dich für's Stüble an.",
   "icons": [
     {
