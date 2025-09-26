@@ -1,5 +1,7 @@
 <script lang="ts">
   import { ui_object } from "$lib/lib/UI.svelte";
+
+  import Logo from "$lib/assets/Stueble-Logo.svelte";
 </script>
 
 <!-- svelte-ignore a11y_missing_attribute, a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -9,7 +11,7 @@
 >
   <header>
     <a>
-      <img class="circle" src="/favicon.svg" draggable="false" alt="Stüble" />
+      <Logo width={100} />
     </a>
   </header>
 

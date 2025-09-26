@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "pwassets": "pwa-asset-generator ./static/favicon.svg ./static/pwa-assets/ -v /pwa-assets -o -b '#201a19' -e -p 15%"
+    "pwassets": "pwa-asset-generator ./static/favicon.svg ./static/pwa-assets/ -v /pwa-assets -o -b '#0e1415' -e -p 15%"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250813.0",

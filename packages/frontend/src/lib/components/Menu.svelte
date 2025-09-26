@@ -2,6 +2,8 @@
   import ui from "beercss";
 
   import { ui_object } from "$lib/lib/UI.svelte";
+
+  import Logo from "$lib/assets/Stueble-Logo.svelte";
 </script>
 
 <!-- Corner radius? -->
@@ -14,7 +16,7 @@
   <ul class="list">
     <header>
       <nav>
-        <img class="circle" src="/favicon.svg" draggable="false" alt="" />
+        <Logo width={75} />
         <h6>Stüble</h6>
       </nav>
     </header>
@@ -71,11 +73,6 @@
 </dialog>
 
 <style>
-  img {
-    height: 40px;
-    width: 40px;
-  }
-
   .section {
     margin: 8px 12px 8px 12px !important;
   }

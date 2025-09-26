@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" viewBox="0 0 3000 3000">
+<script lang="ts">
+  let {
+    width,
+  }: {
+    width: number;
+  } = $props();
+</script>
+
+<svg xmlns="http://www.w3.org/2000/svg" {width} viewBox="0 0 3000 3000">
   <defs>
     <clipPath id="a">
       <path d="M985.648 705h253.278v582.54H985.648Zm0 0" />
@@ -3943,7 +3951,7 @@
       <g clip-path="url(#bs)" transform="translate(696 1074)">
         <g clip-path="url(#bt)">
           <g clip-path="url(#bu)">
-            <path fill="#dde4e3" d="M-1356-1734h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1356-1734h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -3954,7 +3962,7 @@
       <g clip-path="url(#bx)" transform="translate(737 1889)">
         <g clip-path="url(#by)">
           <g clip-path="url(#bz)">
-            <path fill="#dde4e3" d="M-1397-2549h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1397-2549h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -3965,7 +3973,7 @@
       <g clip-path="url(#bC)" transform="translate(761 920)">
         <g clip-path="url(#bD)">
           <g clip-path="url(#bE)">
-            <path fill="#dde4e3" d="M-1421-1580h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1421-1580h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -3976,7 +3984,7 @@
       <g clip-path="url(#bH)" transform="translate(873 896)">
         <g clip-path="url(#bI)">
           <g clip-path="url(#bJ)">
-            <path fill="#dde4e3" d="M-1533-1556h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1533-1556h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -3987,7 +3995,7 @@
       <g clip-path="url(#bM)" transform="translate(868 902)">
         <g clip-path="url(#bN)">
           <g clip-path="url(#bO)">
-            <path fill="#dde4e3" d="M-1528-1562h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1528-1562h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -3998,7 +4006,7 @@
       <g clip-path="url(#bR)" transform="translate(855 1566)">
         <g clip-path="url(#bS)">
           <g clip-path="url(#bT)">
-            <path fill="#dde4e3" d="M-1515-2226h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1515-2226h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4009,7 +4017,7 @@
       <g clip-path="url(#bW)" transform="translate(868 1396)">
         <g clip-path="url(#bX)">
           <g clip-path="url(#bY)">
-            <path fill="#dde4e3" d="M-1528-2056h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1528-2056h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4020,7 +4028,7 @@
       <g clip-path="url(#cb)" transform="translate(955 822)">
         <g clip-path="url(#cc)">
           <g clip-path="url(#cd)">
-            <path fill="#dde4e3" d="M-1615-1482h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1615-1482h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4031,7 +4039,7 @@
       <g clip-path="url(#cg)" transform="translate(995 693)">
         <g clip-path="url(#ch)">
           <g clip-path="url(#ci)">
-            <path fill="#dde4e3" d="M-1655-1353h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1655-1353h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4042,7 +4050,7 @@
       <g clip-path="url(#cl)" transform="translate(950 1554)">
         <g clip-path="url(#cm)">
           <g clip-path="url(#cn)">
-            <path fill="#dde4e3" d="M-1610-2214h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1610-2214h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4053,7 +4061,7 @@
       <g clip-path="url(#cq)" transform="translate(980 2145)">
         <g clip-path="url(#cr)">
           <g clip-path="url(#cs)">
-            <path fill="#dde4e3" d="M-1640-2805h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1640-2805h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4064,7 +4072,7 @@
       <g clip-path="url(#cv)" transform="translate(1168 684)">
         <g clip-path="url(#cw)">
           <g clip-path="url(#cx)">
-            <path fill="#dde4e3" d="M-1828-1344h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1828-1344h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4075,7 +4083,7 @@
       <g clip-path="url(#cA)" transform="translate(1316 637)">
         <g clip-path="url(#cB)">
           <g clip-path="url(#cC)">
-            <path fill="#dde4e3" d="M-1976-1297h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1976-1297h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4086,7 +4094,7 @@
       <g clip-path="url(#cF)" transform="translate(1942 779)">
         <g clip-path="url(#cG)">
           <g clip-path="url(#cH)">
-            <path fill="#dde4e3" d="M-2602-1439h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2602-1439h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4097,7 +4105,7 @@
       <g clip-path="url(#cK)" transform="translate(1657 1000)">
         <g clip-path="url(#cL)">
           <g clip-path="url(#cM)">
-            <path fill="#dde4e3" d="M-2317-1660h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2317-1660h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4108,7 +4116,7 @@
       <g clip-path="url(#cP)" transform="translate(1944 1856)">
         <g clip-path="url(#cQ)">
           <g clip-path="url(#cR)">
-            <path fill="#dde4e3" d="M-2604-2516h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2604-2516h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4119,7 +4127,7 @@
       <g clip-path="url(#cU)" transform="translate(1923 1696)">
         <g clip-path="url(#cV)">
           <g clip-path="url(#cW)">
-            <path fill="#dde4e3" d="M-2583-2356h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2583-2356h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4130,7 +4138,7 @@
       <g clip-path="url(#cZ)" transform="translate(1654 1938)">
         <g clip-path="url(#da)">
           <g clip-path="url(#db)">
-            <path fill="#dde4e3" d="M-2314-2598h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2314-2598h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4141,7 +4149,7 @@
       <g clip-path="url(#de)" transform="translate(1637 1018)">
         <g clip-path="url(#df)">
           <g clip-path="url(#dg)">
-            <path fill="#dde4e3" d="M-2297-1678h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2297-1678h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4152,7 +4160,7 @@
       <g clip-path="url(#dj)" transform="translate(1775 1710)">
         <g clip-path="url(#dk)">
           <g clip-path="url(#dl)">
-            <path fill="#dde4e3" d="M-2435-2370h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2435-2370h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4163,7 +4171,7 @@
       <g clip-path="url(#do)" transform="translate(990 774)">
         <g clip-path="url(#dp)">
           <g clip-path="url(#dq)">
-            <path fill="#dde4e3" d="M-1650-1434h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1650-1434h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4174,7 +4182,7 @@
       <g clip-path="url(#dt)" transform="translate(992 757)">
         <g clip-path="url(#du)">
           <g clip-path="url(#dv)">
-            <path fill="#dde4e3" d="M-1652-1417h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1652-1417h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4185,7 +4193,7 @@
       <g clip-path="url(#dy)" transform="translate(1023 683)">
         <g clip-path="url(#dz)">
           <g clip-path="url(#dA)">
-            <path fill="#dde4e3" d="M-1683-1343h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1683-1343h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4196,7 +4204,7 @@
       <g clip-path="url(#dD)" transform="translate(1955 772)">
         <g clip-path="url(#dE)">
           <g clip-path="url(#dF)">
-            <path fill="#dde4e3" d="M-2615-1432h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2615-1432h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4207,7 +4215,7 @@
       <g clip-path="url(#dI)" transform="translate(1647 1009)">
         <g clip-path="url(#dJ)">
           <g clip-path="url(#dK)">
-            <path fill="#dde4e3" d="M-2307-1669h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2307-1669h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4218,7 +4226,7 @@
       <g clip-path="url(#dN)" transform="translate(1656 1026)">
         <g clip-path="url(#dO)">
           <g clip-path="url(#dP)">
-            <path fill="#dde4e3" d="M-2316-1686h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2316-1686h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4229,7 +4237,7 @@
       <g clip-path="url(#dS)" transform="translate(1944 1015)">
         <g clip-path="url(#dT)">
           <g clip-path="url(#dU)">
-            <path fill="#dde4e3" d="M-2604-1675h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2604-1675h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4240,7 +4248,7 @@
       <g clip-path="url(#dX)" transform="translate(1954 1021)">
         <g clip-path="url(#dY)">
           <g clip-path="url(#dZ)">
-            <path fill="#dde4e3" d="M-2614-1681h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2614-1681h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4251,7 +4259,7 @@
       <g clip-path="url(#ec)" transform="translate(1644 1936)">
         <g clip-path="url(#ed)">
           <g clip-path="url(#ee)">
-            <path fill="#dde4e3" d="M-2304-2596h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2304-2596h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4262,7 +4270,7 @@
       <g clip-path="url(#eh)" transform="translate(1654 1956)">
         <g clip-path="url(#ei)">
           <g clip-path="url(#ej)">
-            <path fill="#dde4e3" d="M-2314-2616h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2314-2616h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4273,7 +4281,7 @@
       <g clip-path="url(#em)" transform="translate(1686 1941)">
         <g clip-path="url(#en)">
           <g clip-path="url(#eo)">
-            <path fill="#dde4e3" d="M-2346-2601h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2346-2601h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4284,7 +4292,7 @@
       <g clip-path="url(#er)" transform="translate(2142 1846)">
         <g clip-path="url(#es)">
           <g clip-path="url(#et)">
-            <path fill="#dde4e3" d="M-2802-2506h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2802-2506h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4295,7 +4303,7 @@
       <g clip-path="url(#ew)" transform="translate(2151 1837)">
         <g clip-path="url(#ex)">
           <g clip-path="url(#ey)">
-            <path fill="#dde4e3" d="M-2811-2497h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2811-2497h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4306,7 +4314,7 @@
       <g clip-path="url(#eB)" transform="translate(2153 1850)">
         <g clip-path="url(#eC)">
           <g clip-path="url(#eD)">
-            <path fill="#dde4e3" d="M-2813-2510h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2813-2510h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4317,7 +4325,7 @@
       <g clip-path="url(#eG)" transform="translate(2154 1823)">
         <g clip-path="url(#eH)">
           <g clip-path="url(#eI)">
-            <path fill="#dde4e3" d="M-2814-2483h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2814-2483h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4328,7 +4336,7 @@
       <g clip-path="url(#eL)" transform="translate(1924 2165)">
         <g clip-path="url(#eM)">
           <g clip-path="url(#eN)">
-            <path fill="#dde4e3" d="M-2584-2825h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2584-2825h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4339,7 +4347,7 @@
       <g clip-path="url(#eQ)" transform="translate(1952 2167)">
         <g clip-path="url(#eR)">
           <g clip-path="url(#eS)">
-            <path fill="#dde4e3" d="M-2612-2827h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2612-2827h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4350,7 +4358,7 @@
       <g clip-path="url(#eV)" transform="translate(1953 2181)">
         <g clip-path="url(#eW)">
           <g clip-path="url(#eX)">
-            <path fill="#dde4e3" d="M-2613-2841h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2613-2841h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4361,7 +4369,7 @@
       <g clip-path="url(#fa)" transform="translate(736 1888)">
         <g clip-path="url(#fb)">
           <g clip-path="url(#fc)">
-            <path fill="#dde4e3" d="M-1396-2548h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1396-2548h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4372,7 +4380,7 @@
       <g clip-path="url(#ff)" transform="translate(729 1873)">
         <g clip-path="url(#fg)">
           <g clip-path="url(#fh)">
-            <path fill="#dde4e3" d="M-1389-2533h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1389-2533h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4383,7 +4391,7 @@
       <g clip-path="url(#fk)" transform="translate(748 1877)">
         <g clip-path="url(#fl)">
           <g clip-path="url(#fm)">
-            <path fill="#dde4e3" d="M-1408-2537h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1408-2537h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4394,7 +4402,7 @@
       <g clip-path="url(#fp)" transform="translate(863 1561)">
         <g clip-path="url(#fq)">
           <g clip-path="url(#fr)">
-            <path fill="#dde4e3" d="M-1523-2221h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1523-2221h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4405,7 +4413,7 @@
       <g clip-path="url(#fu)" transform="translate(841 2020)">
         <g clip-path="url(#fv)">
           <g clip-path="url(#fw)">
-            <path fill="#dde4e3" d="M-1501-2680h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1501-2680h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4416,7 +4424,7 @@
       <g clip-path="url(#fz)" transform="translate(839 2025)">
         <g clip-path="url(#fA)">
           <g clip-path="url(#fB)">
-            <path fill="#dde4e3" d="M-1499-2685h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1499-2685h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4427,7 +4435,7 @@
       <g clip-path="url(#fE)" transform="translate(840 2026)">
         <g clip-path="url(#fF)">
           <g clip-path="url(#fG)">
-            <path fill="#dde4e3" d="M-1500-2686h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1500-2686h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4438,7 +4446,7 @@
       <g clip-path="url(#fJ)" transform="translate(830 2017)">
         <g clip-path="url(#fK)">
           <g clip-path="url(#fL)">
-            <path fill="#dde4e3" d="M-1490-2677h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1490-2677h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4449,7 +4457,7 @@
       <g clip-path="url(#fO)" transform="translate(836 2021)">
         <g clip-path="url(#fP)">
           <g clip-path="url(#fQ)">
-            <path fill="#dde4e3" d="M-1496-2681h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1496-2681h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4460,7 +4468,7 @@
       <g clip-path="url(#fT)" transform="translate(810 1994)">
         <g clip-path="url(#fU)">
           <g clip-path="url(#fV)">
-            <path fill="#dde4e3" d="M-1470-2654h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1470-2654h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4471,7 +4479,7 @@
       <g clip-path="url(#fY)" transform="translate(816 1999)">
         <g clip-path="url(#fZ)">
           <g clip-path="url(#ga)">
-            <path fill="#dde4e3" d="M-1476-2659h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1476-2659h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4482,7 +4490,7 @@
       <g clip-path="url(#gd)" transform="translate(810 1996)">
         <g clip-path="url(#ge)">
           <g clip-path="url(#gf)">
-            <path fill="#dde4e3" d="M-1470-2656h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1470-2656h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4493,7 +4501,7 @@
       <g clip-path="url(#gi)" transform="translate(825 2011)">
         <g clip-path="url(#gj)">
           <g clip-path="url(#gk)">
-            <path fill="#dde4e3" d="M-1485-2671h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1485-2671h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4504,7 +4512,7 @@
       <g clip-path="url(#gn)" transform="translate(832 2017)">
         <g clip-path="url(#go)">
           <g clip-path="url(#gp)">
-            <path fill="#dde4e3" d="M-1492-2677h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1492-2677h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4515,7 +4523,7 @@
       <g clip-path="url(#gs)" transform="translate(825 2008)">
         <g clip-path="url(#gt)">
           <g clip-path="url(#gu)">
-            <path fill="#dde4e3" d="M-1485-2668h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1485-2668h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4526,7 +4534,7 @@
       <g clip-path="url(#gx)" transform="translate(979 2151)">
         <g clip-path="url(#gy)">
           <g clip-path="url(#gz)">
-            <path fill="#dde4e3" d="M-1639-2811h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1639-2811h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4537,7 +4545,7 @@
       <g clip-path="url(#gC)" transform="translate(978 2152)">
         <g clip-path="url(#gD)">
           <g clip-path="url(#gE)">
-            <path fill="#dde4e3" d="M-1638-2812h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1638-2812h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4548,7 +4556,7 @@
       <g clip-path="url(#gH)" transform="translate(977 2156)">
         <g clip-path="url(#gI)">
           <g clip-path="url(#gJ)">
-            <path fill="#dde4e3" d="M-1637-2816h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1637-2816h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4559,7 +4567,7 @@
       <g clip-path="url(#gM)" transform="translate(1166 2265)">
         <g clip-path="url(#gN)">
           <g clip-path="url(#gO)">
-            <path fill="#dde4e3" d="M-1826-2925h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1826-2925h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4570,7 +4578,7 @@
       <g clip-path="url(#gR)" transform="translate(1164 2260)">
         <g clip-path="url(#gS)">
           <g clip-path="url(#gT)">
-            <path fill="#dde4e3" d="M-1824-2920h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1824-2920h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4581,7 +4589,7 @@
       <g clip-path="url(#gW)" transform="translate(766 1041)">
         <g clip-path="url(#gX)">
           <g clip-path="url(#gY)">
-            <path fill="#dde4e3" d="M-1426-1701h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1426-1701h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4592,7 +4600,7 @@
       <g clip-path="url(#hb)" transform="translate(852 905)">
         <g clip-path="url(#hc)">
           <g clip-path="url(#hd)">
-            <path fill="#dde4e3" d="M-1512-1565h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1512-1565h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4603,7 +4611,7 @@
       <g clip-path="url(#hg)" transform="translate(854 897)">
         <g clip-path="url(#hh)">
           <g clip-path="url(#hi)">
-            <path fill="#dde4e3" d="M-1514-1557h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1514-1557h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4614,7 +4622,7 @@
       <g clip-path="url(#hl)" transform="translate(954 1384)">
         <g clip-path="url(#hm)">
           <g clip-path="url(#hn)">
-            <path fill="#dde4e3" d="M-1614-2044h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1614-2044h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4625,7 +4633,7 @@
       <g clip-path="url(#hq)" transform="translate(986 824)">
         <g clip-path="url(#hr)">
           <g clip-path="url(#hs)">
-            <path fill="#dde4e3" d="M-1646-1484h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1646-1484h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4636,7 +4644,7 @@
       <g clip-path="url(#hv)" transform="translate(987 817)">
         <g clip-path="url(#hw)">
           <g clip-path="url(#hx)">
-            <path fill="#dde4e3" d="M-1647-1477h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1647-1477h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4647,7 +4655,7 @@
       <g clip-path="url(#hA)" transform="translate(988 818)">
         <g clip-path="url(#hB)">
           <g clip-path="url(#hC)">
-            <path fill="#dde4e3" d="M-1648-1478h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1648-1478h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4658,7 +4666,7 @@
       <g clip-path="url(#hF)" transform="translate(987 818)">
         <g clip-path="url(#hG)">
           <g clip-path="url(#hH)">
-            <path fill="#dde4e3" d="M-1647-1478h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1647-1478h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4669,7 +4677,7 @@
       <g clip-path="url(#hK)" transform="translate(985 817)">
         <g clip-path="url(#hL)">
           <g clip-path="url(#hM)">
-            <path fill="#dde4e3" d="M-1645-1477h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1645-1477h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4680,7 +4688,7 @@
       <g clip-path="url(#hP)" transform="translate(994 795)">
         <g clip-path="url(#hQ)">
           <g clip-path="url(#hR)">
-            <path fill="#dde4e3" d="M-1654-1455h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1654-1455h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4691,7 +4699,7 @@
       <g clip-path="url(#hU)" transform="translate(1048 717)">
         <g clip-path="url(#hV)">
           <g clip-path="url(#hW)">
-            <path fill="#dde4e3" d="M-1708-1377h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1708-1377h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4702,7 +4710,7 @@
       <g clip-path="url(#hZ)" transform="translate(1919 766)">
         <g clip-path="url(#ia)">
           <g clip-path="url(#ib)">
-            <path fill="#dde4e3" d="M-2579-1426h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2579-1426h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4713,7 +4721,7 @@
       <g clip-path="url(#ie)" transform="translate(1912 763)">
         <g clip-path="url(#if)">
           <g clip-path="url(#ig)">
-            <path fill="#dde4e3" d="M-2572-1423h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2572-1423h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4724,7 +4732,7 @@
       <g clip-path="url(#ij)" transform="translate(1954 777)">
         <g clip-path="url(#ik)">
           <g clip-path="url(#il)">
-            <path fill="#dde4e3" d="M-2614-1437h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2614-1437h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4735,7 +4743,7 @@
       <g clip-path="url(#io)" transform="translate(1951 773)">
         <g clip-path="url(#ip)">
           <g clip-path="url(#iq)">
-            <path fill="#dde4e3" d="M-2611-1433h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2611-1433h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4746,7 +4754,7 @@
       <g clip-path="url(#it)" transform="translate(1779 1947)">
         <g clip-path="url(#iu)">
           <g clip-path="url(#iv)">
-            <path fill="#dde4e3" d="M-2439-2607h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2439-2607h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4757,7 +4765,7 @@
       <g clip-path="url(#iy)" transform="translate(1672 1922)">
         <g clip-path="url(#iz)">
           <g clip-path="url(#iA)">
-            <path fill="#dde4e3" d="M-2332-2582h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2332-2582h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4768,7 +4776,7 @@
       <g clip-path="url(#iD)" transform="translate(1674 1921)">
         <g clip-path="url(#iE)">
           <g clip-path="url(#iF)">
-            <path fill="#dde4e3" d="M-2334-2581h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2334-2581h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4779,7 +4787,7 @@
       <g clip-path="url(#iI)" transform="translate(1683 1942)">
         <g clip-path="url(#iJ)">
           <g clip-path="url(#iK)">
-            <path fill="#dde4e3" d="M-2343-2602h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2343-2602h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4790,7 +4798,7 @@
       <g clip-path="url(#iN)" transform="translate(1683 1940)">
         <g clip-path="url(#iO)">
           <g clip-path="url(#iP)">
-            <path fill="#dde4e3" d="M-2343-2600h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2343-2600h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4801,7 +4809,7 @@
       <g clip-path="url(#iS)" transform="translate(1653 1966)">
         <g clip-path="url(#iT)">
           <g clip-path="url(#iU)">
-            <path fill="#dde4e3" d="M-2313-2626h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2313-2626h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4812,7 +4820,7 @@
       <g clip-path="url(#iX)" transform="translate(1655 1965)">
         <g clip-path="url(#iY)">
           <g clip-path="url(#iZ)">
-            <path fill="#dde4e3" d="M-2315-2625h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2315-2625h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4823,7 +4831,7 @@
       <g clip-path="url(#jc)" transform="translate(1912 1708)">
         <g clip-path="url(#jd)">
           <g clip-path="url(#je)">
-            <path fill="#dde4e3" d="M-2572-2368h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2572-2368h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4834,7 +4842,7 @@
       <g clip-path="url(#jh)" transform="translate(1915 1703)">
         <g clip-path="url(#ji)">
           <g clip-path="url(#jj)">
-            <path fill="#dde4e3" d="M-2575-2363h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2575-2363h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4845,7 +4853,7 @@
       <g clip-path="url(#jm)" transform="translate(1915 1705)">
         <g clip-path="url(#jn)">
           <g clip-path="url(#jo)">
-            <path fill="#dde4e3" d="M-2575-2365h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2575-2365h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4856,7 +4864,7 @@
       <g clip-path="url(#jr)" transform="translate(2171 1854)">
         <g clip-path="url(#js)">
           <g clip-path="url(#jt)">
-            <path fill="#dde4e3" d="M-2831-2514h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2831-2514h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4867,7 +4875,7 @@
       <g clip-path="url(#jw)" transform="translate(2169 1848)">
         <g clip-path="url(#jx)">
           <g clip-path="url(#jy)">
-            <path fill="#dde4e3" d="M-2829-2508h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2829-2508h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4878,7 +4886,7 @@
       <g clip-path="url(#jB)" transform="translate(1312 2196)">
         <g clip-path="url(#jC)">
           <g clip-path="url(#jD)">
-            <path fill="#dde4e3" d="M-1972-2856h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1972-2856h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4889,7 +4897,7 @@
       <g clip-path="url(#jG)" transform="translate(1291 662)">
         <g clip-path="url(#jH)">
           <g clip-path="url(#jI)">
-            <path fill="#dde4e3" d="M-1951-1322h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1951-1322h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4900,7 +4908,7 @@
       <g clip-path="url(#jL)" transform="translate(1320 678)">
         <g clip-path="url(#jM)">
           <g clip-path="url(#jN)">
-            <path fill="#dde4e3" d="M-1980-1338h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1980-1338h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4911,7 +4919,7 @@
       <g clip-path="url(#jQ)" transform="translate(1319 676)">
         <g clip-path="url(#jR)">
           <g clip-path="url(#jS)">
-            <path fill="#dde4e3" d="M-1979-1336h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1979-1336h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4922,7 +4930,7 @@
       <g clip-path="url(#jV)" transform="translate(1319 678)">
         <g clip-path="url(#jW)">
           <g clip-path="url(#jX)">
-            <path fill="#dde4e3" d="M-1979-1338h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1979-1338h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4933,7 +4941,7 @@
       <g clip-path="url(#ka)" transform="translate(1319 676)">
         <g clip-path="url(#kb)">
           <g clip-path="url(#kc)">
-            <path fill="#dde4e3" d="M-1979-1336h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1979-1336h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4944,7 +4952,7 @@
       <g clip-path="url(#kf)" transform="translate(1317 678)">
         <g clip-path="url(#kg)">
           <g clip-path="url(#kh)">
-            <path fill="#dde4e3" d="M-1977-1338h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1977-1338h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4955,7 +4963,7 @@
       <g clip-path="url(#kk)" transform="translate(1316 679)">
         <g clip-path="url(#kl)">
           <g clip-path="url(#km)">
-            <path fill="#dde4e3" d="M-1976-1339h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1976-1339h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4966,7 +4974,7 @@
       <g clip-path="url(#kp)" transform="translate(1316 677)">
         <g clip-path="url(#kq)">
           <g clip-path="url(#kr)">
-            <path fill="#dde4e3" d="M-1976-1337h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1976-1337h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4977,7 +4985,7 @@
       <g clip-path="url(#ku)" transform="translate(1318 679)">
         <g clip-path="url(#kv)">
           <g clip-path="url(#kw)">
-            <path fill="#dde4e3" d="M-1978-1339h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1978-1339h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4988,7 +4996,7 @@
       <g clip-path="url(#kz)" transform="translate(1940 2217)">
         <g clip-path="url(#kA)">
           <g clip-path="url(#kB)">
-            <path fill="#dde4e3" d="M-2600-2877h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2600-2877h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -4999,7 +5007,7 @@
       <g clip-path="url(#kE)" transform="translate(1939 2209)">
         <g clip-path="url(#kF)">
           <g clip-path="url(#kG)">
-            <path fill="#dde4e3" d="M-2599-2869h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2599-2869h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5010,7 +5018,7 @@
       <g clip-path="url(#kJ)" transform="translate(1919 2202)">
         <g clip-path="url(#kK)">
           <g clip-path="url(#kL)">
-            <path fill="#dde4e3" d="M-2579-2862h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2579-2862h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5021,7 +5029,7 @@
       <g clip-path="url(#kO)" transform="translate(1921 2200)">
         <g clip-path="url(#kP)">
           <g clip-path="url(#kQ)">
-            <path fill="#dde4e3" d="M-2581-2860h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2581-2860h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5032,7 +5040,7 @@
       <g clip-path="url(#kT)" transform="translate(1932 2214)">
         <g clip-path="url(#kU)">
           <g clip-path="url(#kV)">
-            <path fill="#dde4e3" d="M-2592-2874h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2592-2874h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5043,7 +5051,7 @@
       <g clip-path="url(#kY)" transform="translate(1941 2203)">
         <g clip-path="url(#kZ)">
           <g clip-path="url(#la)">
-            <path fill="#dde4e3" d="M-2601-2863h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2601-2863h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5054,7 +5062,7 @@
       <g clip-path="url(#ld)" transform="translate(1307 2323)">
         <g clip-path="url(#le)">
           <g clip-path="url(#lf)">
-            <path fill="#dde4e3" d="M-1967-2983h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1967-2983h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5065,7 +5073,7 @@
       <g clip-path="url(#li)" transform="translate(1308 2325)">
         <g clip-path="url(#lj)">
           <g clip-path="url(#lk)">
-            <path fill="#dde4e3" d="M-1968-2985h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1968-2985h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5076,7 +5084,7 @@
       <g clip-path="url(#ln)" transform="translate(1969 1616)">
         <g clip-path="url(#lo)">
           <g clip-path="url(#lp)">
-            <path fill="#dde4e3" d="M-2629-2276h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2629-2276h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5087,7 +5095,7 @@
       <g clip-path="url(#ls)" transform="translate(2134 952)">
         <g clip-path="url(#lt)">
           <g clip-path="url(#lu)">
-            <path fill="#dde4e3" d="M-2794-1612h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2794-1612h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5098,7 +5106,7 @@
       <g clip-path="url(#lx)" transform="translate(1953 937)">
         <g clip-path="url(#ly)">
           <g clip-path="url(#lz)">
-            <path fill="#dde4e3" d="M-2613-1597h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2613-1597h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5109,7 +5117,7 @@
       <g clip-path="url(#lC)" transform="translate(2207 1179)">
         <g clip-path="url(#lD)">
           <g clip-path="url(#lE)">
-            <path fill="#dde4e3" d="M-2867-1839h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2867-1839h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5120,7 +5128,7 @@
       <g clip-path="url(#lH)" transform="translate(2148 949)">
         <g clip-path="url(#lI)">
           <g clip-path="url(#lJ)">
-            <path fill="#dde4e3" d="M-2808-1609h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2808-1609h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5131,7 +5139,7 @@
       <g clip-path="url(#lM)" transform="translate(2150 945)">
         <g clip-path="url(#lN)">
           <g clip-path="url(#lO)">
-            <path fill="#dde4e3" d="M-2810-1605h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2810-1605h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5142,7 +5150,7 @@
       <g clip-path="url(#lR)" transform="translate(2150 943)">
         <g clip-path="url(#lS)">
           <g clip-path="url(#lT)">
-            <path fill="#dde4e3" d="M-2810-1603h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2810-1603h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5153,7 +5161,7 @@
       <g clip-path="url(#lW)" transform="translate(2148 944)">
         <g clip-path="url(#lX)">
           <g clip-path="url(#lY)">
-            <path fill="#dde4e3" d="M-2808-1604h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2808-1604h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5164,7 +5172,7 @@
       <g clip-path="url(#mb)" transform="translate(2149 943)">
         <g clip-path="url(#mc)">
           <g clip-path="url(#md)">
-            <path fill="#dde4e3" d="M-2809-1603h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2809-1603h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5175,7 +5183,7 @@
       <g clip-path="url(#mg)" transform="translate(2148 945)">
         <g clip-path="url(#mh)">
           <g clip-path="url(#mi)">
-            <path fill="#dde4e3" d="M-2808-1605h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2808-1605h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5186,7 +5194,7 @@
       <g clip-path="url(#ml)" transform="translate(2148 944)">
         <g clip-path="url(#mm)">
           <g clip-path="url(#mn)">
-            <path fill="#dde4e3" d="M-2808-1604h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2808-1604h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5197,7 +5205,7 @@
       <g clip-path="url(#mq)" transform="translate(2150 947)">
         <g clip-path="url(#mr)">
           <g clip-path="url(#ms)">
-            <path fill="#dde4e3" d="M-2810-1607h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2810-1607h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5208,7 +5216,7 @@
       <g clip-path="url(#mv)" transform="translate(2144 942)">
         <g clip-path="url(#mw)">
           <g clip-path="url(#mx)">
-            <path fill="#dde4e3" d="M-2804-1602h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2804-1602h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5219,7 +5227,7 @@
       <g clip-path="url(#mA)" transform="translate(2146 943)">
         <g clip-path="url(#mB)">
           <g clip-path="url(#mC)">
-            <path fill="#dde4e3" d="M-2806-1603h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2806-1603h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5230,7 +5238,7 @@
       <g clip-path="url(#mF)" transform="translate(2148 944)">
         <g clip-path="url(#mG)">
           <g clip-path="url(#mH)">
-            <path fill="#dde4e3" d="M-2808-1604h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2808-1604h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5241,7 +5249,7 @@
       <g clip-path="url(#mK)" transform="translate(2148 943)">
         <g clip-path="url(#mL)">
           <g clip-path="url(#mM)">
-            <path fill="#dde4e3" d="M-2808-1603h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2808-1603h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5252,7 +5260,7 @@
       <g clip-path="url(#mP)" transform="translate(2146 943)">
         <g clip-path="url(#mQ)">
           <g clip-path="url(#mR)">
-            <path fill="#dde4e3" d="M-2806-1603h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2806-1603h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5263,7 +5271,7 @@
       <g clip-path="url(#mU)" transform="translate(2144 944)">
         <g clip-path="url(#mV)">
           <g clip-path="url(#mW)">
-            <path fill="#dde4e3" d="M-2804-1604h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2804-1604h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5274,7 +5282,7 @@
       <g clip-path="url(#mZ)" transform="translate(2146 942)">
         <g clip-path="url(#na)">
           <g clip-path="url(#nb)">
-            <path fill="#dde4e3" d="M-2806-1602h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2806-1602h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5285,7 +5293,7 @@
       <g clip-path="url(#ne)" transform="translate(2142 941)">
         <g clip-path="url(#nf)">
           <g clip-path="url(#ng)">
-            <path fill="#dde4e3" d="M-2802-1601h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2802-1601h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5296,7 +5304,7 @@
       <g clip-path="url(#nj)" transform="translate(2144 940)">
         <g clip-path="url(#nk)">
           <g clip-path="url(#nl)">
-            <path fill="#dde4e3" d="M-2804-1600h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2804-1600h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5307,7 +5315,7 @@
       <g clip-path="url(#no)" transform="translate(2145 941)">
         <g clip-path="url(#np)">
           <g clip-path="url(#nq)">
-            <path fill="#dde4e3" d="M-2805-1601h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2805-1601h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5318,7 +5326,7 @@
       <g clip-path="url(#nt)" transform="translate(2137 968)">
         <g clip-path="url(#nu)">
           <g clip-path="url(#nv)">
-            <path fill="#dde4e3" d="M-2797-1628h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2797-1628h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5329,7 +5337,7 @@
       <g clip-path="url(#ny)" transform="translate(1971 1605)">
         <g clip-path="url(#nz)">
           <g clip-path="url(#nA)">
-            <path fill="#dde4e3" d="M-2631-2265h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2631-2265h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5340,7 +5348,7 @@
       <g clip-path="url(#nD)" transform="translate(1970 1613)">
         <g clip-path="url(#nE)">
           <g clip-path="url(#nF)">
-            <path fill="#dde4e3" d="M-2630-2273h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2630-2273h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5351,7 +5359,7 @@
       <g clip-path="url(#nI)" transform="translate(1970 1612)">
         <g clip-path="url(#nJ)">
           <g clip-path="url(#nK)">
-            <path fill="#dde4e3" d="M-2630-2272h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2630-2272h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5362,7 +5370,7 @@
       <g clip-path="url(#nN)" transform="translate(2220 1740)">
         <g clip-path="url(#nO)">
           <g clip-path="url(#nP)">
-            <path fill="#dde4e3" d="M-2880-2400h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2880-2400h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5373,7 +5381,7 @@
       <g clip-path="url(#nS)" transform="translate(2219 1738)">
         <g clip-path="url(#nT)">
           <g clip-path="url(#nU)">
-            <path fill="#dde4e3" d="M-2879-2398h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2879-2398h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5384,7 +5392,7 @@
       <g clip-path="url(#nX)" transform="translate(1183 2256)">
         <g clip-path="url(#nY)">
           <g clip-path="url(#nZ)">
-            <path fill="#dde4e3" d="M-1843-2916h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1843-2916h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5395,7 +5403,7 @@
       <g clip-path="url(#oc)" transform="translate(1177 2257)">
         <g clip-path="url(#od)">
           <g clip-path="url(#oe)">
-            <path fill="#dde4e3" d="M-1837-2917h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1837-2917h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5406,7 +5414,7 @@
       <g clip-path="url(#oh)" transform="translate(1178 2257)">
         <g clip-path="url(#oi)">
           <g clip-path="url(#oj)">
-            <path fill="#dde4e3" d="M-1838-2917h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1838-2917h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5417,7 +5425,7 @@
       <g clip-path="url(#om)" transform="translate(820 1985)">
         <g clip-path="url(#on)">
           <g clip-path="url(#oo)">
-            <path fill="#dde4e3" d="M-1480-2645h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1480-2645h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5428,7 +5436,7 @@
       <g clip-path="url(#or)" transform="translate(820 1980)">
         <g clip-path="url(#os)">
           <g clip-path="url(#ot)">
-            <path fill="#dde4e3" d="M-1480-2640h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1480-2640h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5439,7 +5447,7 @@
       <g clip-path="url(#ow)" transform="translate(865 1560)">
         <g clip-path="url(#ox)">
           <g clip-path="url(#oy)">
-            <path fill="#dde4e3" d="M-1525-2220h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1525-2220h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5450,7 +5458,7 @@
       <g clip-path="url(#oB)" transform="translate(1648 1012)">
         <g clip-path="url(#oC)">
           <g clip-path="url(#oD)">
-            <path fill="#dde4e3" d="M-2308-1672h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2308-1672h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5461,7 +5469,7 @@
       <g clip-path="url(#oG)" transform="translate(861 1552)">
         <g clip-path="url(#oH)">
           <g clip-path="url(#oI)">
-            <path fill="#dde4e3" d="M-1521-2212h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1521-2212h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5472,7 +5480,7 @@
       <g clip-path="url(#oL)" transform="translate(867 1561)">
         <g clip-path="url(#oM)">
           <g clip-path="url(#oN)">
-            <path fill="#dde4e3" d="M-1527-2221h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1527-2221h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5483,7 +5491,7 @@
       <g clip-path="url(#oQ)" transform="translate(868 1372)">
         <g clip-path="url(#oR)">
           <g clip-path="url(#oS)">
-            <path fill="#dde4e3" d="M-1528-2032h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1528-2032h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5494,7 +5502,7 @@
       <g clip-path="url(#oV)" transform="translate(875 1400)">
         <g clip-path="url(#oW)">
           <g clip-path="url(#oX)">
-            <path fill="#dde4e3" d="M-1535-2060h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1535-2060h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5505,7 +5513,7 @@
       <g clip-path="url(#pa)" transform="translate(877 1420)">
         <g clip-path="url(#pb)">
           <g clip-path="url(#pc)">
-            <path fill="#dde4e3" d="M-1537-2080h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1537-2080h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5516,7 +5524,7 @@
       <g clip-path="url(#pf)" transform="translate(879 1423)">
         <g clip-path="url(#pg)">
           <g clip-path="url(#ph)">
-            <path fill="#dde4e3" d="M-1539-2083h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1539-2083h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5527,7 +5535,7 @@
       <g clip-path="url(#pk)" transform="translate(768 1042)">
         <g clip-path="url(#pl)">
           <g clip-path="url(#pm)">
-            <path fill="#dde4e3" d="M-1428-1702h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1428-1702h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5538,7 +5546,7 @@
       <g clip-path="url(#pp)" transform="translate(768 1053)">
         <g clip-path="url(#pq)">
           <g clip-path="url(#pr)">
-            <path fill="#dde4e3" d="M-1428-1713h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1428-1713h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5549,7 +5557,7 @@
       <g clip-path="url(#pu)" transform="translate(766 1058)">
         <g clip-path="url(#pv)">
           <g clip-path="url(#pw)">
-            <path fill="#dde4e3" d="M-1426-1718h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1426-1718h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5560,7 +5568,7 @@
       <g clip-path="url(#pz)" transform="translate(768 1051)">
         <g clip-path="url(#pA)">
           <g clip-path="url(#pB)">
-            <path fill="#dde4e3" d="M-1428-1711h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1428-1711h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5571,7 +5579,7 @@
       <g clip-path="url(#pE)" transform="translate(768 1047)">
         <g clip-path="url(#pF)">
           <g clip-path="url(#pG)">
-            <path fill="#dde4e3" d="M-1428-1707h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1428-1707h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5582,7 +5590,7 @@
       <g clip-path="url(#pJ)" transform="translate(767 1039)">
         <g clip-path="url(#pK)">
           <g clip-path="url(#pL)">
-            <path fill="#dde4e3" d="M-1427-1699h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1427-1699h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5593,7 +5601,7 @@
       <g clip-path="url(#pO)" transform="translate(764 1039)">
         <g clip-path="url(#pP)">
           <g clip-path="url(#pQ)">
-            <path fill="#dde4e3" d="M-1424-1699h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1424-1699h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5604,7 +5612,7 @@
       <g clip-path="url(#pT)" transform="translate(765 1043)">
         <g clip-path="url(#pU)">
           <g clip-path="url(#pV)">
-            <path fill="#dde4e3" d="M-1425-1703h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1425-1703h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5615,7 +5623,7 @@
       <g clip-path="url(#pY)" transform="translate(764 1038)">
         <g clip-path="url(#pZ)">
           <g clip-path="url(#qa)">
-            <path fill="#dde4e3" d="M-1424-1698h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1424-1698h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5626,7 +5634,7 @@
       <g clip-path="url(#qd)" transform="translate(770 1040)">
         <g clip-path="url(#qe)">
           <g clip-path="url(#qf)">
-            <path fill="#dde4e3" d="M-1430-1700h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1430-1700h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5637,7 +5645,7 @@
       <g clip-path="url(#qi)" transform="translate(990 813)">
         <g clip-path="url(#qj)">
           <g clip-path="url(#qk)">
-            <path fill="#dde4e3" d="M-1650-1473h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1650-1473h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5648,7 +5656,7 @@
       <g clip-path="url(#qn)" transform="translate(983 808)">
         <g clip-path="url(#qo)">
           <g clip-path="url(#qp)">
-            <path fill="#dde4e3" d="M-1643-1468h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1643-1468h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5659,7 +5667,7 @@
       <g clip-path="url(#qs)" transform="translate(988 818)">
         <g clip-path="url(#qt)">
           <g clip-path="url(#qu)">
-            <path fill="#dde4e3" d="M-1648-1478h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1648-1478h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5670,7 +5678,7 @@
       <g clip-path="url(#qx)" transform="translate(1067 752)">
         <g clip-path="url(#qy)">
           <g clip-path="url(#qz)">
-            <path fill="#dde4e3" d="M-1727-1412h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1727-1412h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5681,7 +5689,7 @@
       <g clip-path="url(#qC)" transform="translate(1064 750)">
         <g clip-path="url(#qD)">
           <g clip-path="url(#qE)">
-            <path fill="#dde4e3" d="M-1724-1410h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1724-1410h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5692,7 +5700,7 @@
       <g clip-path="url(#qH)" transform="translate(1106 740)">
         <g clip-path="url(#qI)">
           <g clip-path="url(#qJ)">
-            <path fill="#dde4e3" d="M-1766-1400h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1766-1400h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5703,7 +5711,7 @@
       <g clip-path="url(#qM)" transform="translate(1007 832)">
         <g clip-path="url(#qN)">
           <g clip-path="url(#qO)">
-            <path fill="#dde4e3" d="M-1667-1492h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1667-1492h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5714,7 +5722,7 @@
       <g clip-path="url(#qR)" transform="translate(1006 835)">
         <g clip-path="url(#qS)">
           <g clip-path="url(#qT)">
-            <path fill="#dde4e3" d="M-1666-1495h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1666-1495h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5725,7 +5733,7 @@
       <g clip-path="url(#qW)" transform="translate(1104 734)">
         <g clip-path="url(#qX)">
           <g clip-path="url(#qY)">
-            <path fill="#dde4e3" d="M-1764-1394h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1764-1394h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5736,7 +5744,7 @@
       <g clip-path="url(#rb)" transform="translate(1103 735)">
         <g clip-path="url(#rc)">
           <g clip-path="url(#rd)">
-            <path fill="#dde4e3" d="M-1763-1395h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-1763-1395h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5747,7 +5755,7 @@
       <g clip-path="url(#rg)" transform="translate(2104 972)">
         <g clip-path="url(#rh)">
           <g clip-path="url(#ri)">
-            <path fill="#dde4e3" d="M-2764-1632h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2764-1632h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5758,7 +5766,7 @@
       <g clip-path="url(#rl)" transform="translate(2107 970)">
         <g clip-path="url(#rm)">
           <g clip-path="url(#rn)">
-            <path fill="#dde4e3" d="M-2767-1630h4320v4320h-4320z" />
+            <path fill="currentColor" d="M-2767-1630h4320v4320h-4320z" />
           </g>
         </g>
       </g>
@@ -5779,7 +5787,7 @@
     <g clip-path="url(#ru)">
       <path
         fill="none"
-        stroke="#dde4e3"
+        stroke="currentColor"
         stroke-width="51"
         d="M1522.77 986.945c-220.25 0-398.801 178.551-398.801 398.801 0 220.254 178.55 398.8 398.8 398.8 220.254 0 398.801-178.546 398.801-398.8 0-220.25-178.547-398.8-398.8-398.8Zm0 0"
       />
@@ -5811,30 +5819,30 @@
     <g clip-path="url(#rx)">
       <path
         fill="none"
-        stroke="#dde4e3"
+        stroke="currentColor"
         stroke-width="46.5"
         d="M1500.332 526.969c-537.57 0-973.36 435.785-973.36 973.36 0 537.57 435.79 973.359 973.36 973.359s973.36-435.79 973.36-973.36c0-537.574-435.79-973.36-973.36-973.36Zm0 0"
       />
     </g>
   </g>
   <path
-    fill="#dde4e3"
+    fill="currentColor"
     d="M708.624 2485.239q-35.69-28.142-43.219-50.782-7.533-22.637 6.531-40.484 7.137-9.06 15.89-10.844 8.766-1.794 18.11 5.563 9.062 7.159 9.578 14.687c.344 5.024-1 9.453-4.03 13.297q-8.005 10.172-5.298 22.547 2.703 12.375 17.797 24.281 15.374 12.122 28.656 10.797 13.296-1.33 22.829-13.406 7.154-9.082 6.812-18.25-.344-9.176-9.156-20.578l-25.438-33.828q-16.594-22.434-17.234-42.532-.627-20.092 13.219-37.671 19.919-25.265 46.109-25.985 26.187-.732 61.063 26.766 21.949 17.315 31.109 33.656 9.17 16.348 8.297 30.14-.862 13.783-9.078 24.22-15.158 19.218-32.453 5.578c-5.68-4.47-9.04-9.336-10.079-14.61q-1.546-7.904 4.079-15.047 8.015-10.17 5.906-21.609-2.11-11.45-14.188-20.984c-8.418-6.633-16.511-9.829-24.281-9.579q-11.659.376-19.89 10.813-6.927 8.8-7.032 18.531-.093 9.72 7.969 20.969l25.703 34.047c12.008 16.012 18.211 30.254 18.61 42.734q.609 18.732-15.188 38.781-12.346 15.64-28.734 22.313-16.394 6.687-37.047 1.531c-13.774-3.437-29.078-11.793-45.922-25.062m253.17-90.531 133.593 66.688c3.54 1.773 5.727 4.296 6.563 7.578.832 3.28.52 6.382-.938 9.297l-14.843 29.718q-5.472 10.969-16.094 5.672-5.314-2.67-6.094-8.14c-.324-8.758-2.289-16.579-5.89-23.454q-5.408-10.324-18.532-18.453l-68.25 136.719q-3.283 6.576-2.5 11.656.78 5.075 6.094 11.657 1.734 5.155-.61 9.843c-1.667 3.344-3.835 5.586-6.5 6.735q-3.984 1.716-9.609-1.094l-55.687-27.813q-5.641-2.813-6.813-7.109-1.172-4.282 1.328-9.297 2.498-5.002 7.813-6.265 8.14.14 12.828-2.204 4.687-2.342 7.969-8.921l68.25-136.72q-14.064-5.45-25.719-3.64-11.658 1.8-22.437 9.313-5.175 2.518-10.172.015c-3.336-1.664-5.578-3.828-6.735-6.484q-1.721-3.998 1.25-9.953l14.844-29.719q2.185-4.373 7.031-6.25 4.842-1.873 9.86.625m230.264 329.928q-46.864-11.596-63-40.25-16.144-28.669-5.141-73.14l22.406-86.313q1.859-7.465-.062-12.094-1.922-4.622-8.203-9.765-3.16-4.747-1.907-9.828c.907-3.633 2.524-6.301 4.86-8q3.514-2.544 9.625-1.032l60.437 14.938q6.436 1.593 8.36 5.484 1.92 3.893.562 9.344-1.254 5.081-6.234 7.812-7.971 1.627-11.828 4.813-3.844 3.188-6.047 10.578l-24.422 94.453q-7.05 28.518 3.344 46.219c6.925 11.793 18.644 19.727 35.156 23.812 16.3 4.032 30.363 2.524 42.187-4.515q17.749-10.547 24.891-39.422l24.422-94.438q1.856-7.464-.078-12.093-1.922-4.624-8.203-9.782-3.581-4.464-2.235-9.89 1.359-5.45 5.032-7.953 3.685-2.513 9.796-1l36.672 9.062q6.436 1.593 8.36 5.485c1.28 2.593 1.468 5.71.562 9.343q-1.254 5.08-6.234 7.797-7.987 1.64-11.844 4.828-3.844 3.189-6.031 10.578l-23.672 91.407q-10.067 40.734-37.547 57.89-27.485 17.168-73.984 5.672m376.129 35.562-163.64-1.625q-6.643-.063-9.407-3.406-2.766-3.358-2.703-8.954.046-5.59 4.282-9.046 7.03-3.092 10.218-7.25 3.186-4.172 3.25-11.157l1.391-140.562q.074-6.998-3.031-11.219-3.111-4.23-10.078-7.437-4.16-3.2-4.094-9.141c.031-3.727.988-6.688 2.875-8.875q2.84-3.293 9.484-3.234l163.64 1.625c3.727.03 6.688 1.34 8.876 3.921q3.28 3.879 3.234 8.766l-.328 33.219q-.128 12.252-12.016 12.14-5.94-.06-9.062-4.296-7.207-13.716-18.844-20.641-11.641-6.937-31.562-7.14l-47.547-.47-.703 70.282 29.015.281q12.592.128 19.797-4.344 7.202-4.464 12.219-14.906 3.874-3.811 9.125-3.766 11.871.128 11.766 12.016l-.5 49.297q-.112 11.894-11.985 11.766c-3.742-.032-6.761-1.227-9.062-3.594q-4.798-10.529-11.922-14.969c-4.742-2.969-11.309-4.492-19.703-4.578l-29.016-.625-.687 69.937 47.546.47q19.922.204 31.688-6.329 11.777-6.543 19.266-19.75 3.199-4.856 9.14-4.797 11.889.112 11.766 12.688l-.328 33.218q-.048 4.55-3.407 8.547-3.363 3.985-8.953 3.938m241.733-155.29q43.062 1.893 52.016 42.171c4.695 21.157 1.266 37.98-10.297 50.47-11.555 12.48-32.687 22.132-63.406 28.952l-100.375 22.282q-6.47 1.438-9.922-1.188-3.456-2.638-4.672-8.094-1.206-5.466 2.125-9.797 6.061-4.92 8.266-9.53 2.2-4.624.687-11.438l-30.562-137.578q-1.514-6.828-5.453-10.063c-2.625-2.164-6.442-3.766-11.454-4.797q-4.92-2.84-6.062-7.969-1.22-5.468.797-9.312c1.344-2.563 4.172-4.32 8.484-5.281l88.078-19.563q31.407-6.965 50.953-5.219 19.56 1.735 30.235 11.907 10.67 10.16 14.765 28.593 3.936 17.753.86 31.329-3.064 13.565-15.063 24.125m-82.812-63.297-25.938 5.765 15.157 68.282 25.937-5.766q21.17-4.7 29.031-15.219 7.875-10.514 3.938-28.281-3.938-17.747-15.281-23.64-11.345-5.906-32.844-1.141m10.219 168.609 41.984-9.328q21.17-4.7 28.734-14.984 7.56-10.278 3.703-27.688-3.722-16.734-15.593-23.39-11.861-6.669-32-2.204l-41.985 9.328Zm386.798-110.74-147.813 70.282q-5.689 2.706-9.797.984-4.096-1.732-6.5-6.781-2.409-5.046.203-10.172 4.952-5.841 6-10.985 1.045-5.137-1.953-11.453l-60.062-126.328q-3.31-6.95-7.781-9.469-4.482-2.514-12.485-2.187-5.45-.903-8-6.266-2.403-5.045-1.156-9.312 1.254-4.278 6.937-6.985l56.22-26.734q6-2.84 9.968-1.047 3.956 1.799 6.36 6.844 2.548 5.362.093 10.016-5.59 6.14-6.469 11.203c-.593 3.375.215 7.383 2.422 12.015l65.61 138.016 42.937-20.422c12.219-5.8 20.898-12.379 26.047-19.734q7.734-11.045 8.344-26.032 1.358-6.077 6.109-8.328 5.044-2.403 9.25-1.297 4.202 1.096 7.203 7.407l14.266 30q1.95 4.111.672 9.172-1.268 5.05-6.625 7.593m223.843-159.396-129.062 100.625q-5.237 4.078-9.485 3.187c-2.836-.601-5.398-2.375-7.687-5.312q-3.453-4.419-2.281-9.734 3.574-6.81 3.468-12.047-.091-5.248-4.39-10.766l-86.422-110.86q-4.312-5.513-9.375-6.89-5.062-1.371-12.516.469-5.25.08-8.906-4.61-3.435-4.403-3.266-8.75.175-4.342 5.407-8.421l129.062-100.625q4.407-3.436 9.375-2.454 4.981.987 8 4.844l20.422 26.203q7.53 9.657-1.844 16.97-4.687 3.656-9.75 2.28-14.173-6.234-27.61-4.406c-8.96 1.211-18.675 5.898-29.155 14.063l-37.5 29.25 43.234 55.437 22.89-17.844q9.922-7.747 12.782-15.734 2.857-7.997.265-19.281c.438-3.602 2.036-6.485 4.797-8.64q9.375-7.297 16.688 2.077l30.328 38.89q7.312 9.377-2.063 16.673-4.423 3.455-9.328 2.843-10.312-5.262-18.656-4.296-8.344.956-18.266 8.703l-23.109 17.562 43.016 55.156 37.5-29.25q15.714-12.247 20.86-24.687 5.154-12.45 2.78-27.438-.532-5.795 4.157-9.453 9.375-7.312 17.109 2.61l20.422 26.187q2.796 3.598 2.656 8.813-.141 5.221-4.547 8.656m0 0"
   />
-  <g fill="#dde4e3" clip-path="url(#ry)" transform="translate(88 81)">
+  <g fill="currentColor" clip-path="url(#ry)" transform="translate(88 81)">
     <path
       d="m220.505 1770.32-12.516-33.453q-1.623-4.311.344-7.844c1.313-2.351 3.219-4 5.719-4.937 5.187-1.938 9.086-1.203 11.687 2.203q2.267 3.423 5.829 5.047c2.375 1.086 6.351 1.453 11.921 1.11l161-9.907q7.969-.669 11.204 7.984 3.127 8.345-3.22 13.344l-101.593 79.094 128.016-8.438q8.19-.076 11.109 7.704 3.017 8.062-3.125 13.64l-122.687 96.516q-8.73 6.56-11.485 9.734-2.765 3.187-3.14 8.25-.703 2.561-2.407 5c-1.144 1.633-2.675 2.813-4.593 3.531-3.082 1.157-5.82 1.305-8.22.454q-3.608-1.283-5.671-6.766l-18.219-48.734q-1.622-4.33-.344-7.922 1.285-3.609 6.782-5.657 4.893-1.826 10.765 1.563 5.97 6.3 18.016-2.813l60.187-46.5-107.234 6.891c-3.883.149-7.254-1.11-10.11-3.766a24.5 24.5 0 0 1-6.327-9.468c-1.438-3.844-1.844-7.414-1.22-10.719q.94-4.968 5.47-8.64l85.578-66.532-74.063 5.031q-9.62.643-13.078 3.266-3.469 2.613-3.61 9.234c-.144 1.368-.82 2.766-2.03 4.203-1.22 1.438-3.176 2.665-5.876 3.672q-4.03 1.518-7.64.235-3.609-1.279-5.219-5.61m153-239.87q5.22 44.972-17.797 69.657-23.028 24.675-71.047 30.235-48.341 5.606-76.234-13.157-27.903-18.78-33.125-63.75-5.217-44.953 17.656-69.61 22.864-24.667 71.203-30.28 48.018-5.56 76.079 13.203 28.05 18.75 33.265 63.703m-23.25 2.688q-2.59-22.311-21.89-30.921-19.295-8.623-59.032-4.016-39.762 4.628-56.422 17.406c-11.101 8.524-15.789 20.219-14.062 35.094q2.596 22.348 21.734 30.984 19.144 8.627 58.907 4c26.492-3.07 45.34-8.875 56.546-17.406q16.816-12.795 14.22-35.14m-129.07-333.653 122.156 13.14c4.313.263 7.79-.343 10.422-1.812 2.637-1.476 5.211-4.347 7.735-8.61 2.488-2 5.258-2.835 8.312-2.515q4.905.533 7.547 3.297 2.654 2.755 2.031 8.578l-5.843 54.188q-.627 5.813-3.797 7.953-3.175 2.144-8.078 1.61-4.887-.528-7.547-4.548-2.373-6.748-5.766-9.734-3.388-3-9.828-3.703l-50.203-5.406-7.953 73.78 50.203 5.407q6.488.41 10.437-1.812 3.937-2.216 7.735-8.625 3.737-2.982 8.312-2.5 4.905.532 7.547 3.297c1.758 1.836 2.43 4.687 2.016 8.562l-5.828 54.188q-.627 5.83-3.797 7.968-3.17 2.128-8.078 1.594c-3.258-.351-5.782-1.86-7.563-4.516q-2.356-6.76-5.75-9.75-3.388-3-9.828-3.703l-122.156-13.14c-4.282-.47-7.739.039-10.375 1.515q-3.968 2.204-7.407 8.344-3.762 3.3-8.375 2.797-4.887-.528-7.53-3.281-2.638-2.765-2.016-8.594l5.828-54.188q.626-5.812 3.797-7.937 3.175-2.138 8.062-1.61 4.612.505 7.625 4.22 2.003 7.03 5.406 10.03c2.274 2 5.532 3.337 9.782 4l50.53 5.438 7.954-73.781-50.531-5.438q-6.422-.7-10.375 1.516-3.969 2.204-7.39 8.328-3.78 3.33-8.392 2.828c-3.257-.351-5.769-1.453-7.53-3.297q-2.638-2.765-2.016-8.578l5.843-54.187q.627-5.825 3.797-7.953 3.16-2.138 8.047-1.61 4.612.503 7.625 4.235c1.344 4.68 3.152 8.015 5.422 10.015q3.393 2.987 9.781 4m36.001-249.569 10.922-31.406q1.83-5.234 5.453-6.75 3.626-1.513 8.266.11 4.378 1.515 6.359 6.108c.336 4.688 1.375 8.262 3.125 10.72q2.613 3.69 8.719 5.812l142.203 49.515q4.077 1.407 6.11 5.375 2.045 3.973-.282 10.657c-1.281 3.687-3.086 6.375-5.406 8.062q-3.486 2.532-8.39 4.406l-172.063 57.813 107.593 37.453q6.111 2.143 10.47.875 4.358-1.265 9.374-6.344 4.125-2.466 8.766-.86 4.668 1.629 6.625 4.907 1.951 3.282.125 8.516l-10.938 31.406c-1.281 3.687-3.117 5.992-5.5 6.906-2.375.906-5.117.82-8.234-.265-2.895-1.008-5.035-2.954-6.422-5.829q-.78-7.106-3.36-10.937-2.59-3.842-8.703-5.984l-116.03-40.391q-6.107-2.121-10.5-.703c-2.927.937-5.973 3.133-9.141 6.578q-4.312 2.096-8.688.578c-3.094-1.082-5.289-2.719-6.594-4.906q-1.952-3.295-.03-8.828l14.874-42.735c1.086-3.101 3.75-5.441 8-7.015l140.64-47.203-82.296-28.657q-6.105-2.123-10.5-.718-4.39 1.406-9.14 6.593-4.702 2.267-8.782.86c-3.094-1.082-5.273-2.766-6.547-5.047q-1.906-3.434-.078-8.672M435.21 697.206l103.922 65.547q5.638 3.188 10.157 2.953 4.53-.235 10.734-4.312 4.687-1.077 8.578 1.39 4.186 2.625 5.328 6.282 1.155 3.644-1.968 8.593l-29.079 46.094q-3.11 4.94-6.906 5.469-3.785.515-7.969-2.11c-2.773-1.75-4.367-4.21-4.78-7.39q.857-7.107-.876-11.297-1.735-4.2-7.203-7.656L472.43 773.83l-39.593 62.781 42.718 26.938q5.638 3.188 10.157 2.953c3.007-.156 6.586-1.601 10.734-4.344q4.671-1.043 8.562 1.422 4.184 2.626 5.344 6.266 1.154 3.644-1.953 8.594l-29.078 46.093c-2.086 3.305-4.387 5.125-6.906 5.47-2.524.343-5.176-.36-7.97-2.11q-4.154-2.624-4.812-7.375.863-7.124-.859-11.313-1.732-4.184-7.203-7.64l-103.922-65.547q-5.467-3.45-9.984-3.203c-3.02.156-6.461 1.57-10.328 4.234q-4.81 1.314-8.72-1.156c-2.78-1.75-4.554-3.836-5.327-6.266q-1.155-3.638 1.968-8.594l29.079-46.093q3.11-4.952 6.89-5.47c2.524-.343 5.172.36 7.953 2.11 2.606 1.649 4.262 4.016 4.97 7.11-.852 4.824-.704 8.632.452 11.421q1.734 4.175 7.031 7.891l42.985 27.11 39.594-62.782-42.985-27.11q-5.466-3.449-9.984-3.202-4.511.251-10.313 4.234-4.84 1.331-8.75-1.14c-2.78-1.75-4.55-3.836-5.312-6.266-.77-2.438-.117-5.3 1.953-8.594l29.078-46.094c2.086-3.3 4.39-5.125 6.922-5.468q3.783-.53 7.953 2.093 3.91 2.472 4.953 7.141-1.266 7.208.469 11.39c1.148 2.782 3.484 5.415 7.016 7.891m281.339-74.156-101.265 102.5c-2.75 2.773-5.399 4.058-7.938 3.86q-3.797-.313-7.312-3.782-3.498-3.45-3.094-8.25 2.361-6.31 1.687-10.875-.684-4.576-5.078-8.906l-88.062-87q-4.372-4.326-8.938-4.953-4.576-.623-10.875 1.796-4.575.675-8.297-3-3.498-3.468-3.843-7.265-.36-3.81 3.765-7.969l101.266-102.5q3.486-3.515 7.937-3.203 4.456.299 7.516 3.328l20.812 20.547q7.67 7.58.329 15.016-3.69 3.737-8.266 3.109c-8.719-2.563-16.914-2.805-24.594-.734q-11.53 3.111-23.875 15.609l-29.437 29.781 44.015 43.5 17.97-18.187q7.796-7.873 9.39-15.172 1.58-7.297-1.953-16.86-.031-4.792 3.203-8.062c4.914-4.977 9.86-5.016 14.828-.11l30.89 30.516c4.958 4.906 4.977 9.852.063 14.828-2.305 2.336-4.906 3.508-7.813 3.516q-9.595-3.422-16.765-1.64c-4.781 1.187-9.774 4.406-14.969 9.656l-18.187 17.968 43.812 43.297 29.438-29.781q12.34-12.499 15.421-23.953 3.094-11.45-.687-24.266-1.126-4.997 2.562-8.734 7.344-7.437 15.22.344l20.827 20.578c1.895 1.875 3 4.336 3.313 7.375q.467 4.563-3.016 8.078m102.056-76.994-44.125 32q-4.736 3.44-8.453 2.516-3.704-.92-6.594-4.922-2.89-3.967-1.719-8.64 3.435-6.281 3.375-10.798-.046-4.529-3.843-9.765l-72.14-99.453q-3.797-5.235-8.08-6.688-4.293-1.465-11.155.094-4.969-.576-7.688-4.328-2.89-3.985-2.61-7.782.269-3.81 5-7.25l44.126-32q4.722-3.434 8.437-2.515 3.705.907 6.594 4.89 2.721 3.75 1.984 8.485-3.872 6.221-3.812 10.75.047 4.518 3.594 9.937l72.14 99.453q4.045 5.052 8.328 6.516 4.295 1.453 11.594-.047 4.716.769 7.422 4.485 2.89 4.003 2.61 7.812-.269 3.816-4.985 7.25m237.307-147.065q4.653 1.219 6.75 5.671 2.093 4.471.969 8.235-1.125 3.752-6.14 6.11l-49.61 23.296q-5.033 2.363-8.64.828-3.612-1.546-5.704-6.015-1.845-3.89-.062-8.797 4.686-5.249 5.546-9.907.873-4.671-1.875-10.53l-37.953-80.829 7.657 125.688q.404 5.906-2.11 9.984-2.52 4.065-6.984 6.156-4.453 2.099-9.328 1.5-4.864-.607-8.907-4.812l-92.359-86.578 38.219 81.375q2.748 5.86 6.89 8.171 4.154 2.298 11.172 2.047 4.67 1.219 6.766 5.672 2.093 4.47 1.11 8.172-.988 3.692-6.016 6.047L874.93 504.74q-5.016 2.343-8.485.75-3.47-1.606-5.562-6.079-1.971-4.17-.344-8.671 4.67-5.233 5.531-9.891.873-4.67-1.875-10.531l-52.078-110.922q-2.89-6.141-6.969-8.297c-2.718-1.445-6.414-2.094-11.093-1.938q-4.248-1.09-6.47-5.828-2.092-4.451-1.108-8.14.984-3.687 6-6.032L830.93 311.1q3.082-1.434 6.375-.953 3.282.487 5.828 3.031l96.937 91.219-8.297-132.844q-.222-7.717 6.47-10.86l36.796-17.265q5.016-2.357 8.625-.828 3.607 1.533 5.703 5.984 2.217 4.737.063 8.828c-3.125 3.5-4.953 6.743-5.485 9.72-.531 2.968.164 6.5 2.094 10.593l52.078 110.922q2.748 5.86 6.75 8.234 4.015 2.361 11.047 2.11m206.884-28.359-140.922 30.062q-5.737 1.22-8.75-1.125-3.017-2.343-4.047-7.172-1.032-4.81 1.938-8.594 5.437-3.997 7.375-8.187 1.951-4.186.656-10.234l-25.828-121.047c-.852-4.008-2.438-7.024-4.75-9.047q-3.48-3.047-10.078-4.453-4.203-1.951-5.281-7.078c-.688-3.207-.43-5.938.765-8.188q1.8-3.375 7.531-4.594l140.922-30.062c3.219-.688 6.008-.13 8.375 1.672q3.562 2.705 4.469 6.922l6.094 28.609q2.248 10.534-7.985 12.719-5.111 1.097-8.593-1.938-8.812-10.405-20.157-14.125-11.344-3.732-28.53-.062l-40.954 8.734 12.922 60.531 25-5.328q10.84-2.309 16.172-7.547 5.341-5.231 7.625-15.156 2.607-4.03 7.125-4.984 10.247-2.185 12.437 8.047l9.063 42.468q2.186 10.253-8.063 12.438-4.816 1.019-8.484-1.344-6.141-8.14-13.125-10.578-6.973-2.45-17.813-.14l-25.062 5.015 12.86 60.234 40.952-8.734q17.187-3.668 26.047-11.531c5.907-5.25 10.149-12.14 12.735-20.672q1.811-4.795 6.922-5.89 10.23-2.186 12.546 8.655l6.11 28.625q.827 3.908-1.281 7.985-2.11 4.063-6.938 5.094m381.466-146.959-15.407 121.89q-.503 6.458 1.625 10.453 2.14 3.983 8.469 7.907 2.934 3.78 2.36 8.343-.627 4.906-3.438 7.485-2.813 2.59-8.625 1.86l-54.063-6.829q-5.8-.738-7.89-3.953-2.08-3.205-1.453-8.11c.406-3.25 1.96-5.734 4.672-7.453q6.81-2.25 9.875-5.578c2.039-2.226 3.332-5.484 3.875-9.765l6.328-50.094-73.641-9.313-6.328 50.094q-.503 6.458 1.625 10.453 2.139 3.986 8.484 7.907 2.919 3.784 2.344 8.343-.626 4.906-3.437 7.485-2.8 2.59-8.594 1.86l-54.078-6.829q-5.814-.738-7.891-3.938-2.063-3.215-1.437-8.125.608-4.875 4.656-7.453 6.795-2.25 9.86-5.578c2.038-2.226 3.331-5.484 3.874-9.765l15.406-121.891q.81-6.422-1.328-10.406-2.128-3.996-8.187-7.547c-2.156-2.563-3.043-5.367-2.656-8.422q.62-4.889 3.421-7.469 2.812-2.59 8.625-1.86l54.079 6.829q5.795.737 7.859 3.953 2.074 3.206 1.453 8.094c-.387 3.055-1.836 5.562-4.344 7.531-4.718 1.25-8.101 2.992-10.14 5.219q-3.064 3.33-4.188 9.719l-6.375 50.421 73.64 9.313 6.376-50.422q.809-6.422-1.328-10.406-2.127-3.996-8.203-7.547c-2.168-2.563-3.06-5.367-2.672-8.422q.623-4.889 3.437-7.469 2.824-2.59 8.625-1.859l54.063 6.828q5.812.737 7.89 3.953 2.074 3.206 1.453 8.094c-.386 3.055-1.84 5.562-4.359 7.531q-7.066 1.877-10.125 5.219-3.063 3.33-4.187 9.719m186.259 223.507-135.719-48.376c-3.68-1.312-5.965-3.164-6.86-5.546q-1.33-3.576.329-8.235 1.64-4.64 6.156-6.281 6.716-.545 10.578-3.094c2.57-1.695 4.547-4.488 5.922-8.375l41.563-116.594q2.074-5.795.687-10.203c-.918-2.937-2.996-5.96-6.234-9.078q-2.533-3.873-.782-8.797 1.654-4.64 4.954-6.562 3.292-1.922 8.812.047l135.719 48.375q4.653 1.657 6.265 5.828 1.625 4.173.172 8.234l-9.812 27.547c-2.418 6.774-6.914 8.984-13.485 6.64q-4.921-1.746-6.28-6.171-2.066-13.482-9.766-22.594-7.688-9.122-24.235-15.016l-39.437-14.062-20.782 58.297 24.079 8.578q10.418 3.72 17.718 2.078 7.295-1.652 14.438-8.906 4.34-2.046 8.687-.5c6.582 2.344 8.703 6.805 6.36 13.375l-14.578 40.89q-3.517 9.861-13.391 6.344-4.641-1.651-6.516-5.578-.939-10.154-5.609-15.89-4.659-5.749-15.078-9.47l-23.969-8.874-20.687 58.015 39.437 14.063q16.547 5.889 28.219 3.844c7.789-1.368 15.023-5 21.703-10.907q4.061-3.128 8.984-1.375 9.856 3.514 6.141 13.953l-9.828 27.563c-.899 2.508-2.656 4.547-5.281 6.11-2.625 1.57-5.493 1.804-8.594.702m119.751 65.045q-34.299-20.642-43.39-39.593c-6.055-12.625-5.64-24.657 1.234-36.094q5.248-8.7 12.688-11.219 7.451-2.515 16.422 2.875 8.699 5.238 10 11.766c.863 4.343.18 8.367-2.047 12.062q-5.878 9.77-2.14 20.281 3.73 10.513 18.25 19.25c9.85 5.926 18.597 8.008 26.233 6.25q11.45-2.642 18.454-14.25 5.233-8.688 3.921-16.656-1.314-7.98-10.28-16.969l-25.954-26.75q-16.97-17.764-19.75-35.25-2.781-17.483 7.39-34.375 14.591-24.262 37.391-27.796c15.196-2.364 33.97 3.18 56.313 16.625q21.094 12.688 30.89 25.953c6.54 8.843 10.07 17.32 10.594 25.422q.78 12.14-5.25 22.156-11.127 18.485-27.75 8.5-8.174-4.92-10.406-11.656-2.236-6.75 1.89-13.61 5.873-9.763 2.766-19.531-3.093-9.78-14.719-16.781-12.128-7.296-22.265-5.672-10.142 1.627-16.172 11.656-5.08 8.457-4.094 16.953.996 8.503 9.281 17.422l26.22 26.922q18.386 18.985 20.984 35.281 2.606 16.294-8.985 35.547-9.047 15.045-22.64 22.672c-9.055 5.094-19.782 6.898-32.188 5.422q-18.61-2.221-42.89-16.813m389.969 175.806 27.36 32.516q3.562 4.248 2.906 8.016-.643 3.761-4.422 6.937-1.641 1.387-3.797 2.172-2.144.797-4.281.187-5.8-3.563-11.625-5.703-5.83-2.127-12.672 3.625l-.922.782q-10.863 9.123-24.375 15.046-13.517 5.936-28.469 7.266-2.737 8.72-1.765 15.14c.644 4.282 2.242 8.571 4.797 12.876q1.544 2.325 1.015 5.765-.518 3.452-3.578 6.032c-2.992 2.507-5.742 3.546-8.25 3.109q-3.75-.645-6.922-4.406l-21.015-24.985c-5.024-5.968-6.985-12.773-5.891-20.406q-10.734-4.643-21.516-12.672-10.768-8.034-20.875-20.047-21.797-25.94-22.625-49.39-.83-23.45 20.61-41.485 35.826-30.122 84.625-.343 6.34-20.216 20.468-32.094c5.508-4.633 11.782-7.63 18.813-8.985q10.546-2.027 22.656 3.282 12.123 5.297 24.797 20.375 19.436 23.11 19.922 38.984c.32 10.582-4.703 20.238-15.078 28.969q-6.363 5.342-12.422 4.61-6.048-.739-10.813-6.391-4.751-5.66-4.687-11.547.059-5.893 5.25-10.25 15.796-13.278 4.703-26.485-5.953-7.076-11.906-6.5-5.94.58-11.828 5.547-3.535 2.971-6.828 8.156-3.282 5.174-5.438 12.188l-29.078 88.844c11.05-3.125 21.531-8.852 31.437-17.172l.922-.781q6.843-5.755 5.735-11.86-1.112-6.112-3.438-12.219-.44-2.438.61-4.53 1.061-2.099 2.703-3.485 3.779-3.176 7.703-3.047 3.921.123 7.484 4.36m-115.969-28.812q-13.908 11.7-14.468 27.062-.549 15.358 11.547 29.72 5.139 6.123 10.78 10.437 5.638 4.325 11.532 7l27.766-83.704q-12.018-5.184-24.047-2.5-12.036 2.674-23.11 11.985m347.807 411.753-115.312 42.375q-5.97 2.513-8.532 6.25-2.564 3.75-3.125 11.156-2.004 4.343-6.328 5.938c-3.094 1.132-5.84 1.265-8.234.39-2.399-.867-4.266-3.133-5.61-6.797l-18.796-51.156q-2.017-5.485-.125-8.812c1.257-2.22 3.437-3.899 6.53-5.032q4.608-1.703 8.782.735 5.123 4.999 9.484 6.172 4.371 1.184 10.454-1.032l47.406-17.422-25.594-69.671-47.406 17.421q-5.97 2.513-8.531 6.25-2.564 3.732-3.125 11.172c-1.336 2.883-3.446 4.86-6.329 5.922-3.093 1.133-5.84 1.266-8.234.39q-3.596-1.298-5.61-6.78l-18.796-51.157q-2.017-5.501-.125-8.828 1.889-3.316 6.531-5.015c3.07-1.137 6-.899 8.781.718q5.11 4.999 9.485 6.172 4.37 1.184 10.453-1.031l115.312-42.375q6.076-2.215 8.64-5.953c1.708-2.5 2.688-6.086 2.938-10.766q1.904-4.623 6.25-6.234 4.605-1.687 8.204-.375 3.592 1.3 5.609 6.797l18.797 51.156c1.344 3.656 1.383 6.586.125 8.797q-1.894 3.328-6.5 5.015c-2.899 1.07-5.797.938-8.703-.406-3.282-3.617-6.383-5.812-9.297-6.594q-4.376-1.17-10.563.75l-47.687 17.532 25.594 69.672 47.687-17.532q6.075-2.219 8.64-5.968c1.72-2.493 2.696-6.075 2.938-10.75q1.904-4.643 6.25-6.25 4.605-1.687 8.203-.375 3.593 1.312 5.61 6.796l18.797 51.157q2.012 5.496.125 8.812-1.894 3.328-6.5 5.016c-2.899 1.07-5.797.93-8.704-.422-3.28-3.594-6.382-5.79-9.296-6.578q-4.376-1.171-10.563.75m-124.214 182.653-9.531-53.656c-.68-3.844-.203-6.746 1.422-8.703q2.45-2.94 7.312-3.813 4.841-.861 8.516 2.25 4.155 5.812 8.25 7.75 4.108 1.934 10.484.797l120.953-21.484q6.373-1.137 9.547-4.36 3.188-3.218 4.782-10.062 2.701-4.231 7.25-5.047c3.226-.57 5.94-.219 8.14 1.062q3.31 1.91 4.328 7.672l9.532 53.657c.687 3.832.21 6.726-1.422 8.687q-2.44 2.936-7.282 3.797-4.546.81-8.484-1.906-3.909-6.207-8-8.141-4.096-1.923-10.531-1.094l-120.953 21.485q-6.314 1.452-9.5 4.656-3.19 3.216-5.032 10.453-2.736 3.905-7.28 4.703-4.863.875-8.173-1.047-3.297-1.909-4.328-7.656m32.39 243.97q-2.438 3.405-4.906 4.64-2.473 1.25-4.922 1.266-4.94.013-7.875-2.593-2.926-2.597-2.937-8.141l-.125-29.563q-.034-7.394 3.484-12.484 3.516-5.096 9.047-8.5l43.61-26.047q7.076-4.659 10.89-10.531 3.826-5.86 3.781-15.406l-.062-16.938-35.407.14c-4.312.227-7.699 1.22-10.156 2.97-2.46 1.757-4.703 4.906-6.734 9.437q-3.377 3.388-7.985 3.406-4.94.012-7.875-2.437-2.94-2.439-2.953-8.281l-.234-54.5q-.017-5.86 2.89-8.344 2.906-2.473 7.844-2.485 4.921-.016 8.016 3.657c2.07 4.3 4.344 7.316 6.812 9.047q3.704 2.607 10.172 2.578l122.86-.516q6.466-.018 10.156-2.656c2.457-1.75 4.598-4.79 6.422-9.11q3.373-3.704 8-3.718c3.281-.024 5.898.785 7.86 2.422 1.956 1.632 2.94 4.406 2.952 8.312l.328 79.125q.188 42.187-13.593 59.172-13.782 16.998-40.875 17.125-21.252.076-35.297-7.406-14.05-7.486-21.203-24.688-5.19 8.936-15.016 14.844l-31.031 18.594q-7.69 4.951-10.75 8.515-3.066 3.563-5.188 9.094m112.75-64.203q36.95-.159 36.797-37.11l-.094-23.093-75.75.015.094 23.407q.076 19.09 9.656 27.968 9.592 8.89 29.297 8.813m49.108 154.996-25.719 128.937c-.68 3.414-2.312 5.86-4.906 7.328q-3.892 2.217-8.125 1.375l-28.687-5.719q-10.582-2.108-8.532-12.375 1.031-5.127 5.5-7.078 11.063-3.422 18.563-10.406 7.512-6.985 11.375-20.047l-131.953-26.312q-6.347-1.267-10.485.578c-2.761 1.238-5.585 3.867-8.484 7.89q-3.983 2.671-8.5 1.766-4.84-.97-7.219-3.969-2.39-2.987-1.312-8.406l10.719-53.75c.718-3.625 2.21-6.105 4.468-7.437 2.25-1.336 4.993-1.68 8.22-1.032q4.827.968 7.124 5.203 1.747 6.937 4.828 10.375 3.077 3.436 9.422 4.704l131.953 26.312c.926-8.812-.023-16.383-2.844-22.703q-4.218-9.47-13.125-16.906-3.316-3.798-2.343-8.625.95-4.829 3.937-7.22 2.982-2.39 8.735-1.25l28.687 5.72q4.23.841 6.938 4.53 2.716 3.688 1.765 8.517m-288.69 285.979 54.813-133.266q2.22-5.423 5.86-6.593 3.638-1.159 8.202.718 4.548 1.873 6 6.453.2 6.732 2.563 10.704 2.372 3.966 8.078 6.328l114.484 47.062q5.685 2.343 10.157 1.188c2.988-.774 6.113-2.703 9.375-5.797q3.983-2.346 8.828-.344 4.545 1.857 6.312 5.25 1.763 3.387-.453 8.813l-54.812 133.265c-1.25 3.04-3.29 5.031-6.11 5.969-2.824.945-5.57.875-8.234-.219l-27.047-11.125c-6.648-2.73-8.64-7.324-5.984-13.781q1.98-4.847 6.468-5.984 13.546-1.423 23.032-8.688 9.481-7.253 16.156-23.5l15.937-38.719-57.25-23.531-9.718 23.64c-2.813 6.833-3.79 12.704-2.922 17.61q1.313 7.358 8.203 14.844 1.84 4.437.094 8.703-3.986 9.687-13.672 5.703l-40.156-16.516q-9.673-3.985-5.688-13.671 1.873-4.565 5.89-6.235c6.782-.312 12.157-1.93 16.126-4.844 3.976-2.906 7.375-7.777 10.187-14.609l10.016-23.531-56.969-23.422-15.937 38.719q-6.67 16.25-5.172 28.015c.992 7.844 4.273 15.242 9.843 22.203q2.94 4.185.954 9.032c-2.657 6.457-7.399 8.28-14.235 5.468l-27.062-11.125q-3.704-1.534-5.86-5.578c-1.445-2.699-1.547-5.57-.297-8.61m0 0"
     />
   </g>
   <g clip-path="url(#rz)">
     <path
-      fill="#dde4e3"
+      fill="currentColor"
       d="M586.777 2178.855q0 1.47-.144 2.93a29.8 29.8 0 0 1-1.145 5.75q-.427 1.407-.988 2.766a29.7 29.7 0 0 1-4.512 7.527 31 31 0 0 1-1.968 2.172 29.4 29.4 0 0 1-4.535 3.719 29 29 0 0 1-2.516 1.508 29 29 0 0 1-2.653 1.257q-1.357.562-2.761.989-1.407.426-2.848.71-1.442.288-2.902.434a30.7 30.7 0 0 1-5.864 0 30 30 0 0 1-2.902-.433 29.7 29.7 0 0 1-5.61-1.7 29 29 0 0 1-2.652-1.257 29 29 0 0 1-2.52-1.508 29.8 29.8 0 0 1-6.5-5.89 29.7 29.7 0 0 1-4.512-7.527 29 29 0 0 1-.987-2.767 29.8 29.8 0 0 1-1.29-8.68q0-1.47.145-2.93a29 29 0 0 1 .43-2.905q.287-1.437.715-2.844.423-1.407.988-2.766a29.7 29.7 0 0 1 4.512-7.527 31 31 0 0 1 1.969-2.172 29 29 0 0 1 2.175-1.973 30 30 0 0 1 4.875-3.258 29.9 29.9 0 0 1 8.262-2.953q1.44-.287 2.902-.433a30.6 30.6 0 0 1 5.864 0 30.4 30.4 0 0 1 5.75 1.144 30 30 0 0 1 5.414 2.242 30 30 0 0 1 2.515 1.512 29.4 29.4 0 0 1 4.536 3.719 31 31 0 0 1 1.968 2.172 29.7 29.7 0 0 1 4.512 7.527 30 30 0 0 1 1.703 5.61 30.3 30.3 0 0 1 .574 5.835m0 0"
     />
   </g>
   <g clip-path="url(#rA)">
     <path
-      fill="#dde4e3"
+      fill="currentColor"
       d="M2473.7 2178.855q0 1.47-.145 2.93a29.8 29.8 0 0 1-1.145 5.75 29 29 0 0 1-.988 2.766 29.7 29.7 0 0 1-4.512 7.527 31 31 0 0 1-1.969 2.172 31 31 0 0 1-2.175 1.973 30 30 0 0 1-2.356 1.746 29 29 0 0 1-2.52 1.508 29 29 0 0 1-2.652 1.257q-1.357.562-2.761.989-1.407.426-2.848.71-1.443.288-2.902.434a30.6 30.6 0 0 1-5.864 0 30.4 30.4 0 0 1-5.75-1.144 30 30 0 0 1-2.761-.989 29 29 0 0 1-2.653-1.257 29 29 0 0 1-2.52-1.508 30 30 0 0 1-2.355-1.746 31 31 0 0 1-2.176-1.973 31 31 0 0 1-1.968-2.172 29.7 29.7 0 0 1-4.512-7.527 29 29 0 0 1-.988-2.766 29.8 29.8 0 0 1-1.29-8.68q0-1.47.145-2.93a29 29 0 0 1 .43-2.905q.287-1.437.715-2.844c.28-.938.613-1.86.988-2.766a29.7 29.7 0 0 1 4.512-7.527 31 31 0 0 1 1.968-2.172 29.7 29.7 0 0 1 4.532-3.719 29.9 29.9 0 0 1 10.781-4.465q1.442-.287 2.902-.433a30.7 30.7 0 0 1 5.864 0 30.4 30.4 0 0 1 5.75 1.144 30 30 0 0 1 5.414 2.242 30 30 0 0 1 4.875 3.258 30 30 0 0 1 2.175 1.973 31 31 0 0 1 1.97 2.172 29.7 29.7 0 0 1 4.512 7.527c.374.906.706 1.828.987 2.766q.428 1.407.715 2.844.288 1.441.43 2.906.145 1.458.144 2.93m0 0"
     />
   </g>
@@ -5842,7 +5850,7 @@
     <g clip-path="url(#rC)">
       <path
         fill="none"
-        stroke="#dde4e3"
+        stroke="currentColor"
         stroke-width="67.5"
         d="M1500.332 115.754c-772.644 0-1399 619.894-1399 1384.574s626.356 1384.578 1399 1384.578c772.649 0 1399.004-619.898 1399.004-1384.578S2272.981 115.754 1500.332 115.754Zm0 0"
       />
@@ -5852,7 +5860,7 @@
     <g clip-path="url(#rE)">
       <path
         fill="none"
-        stroke="#dde4e3"
+        stroke="currentColor"
         stroke-width="30"
         d="M1500.332 73.402c-798.808 0-1446.371 638.856-1446.371 1426.93 0 788.07 647.563 1426.93 1446.371 1426.93 798.805 0 1446.368-638.86 1446.368-1426.93 0-788.074-647.563-1426.93-1446.368-1426.93Zm0 0"
       />

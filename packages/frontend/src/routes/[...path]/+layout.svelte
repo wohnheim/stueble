@@ -13,7 +13,7 @@
   import { error } from "$lib/lib/error";
   import { ui_object } from "$lib/lib/UI.svelte";
 
-  import logo from "$lib/assets/Fileplay.svg";
+  import Logo from "$lib/assets/Stueble.svelte";
   import Layout from "$lib/components/Layout.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import LargeDialog from "$lib/components/LargeDialog.svelte";
@@ -91,7 +91,7 @@
     in:fade={{ duration: 200 }}
     out:fade={{ delay: 200, duration: 1000, easing: quadOut }}
   >
-    <img id="logo-image" src={logo} alt="Fileplay" draggable="false" />
+    <Logo />
   </div>
 
   <div
@@ -135,6 +135,7 @@
     z-index: 10000;
     width: 100%;
     height: 100%;
+
     background: var(--background);
   }
 
@@ -148,6 +149,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
+
+    color: var(--on-background);
   }
 
   #offline {
@@ -156,10 +159,5 @@
     width: 100%;
     height: 50%;
     bottom: 0;
-  }
-
-  img#logo-image {
-    width: 300px;
-    height: auto;
   }
 </style>

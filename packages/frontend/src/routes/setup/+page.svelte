@@ -7,7 +7,7 @@
   import { settings } from "$lib/lib/settings.svelte";
   import { ui_object, WohnheimType } from "$lib/lib/UI.svelte";
 
-  import logo from "$lib/assets/Fileplay.svg";
+  import Logo from "$lib/assets/Stueble.svelte";
 
   /* Navigation */
 
@@ -105,7 +105,7 @@
 
 {#if progress == 1}
   <div id="logo" in:fade={{ duration: 200 }}>
-    <img id="logo-image" src={logo} alt="Stüble" draggable="false" />
+    <Logo />
   </div>
 
   <div id="start" class="center-align middle-align" in:fade={{ duration: 200 }}>
@@ -131,7 +131,7 @@
     </nav>
   </div>
 {:else if progress == 2}
-  <article class="center absolute middle-align center-align border">
+  <article id="main-article" class="center absolute middle-align center-align border">
     <div>
       {#if progress2Mode == "login"}
         <h5>Anmelden</h5>
@@ -320,9 +320,9 @@
           {/if}
         </div>
 
-        <label class="checkbox">
+        <label class="checkbox bottom-margin">
           <input bind:checked={privacyPolicy} type="checkbox" />
-          <span
+          <span class="wrap"
             >Ich stimme der Nutzung meiner Daten zur Verifikation der
             Korrektheit und Nutzung der Anwendung zu.</span
           >
@@ -357,8 +357,8 @@
     bottom: 0;
   }
 
-  img#logo-image {
-    width: 300px;
-    height: auto;
+  #main-article {
+    width: 600px;
+    min-width: 290px;
   }
 </style>
