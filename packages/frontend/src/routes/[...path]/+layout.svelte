@@ -149,8 +149,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-
-    color: var(--on-background);
   }
 
   #offline {
