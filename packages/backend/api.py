@@ -1448,9 +1448,6 @@ def search_intern():
     allowed keys for searching are first_name, last_name, email, (room, residence), user_uuid
     """
 
-    # load data
-    data = request.get_json()
-
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
