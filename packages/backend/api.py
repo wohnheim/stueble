@@ -1561,57 +1561,63 @@ def search_intern():
             status=400,
             mimetype="application/json")
         return response
-    
+
     keywords = ["first_name", "last_name", "id"]
+    negated_conditions = {"user_role": "extern"}
     if "username" in data:
-        conditions = {"user_name": f"{data["username"]} AND user_role != USER_ROLE.EXTERN"}
+        conditions = {"user_name": data["username"]}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
             keywords=keywords,
             conditions=conditions,
+            negated_conditions=negated_conditions,
             expect_single_answer=True)
 
     # search room and / or residence
     elif "room" in data or "residence" in data:
         conditions = [[key, value] for key, value in data.items() if key in ["room", "residence"]]
-        conditions[-1][1] = conditions[-1][1] + " AND user_role != USER_ROLE.EXTERN"
         conditions = dict(conditions)
         result = db.read_table(
             cursor=cursor,
             table_name="users",
             keywords=keywords,
             conditions=conditions,
+            negated_conditions=negated_conditions,
             expect_single_answer=True)
     
     # search user_uuid
     elif "id" in data:
-        conditions = {"user_uuid": f"{data["id"]} AND user_role != USER_ROLE.EXTERN"}
+        conditions = {"user_uuid":data["id"]}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
             keywords=keywords,
             conditions=conditions,
+            negated_conditions=negated_conditions,
             expect_single_answer=True)
 
     # search email
     elif "email" in data:
-        conditions = {"email": f"{data["email"]} AND user_role != USER_ROLE.EXTERN"}
+        conditions = {"email": data["email"]}
+        negated_conditions = {"user_role": "extern"}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
             keywords=keywords,
             conditions=conditions,
+            negated_conditions=negated_conditions,
             expect_single_answer=True)
         
     # search first_name and/or last_name
     else:
-        conditions = {key: value if index != (len(data.keys())-1) else f"{value} AND user_role != extern" for index, (key, value) in enumerate(data.items()) if value is not None}
+        conditions = {key: value for key, value in data.items() if value is not None}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
             conditions=conditions,
             keywords=keywords,
+            negated_conditions=negated_conditions,
             expect_single_answer=False)
 
     close_conn_cursor(conn, cursor) # close conn, cursor
