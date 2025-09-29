@@ -123,7 +123,7 @@ def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = Fal
     keywords = list(keywords)
     conditions = {} if conditions is None else conditions
     negated_conditions = {} if negated_conditions is None else negated_conditions
-    all_conditions = {key: {"value": value, "negated": False} for key, value in conditions.items()} | {key: {"value": value, "negated": True} for key, value in negated_conditions.items()}
+    all_conditions = {key: {"value": value, "negated": False} for key, value in conditions.items()} | {key: {"value": value, "negagted": True} for key, value in negated_conditions.items()}
     query = f"""SELECT {', '.join(keywords)} FROM {table_name}"""
 
     if len(all_conditions) > 0:
