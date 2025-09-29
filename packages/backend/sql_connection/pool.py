@@ -1,8 +1,9 @@
-from psycopg2 import pool
-from dotenv import load_dotenv
 import os
 
-load_dotenv()
+from dotenv import load_dotenv
+from psycopg2.pool import ThreadedConnectionPool
+
+_ = load_dotenv()
 
 USER = os.getenv("USERDB") # stueble (like the linux user name!)
 PASSWORD = os.getenv("PASSWORD")
@@ -21,7 +22,7 @@ def create_pool(max_connections: int = 100, min_connections: int=20):
     Returns:
         connection_pool:connection_pool
     """
-    connection_pool = pool.ThreadedConnectionPool(
+    connection_pool = ThreadedConnectionPool(
         minconn=min_connections,
         maxconn=max_connections,
         user=USER,

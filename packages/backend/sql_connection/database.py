@@ -1,10 +1,21 @@
-import psycopg2 as pg
-from functools import wraps
-import os
-from dotenv import load_dotenv
+from collections.abc import Callable, Sequence
 from enum import Enum
+import os
+from typing import Any, Literal, overload
 
-load_dotenv()
+from dotenv import load_dotenv
+import psycopg2 as pg
+from psycopg2.extensions import connection, cursor
+
+from packages.backend.sql_connection.common_types import (
+    GenericFailure,
+    GenericSuccess,
+    MultipleSuccess,
+    MultipleTupleSuccess,
+    SingleSuccess,
+)
+
+_ = load_dotenv()
 
 USER = os.getenv("USERDB") # stueble (like the linux user name!)
 PASSWORD = os.getenv("PASSWORD")
@@ -20,7 +31,7 @@ class ANSWER_TYPE(Enum):
 def is_valid_answer_type(value):
     return value in ANSWER_TYPE._value2member_map_
 
-def full_pack(func):
+def full_pack(func: Callable[..., Any]):
     """
     full_pack \n
     wrapper function to make just one function call for initializing, closing and the actual function
@@ -32,7 +43,7 @@ def full_pack(func):
     """
     def wrapped(*args, **kwargs):
         conn, cursor = connect()
-        result = func(conn, cursor, *args, **kwargs)
+        result = func(cursor, *args, **kwargs)
         close(connection=conn, cursor=cursor)
         return result
     return wrapped
@@ -66,18 +77,28 @@ def connect(**kwargs):
         connection, cursor
     """
     if len(kwargs) > 0:
-        conn = pg.connect(**kwargs)
+        conn: connection = pg.connect(**kwargs)
         return conn, conn.cursor()
     conn = pg.connect(user=USER, password=PASSWORD, host=HOST,
                                  port=PORT, database=DBNAME)
     return conn, conn.cursor()
 
+@overload
+def read_table(cursor: cursor, table_name: str, expect_single_answer: Literal[True], keywords: tuple[str] | list[str] = ("*",),
+               conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None, 
+               order_by: tuple[str, Literal[0, 1]] | None = None) -> SingleSuccess | GenericFailure: ...
+
+@overload
+def read_table(cursor: cursor, table_name: str, expect_single_answer: Literal[False] = False, keywords: tuple[str] | list[str] = ("*",),
+               conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None, 
+               order_by: tuple[str, Literal[0, 1]] | None = None) -> MultipleSuccess | GenericFailure: ...
+
 # TODO can't return success: False right now
 # TODO for arguments as list might not be completely implemented
 # @catch_exception
-def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",), conditions: dict | None=None,
-               expect_single_answer=False, select_max_of_key: str="", specific_where: str="", variables: list | None=None, order_by: tuple | None=None,
-               connection=None) -> dict:
+def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = False, keywords: tuple[str] | list[str] = ("*",), 
+               conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None, 
+               order_by: tuple[str, Literal[0, 1]] | None = None) -> SingleSuccess | MultipleSuccess | GenericFailure:
     """
     read_table \n
     read data from a table
@@ -91,18 +112,18 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
         specific_where (str): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string),
         variables (list | None): list of variables that should be passed into the specific_where statement
         order_by (tuple | None): (key to order by, 0: descending / 1: ascending) by default no ordering, if specified and second value is invalid, then set to DESC
-        connection (connection): is added to make using the wrapper full_pack easier
     Returns:
         dict: {"success": bool, data: value}
     """
 
     if specific_where == "" and variables is not None:
-        return {"success": False, "error": ValueError("if specific_where is empty, variables must be None as well")}
+        return GenericFailure(success=False, error="if specific_where is empty, variables must be None as well")
 
     keywords = list(keywords)
     if conditions is None:
         conditions = {}
     query = f"""SELECT {', '.join(keywords)} FROM {table_name}"""
+
     if len(conditions) > 0:
         query += f" WHERE {' AND '.join([f'{key} = %s' for index, key in enumerate(conditions.keys())])}"
         if order_by is not None:
@@ -111,7 +132,9 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
         if expect_single_answer:
             data = cursor.fetchone()
             return {"success": True, "data": data}
-        return {"success": True, "data": [i if i is None else list(i) for i in cursor.fetchall()]}
+
+        return {"success": True, "data": [list(i) for i in cursor.fetchall()]}
+
     if select_max_of_key != "":
         query += f" WHERE {select_max_of_key} = (SELECT MAX({select_max_of_key}) FROM {table_name}) LIMIT 1"
         if order_by is not None:
@@ -120,23 +143,34 @@ def read_table(cursor, table_name: str, keywords: tuple[str] | list[str]=("*",),
         query += f" WHERE {specific_where}"
         if order_by is not None:
             query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
+
     if variables is None:
         cursor.execute(query)
     else:
         cursor.execute(query, variables)
+
     if expect_single_answer:
         data = cursor.fetchone()
         return {"success": True, "data": data}
-    return {"success": True, "data": [i if i is None else list(i) for i in cursor.fetchall()]}
+
+    return {"success": True, "data": [list(i) for i in cursor.fetchall()]}
+
+@overload
+def insert_table(cursor: cursor, table_name: str, returning_column: None = None,
+                 arguments: dict[str, Any] | list[str] | None = None) -> GenericSuccess | GenericFailure: ...
+
+@overload
+def insert_table(cursor: cursor, table_name: str, returning_column: str,
+                 arguments: dict[str, Any] | list[str] | None = None) -> SingleSuccess | GenericFailure: ...
 
 # NOTE arguments is either of type dict or of type list
 # @catch_exception
-def insert_table(connection, cursor, table_name: str, arguments: dict | None = None, returning_column: str = ""):
+def insert_table(cursor: cursor, table_name: str, returning_column: str | None = None, 
+                 arguments: dict[str, Any] | list[str] | None = None) -> GenericSuccess | SingleSuccess | GenericFailure:
     """
     insert data into table
 
     Parameters:
-        connection (connection):  conn to db
         cursor (cursor): cursor for interaction with db
         table_name (str): table to insert into, if empty set all
         arguments (dict | None): values that should be entered (key: column, value: value), if empty, no conditions, if arguments is of type list, then list has to contain all values that have to be entered
@@ -146,37 +180,54 @@ def insert_table(connection, cursor, table_name: str, arguments: dict | None = N
     """
     if arguments is None:
         arguments = {}
+
+    # Overloads can't distinguish between empty and non-empty strings
+    if (returning_column is not None and len(returning_column) == 0):
+        returning_column = None
+
     try:
+        query = ""
         vals = []
+
         if type(arguments) == list:
             query = f"""INSERT INTO {table_name}
-                        VALUES ({', '.join('%s' for index in range(len(arguments)))})"""
+                        VALUES ({', '.join('%s' for _ in range(len(arguments)))})"""
             vals = arguments
-        else:
+        elif type(arguments) == dict:
             query = f"""INSERT INTO {table_name} ({', '.join(arguments.keys())})
-                    VALUES ({', '.join('%s' for index, _ in enumerate(arguments.keys()))})"""
+                    VALUES ({', '.join('%s' for _, _ in enumerate(arguments.keys()))})"""
             vals = list(arguments.values())
-        if returning_column != "":
+
+        if returning_column != None:
             query += f" RETURNING {returning_column}"
+
         cursor.execute(query, vals)
-        connection.commit()
-        if returning_column != "":
+        cursor.connection.commit()
+
+        if returning_column != None:
             data = cursor.fetchone()
             return {"success": True, "data": data}
         return {"success": True}
     except Exception as e:
-        connection.rollback()
-        return {"success": False, "error": e}
+        cursor.connection.rollback()
+        return {"success": False, "error": str(e)}
+
+@overload
+def update_table(cursor: cursor, table_name: str, returning_column: None = None, arguments: dict[str, Any] | None = None,
+                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> GenericSuccess | GenericFailure: ...
+
+@overload
+def update_table(cursor: cursor, table_name: str, returning_column: str, arguments: dict[str, Any] | None = None,
+                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> SingleSuccess | GenericFailure: ...
 
 # for specific_where conditions must be empty, otherwise conditions will be ignored IMPORTANT what is being ignored differs from the other functions
-def update_table(connection, cursor, table_name: str, arguments: dict | None=None, conditions: dict | None=None,
-                 specific_where: str = "", specific_set: str = "", returning_column: str = ""):
+def update_table(cursor: cursor, table_name: str, returning_column: str | None = None, arguments: dict[str, Any] | None = None,
+                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> GenericSuccess | SingleSuccess | GenericFailure:
     """
     updates values in a table \n
     already has try catch
 
     Parameters:
-        connection (connection):  conn to db
         cursor (cursor): cursor to interact with db
         table_name (str): table to insert into, if empty set all
         arguments (dict | None): values that should be entered (key: column, value: value)
@@ -192,35 +243,48 @@ def update_table(connection, cursor, table_name: str, arguments: dict | None=Non
         arguments = {}
     if conditions is None:
         conditions = {}
+
+    # Overloads can't distinguish between empty and non-empty strings
+    if (returning_column is not None and len(returning_column) == 0):
+        returning_column = None
+
     try:
         query = f"""UPDATE {table_name}"""
         if specific_set != "":
             query += f""" SET {specific_set}"""
         else:
-             query += f""" SET  {', '.join(key + ' = %s' for index, key in enumerate(arguments.keys()))}"""
+             query += f""" SET  {', '.join(key + ' = %s' for _, key in enumerate(arguments.keys()))}"""
         if specific_where != "":
             query += " WHERE " + specific_where
         else:
-            query += f""" WHERE {' AND '.join(key + " = %s" for index, key in enumerate(conditions))}"""
-        if returning_column != "":
+            query += f""" WHERE {' AND '.join(key + " = %s" for _, key in enumerate(conditions))}"""
+        if returning_column != None:
             query += f" RETURNING {returning_column}"
         cursor.execute(query, list(arguments.values()) + list(conditions.values()))
-        connection.commit()
-        if returning_column != "":
+        cursor.connection.commit()
+        if returning_column != None:
             data = cursor.fetchone()
             return {"success": True, "data": data}
         return {"success": True}
     except Exception as e:
-        connection.rollback()
-        return {"success": False, "error": e}
+        cursor.connection.rollback()
+        return {"success": False, "error": str(e)}
 
-def remove_table(connection, cursor, table_name: str, conditions: dict, returning_column: str = ""):
+@overload
+def remove_table(cursor: cursor, table_name: str, conditions: dict[str, Any],
+                 returning_column: None = None) -> GenericSuccess | GenericFailure: ...
+
+@overload
+def remove_table(cursor: cursor, table_name: str, conditions: dict[str, Any],
+                 returning_column: str) -> SingleSuccess | GenericFailure: ...
+
+def remove_table(cursor: cursor, table_name: str, conditions: dict[str, Any],
+                 returning_column: str | None = None) -> GenericSuccess | SingleSuccess | GenericFailure:
     """
     removes data from table \n
     already has try catch
 
     Parameters:
-        connection (connection): conn to db
         cursor (cursor): cursor to interact with db
         table_name (str): table to insert into, if empty set all
         conditions (dict): specify from which row to remove the data
@@ -229,28 +293,44 @@ def remove_table(connection, cursor, table_name: str, conditions: dict, returnin
         dict: {"success": True} if successful, {"success": False, "error": e} else
     """
 
+    # Overloads can't distinguish between empty and non-empty strings
+    if (returning_column is not None and len(returning_column) == 0):
+        returning_column = None
+
     try:
         query = f"""DELETE FROM {table_name}
-                    WHERE {' AND '.join(key + " = %s" for index, key in enumerate(conditions))}"""
-        if returning_column != "":
+                    WHERE {' AND '.join(key + " = %s" for _, key in enumerate(conditions))}"""
+        if returning_column != None:
             query += f" RETURNING {returning_column}"
         cursor.execute(query, list(conditions.values()))
-        connection.commit()
-        if returning_column != "":
+        cursor.connection.commit()
+        if returning_column != None:
             data = cursor.fetchone()
             return {"success": True, "data": data}
         return {"success": True}
     except Exception as e:
-        connection.rollback()
-        return {"success": False, "error": e}
+        cursor.connection.rollback()
+        return {"success": False, "error": str(e)}
 
-def custom_call(connection, cursor, query: str, type_of_answer: ANSWER_TYPE, variables: list | None=None):
+@overload
+def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.NO_ANSWER],
+                variables: Sequence[Any] | None = None) -> GenericSuccess | GenericFailure: ...
+
+@overload
+def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.SINGLE_ANSWER],
+                variables: Sequence[Any] | None = None) -> SingleSuccess | GenericFailure: ...
+
+@overload
+def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.LIST_ANSWER],
+                variables: Sequence[Any] | None = None) -> MultipleTupleSuccess | GenericFailure: ...
+
+def custom_call(cursor: cursor, query: str, type_of_answer: ANSWER_TYPE, 
+                variables: Sequence[Any] | None = None) -> GenericSuccess | SingleSuccess | MultipleTupleSuccess | GenericFailure:
     """
     send a custom query to the database
 
     Parameters:
-        connection (connection): can be None if it isn't needed (e.g. for SELECT statements)
-        cursor (cursor):
+        cursor (cursor): cursor to interact with db
         query (str):
         type_of_answer (ANSWER_TYPE): what answer to expect
         variables (list | None): list of variables that should be passed into the query
@@ -258,33 +338,28 @@ def custom_call(connection, cursor, query: str, type_of_answer: ANSWER_TYPE, var
         dict
     """
     try:
-        if variables is None:
-            cursor.execute(query)
-        else:
-            cursor.execute(query, variables)
-        # can't be None when using UPDATE or DELETE or INSERT statements
-        if connection is not None:
-            connection.commit()
+        cursor.execute(query, variables)
+
+        # Always commit (TODO: Filter SELECT statements)
+        if query.startswith("SELECT") is False:
+            cursor.connection.commit()
+
         if type_of_answer == ANSWER_TYPE.NO_ANSWER:
             return {"success": True}
         elif type_of_answer == ANSWER_TYPE.SINGLE_ANSWER:
-            data = cursor.fetchone()
-            if data is not None:
-                data = data[0]
-            return {"success": True, "data": data}
+            return {"success": True, "data": cursor.fetchone()}
         elif type_of_answer == ANSWER_TYPE.LIST_ANSWER:
             return {"success": True, "data": cursor.fetchall()}
         else:
             # would usually be better to check at the beginning, but since code is used backend, function is mostly used correctly. Therefore, it is more effective to check at the end if no other case matches
             return {"success": False, "error": "parameter type_of_answer of the function must be of enum type ANSWER_TYPE"}
     except Exception as e:
-        if connection is not None:
-            connection.rollback()
-        return {"success": False, "error": e}
+        cursor.connection.rollback()
+        return {"success": False, "error": str(e)}
 
 # TODO can only return success True right now
 # @catch_exception
-def get_time(cursor, connection=None):
+def get_time(cursor: cursor) -> SingleSuccess:
     """
     returns the current berlin time
 
@@ -297,18 +372,20 @@ def get_time(cursor, connection=None):
     query = """SELECT NOW() AT TIME ZONE 'Europe/Berlin' AS current_time"""
     cursor.execute(query)
     data = cursor.fetchone()
-    return {"success": True, "data": data[0]}
+    return {"success": True, "data": data[0] if data is not None else None}
 
-def close(connection, cursor=None):
+def close(connection: connection | None, cursor: cursor | None = None):
     """
-    closes the current cursor and connection
+    closes the current cursor and/or connection
     
     Parameters:
         connection (closed): connection that should be closed
         cursor: cursor that should be closed
     """
-    connection.close()
-    if cursor is not None:
+
+    if connection is not None:
+        connection.close()
+    elif cursor is not None:
         cursor.close()
 
 if __name__ == "__main__":

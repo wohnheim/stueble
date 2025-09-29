@@ -1,6 +1,8 @@
+from psycopg2.extensions import connection, cursor
+
 from packages.backend.sql_connection.pool import pool
 
-def get_conn_cursor():
+def get_conn_cursor() -> tuple[connection, cursor]:
     """
     gets a connection and a cursor from the connection pool
     """
@@ -8,7 +10,7 @@ def get_conn_cursor():
     cursor = conn.cursor()
     return conn, cursor
 
-def close_conn_cursor(connection, cursor):
+def close_conn_cursor(connection: connection, cursor: cursor):
     """
     closes the cursor and returns the connection to the pool
     """

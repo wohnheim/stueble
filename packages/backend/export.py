@@ -1,4 +1,7 @@
-def export_csv(result: list[dict]):
+from typing import Any
+
+
+def export_csv(result: list[dict[str, Any]]):
     """
     Export the given result as a JSON string.
     Parameters:

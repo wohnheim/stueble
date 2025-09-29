@@ -1,2 +1,7 @@
-def clean_single_data(data: dict):
-    return {k: v if k != "data" else v[0] for k, v in data.items()}
+from packages.backend.sql_connection.common_types import (
+    SingleSuccess,
+    SingleSuccessCleaned,
+)
+
+def clean_single_data(data: SingleSuccess) -> SingleSuccessCleaned:
+    return {"success": data["success"], "data": data["data"][0] if data["data"] is not None else None }
