@@ -97,7 +97,7 @@ def read_table(cursor: cursor, table_name: str, expect_single_answer: Literal[Fa
 # TODO for arguments as list might not be completely implemented
 # @catch_exception
 def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = False, keywords: tuple[str] | list[str] = ("*",), 
-               conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None, 
+               conditions: dict[str, Any] | None = None, negated_conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None,
                order_by: tuple[str, Literal[0, 1]] | None = None) -> SingleSuccess | MultipleSuccess | GenericFailure:
     """
     read_table \n
@@ -107,6 +107,7 @@ def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = Fal
         cursor (from): conn to db
         keywords (tuple[str] | list[str]): columns, that should be selected, if empty, get all
         conditions (dict): under which conditions (key: column, value: value) values should be selected, if empty, no conditions
+        negated_conditions (dict): under which conditions (key: column, value: value) values should NOT be selected, if empty, no negated conditions
         expect_single_answer (bool): specify whether one or more answers are to be received, therefore it changes, whether list or single object will be returned
         select_max_of_key (bool): conditions must be empty, otherwise it won't be used
         specific_where (str): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string),
@@ -120,15 +121,16 @@ def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = Fal
         return GenericFailure(success=False, error="if specific_where is empty, variables must be None as well")
 
     keywords = list(keywords)
-    if conditions is None:
-        conditions = {}
+    conditions = {} if conditions is None else conditions
+    negated_conditions = {} if negated_conditions is None else negated_conditions
+    all_conditions = {key: {"value": value, "negated": False} for key, value in conditions.items()} | {key: {"value": value, "negated": True} for key, value in negated_conditions.items()}
     query = f"""SELECT {', '.join(keywords)} FROM {table_name}"""
 
-    if len(conditions) > 0:
-        query += f" WHERE {' AND '.join([f'{key} = %s' for index, key in enumerate(conditions.keys())])}"
+    if len(all_conditions) > 0:
+        query += f" WHERE {' AND '.join([f'{key} {'!' if value_data['negated'] is True else ''}= %s' for index, (key, value_data) in enumerate(all_conditions.values())])}"
         if order_by is not None:
             query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
-        cursor.execute(query, tuple(conditions.values()))
+        cursor.execute(query, tuple([i["value"] for i in all_conditions.values()]))
         if expect_single_answer:
             data = cursor.fetchone()
             return {"success": True, "data": data}
