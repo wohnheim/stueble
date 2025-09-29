@@ -27,7 +27,7 @@ class GetMottoData(TypedDict):
 
 class GetMottoSuccess(TypedDict):
     success: Literal[True]
-    data: GetMottoData | list[GetMottoData]
+    data: GetMottoData
 
 def check_permissions(cursor: cursor, session_id: str | None, required_role: UserRole) -> PermissionCheckSuccess | GenericFailure:
     """
@@ -71,14 +71,13 @@ def get_motto(date: datetime.date | None = None) -> GetMottoSuccess | GenericFai
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    # if date is None, return all stuebles
     if date is None:
         result = db.read_table(
             cursor=cursor,
             table_name="stueble_motto",
-            keywords=["motto", "date_of_time"],
-            order_by=("date_of_time", 0), # descending
-            expect_single_answer=False)
+            keywords=["motto", "date_of_time", "id"],
+            expect_single_answer=True,
+            specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
         close_conn_cursor(conn, cursor) # close conn, cursor
         if result["success"] is False:
             return result
