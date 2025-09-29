@@ -220,6 +220,10 @@ components:
               present:
                 type: boolean
                 description: Depends on registered
+            required:
+              - date
+              - registered
+              - present
 
     ping:
       summary: Ping server to check connection health (Application-Level).
@@ -446,9 +450,16 @@ components:
           reqId:
             $ref: "#/components/schemas/reqId"
           data:
-            type: string
-            description: String containing the weekly motto.
-            example: "Freue dich auf unser Men-In-Black Stüble!"
+            type: object
+            properties:
+              motto:
+                type: string
+                description: String containing the weekly motto.
+                example: "Men-In-Black"
+              description:
+                type: string
+                description: String containing the weekly motto description.
+                example: "Freue dich auf unser Men-In-Black Stüble!"
       correlationId:
         location: "$message.payload#/reqId"
 

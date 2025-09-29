@@ -77,14 +77,18 @@
       // Load via WebSocket
       ui_object.user = await apiClient("http").getUser();
 
-      ui_object.motto = await apiClient("ws").sendMessage({
+      const mottoRes = await apiClient("ws").sendMessage({
         event: "requestMotto",
       });
+
+      ui_object.motto = mottoRes.motto;
+      ui_object.description = mottoRes.description;
 
       // Store in IndexedDB
       await settings.set("user", JSON.stringify(ui_object.user));
 
       await settings.set("motto", ui_object.motto);
+      await settings.set("motto", ui_object.description);
     }
   };
 
@@ -100,6 +104,9 @@
 
     if (settings.settings["motto"])
       ui_object.motto = settings.settings["motto"];
+
+    if (settings.settings["description"])
+      ui_object.description = settings.settings["description"];
   };
 
   onMount(() => {
