@@ -1638,6 +1638,7 @@ def search_intern():
         users.append({"first_name": entry[0], 
                       "last_name": entry[1], 
                       "id": entry[2]})
+    users = [{snake_to_camel_case(key): value for key, value in i.items()} for i in users]
 
     response = Response(
         response=json.dumps(users),
