@@ -458,7 +458,7 @@ async def request_motto(websocket, msg, req_id):
             {"code": "500",
              "message": str(result["error"])})
         return
-    motto = min(result["data"], key=lambda i: i["date"])["motto"]
+    motto = result["data"]["motto"]
     await send(websocket=websocket, event="motto", reqId=req_id, data=motto)
     return
 
