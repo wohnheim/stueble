@@ -127,7 +127,7 @@ def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = Fal
     query = f"""SELECT {', '.join(keywords)} FROM {table_name}"""
 
     if len(all_conditions) > 0:
-        query += f" WHERE {' AND '.join([f'{key} {'!' if value_data['negated'] is True else ''}= %s' for index, (key, value_data) in enumerate(all_conditions.values())])}"
+        query += f" WHERE {' AND '.join([f'{key} {'!' if value_data['negated'] is True else ''}= %s' for key, value_data in all_conditions.values()])}"
         if order_by is not None:
             query += f" ORDER BY {order_by[0]} {'ASC' if order_by[1] == 1 else 'DESC'}"
         cursor.execute(query, tuple([i["value"] for i in all_conditions.values()]))
