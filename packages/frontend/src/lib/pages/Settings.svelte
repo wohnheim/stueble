@@ -82,7 +82,7 @@
 
         if (await apiClient("http").modifyMotto(motto)) {
           ui_object.motto = motto;
-          settings.set("motto", motto);
+          await settings.set("motto", motto);
         }
       }}
     >
@@ -90,6 +90,33 @@
         <p id="title">Motto dieser Woche</p>
         <p id="subtitle">
           {ui_object.motto}
+        </p>
+      </div>
+    </Button>
+
+    <Button
+      onclick={async () => {
+        const description = await ui_object.openEditDialog(
+          {
+            title: "Motto-Beschreibung dieser Woche",
+            description:
+              "Was erwartet die Gäste auf eurer Party (Musik, Specials, Besonderes)? Dieses Nachricht wird den Besuchern auf der Anmeldeseite anzeigt.",
+            placeholder: "Beschreibung",
+            type: "string",
+          },
+          ui_object.description,
+        );
+
+        if (await apiClient("http").modifyMotto(undefined, description)) {
+          ui_object.description = description;
+          await settings.set("description", description);
+        }
+      }}
+    >
+      <div>
+        <p id="title">Motto-Beschreibung dieser Woche</p>
+        <p id="subtitle">
+          {ui_object.description}
         </p>
       </div>
     </Button>
@@ -127,7 +154,7 @@
 
           if (res != null) {
             ui_object.config = res;
-            settings.set("config", JSON.stringify(res));
+            await settings.set("config", JSON.stringify(res));
           }
         }}
       >
@@ -151,7 +178,7 @@
   </Button>
 
   <!-- Admin accounts can't be deleted -->
-  {#if ui_object.capabilities.some((c) => c != "admin")}
+  {#if !ui_object.capabilities.some((c) => c == "admin")}
     <Button
       onclick={async () =>
         (await ui_object.openDialog({

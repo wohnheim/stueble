@@ -163,7 +163,10 @@ export const requestMotto = z.object({
 export const motto = z.object({
   event: constant("motto"),
   reqId,
-  data: z.string(),
+  data: z.object({
+    motto: z.string(),
+    description: z.string(),
+  }),
 });
 
 /* Operation: requestQRCode */
