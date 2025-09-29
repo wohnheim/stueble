@@ -64,6 +64,10 @@
   {properties.title}
 </p>
 
+{#if properties.description !== undefined}
+  <p>{properties.description}</p>
+{/if}
+
 <div class="field">
   {#if properties.type == "string"}
     <input
