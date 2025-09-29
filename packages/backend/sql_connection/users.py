@@ -456,4 +456,39 @@ def check_user_guest_list(cursor, user_id: int) -> dict:
     
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "User or stueble doesn't exist."}
-    return result
+    return clean_single_data(result)
+
+def check_user_present(cursor, user_id: int) -> dict:
+    """
+    checks, whether the user is currently present at the latest stueble
+
+    Parameters:
+        cursor: cursor for the connection
+        user_id (int): id of the user
+    """
+
+    query = """SELECT (COALESCE(
+            (SELECT event_type
+             FROM events
+             WHERE user_id = %s
+               AND stueble_id = (SELECT id 
+                                 FROM stueble_motto 
+                                 WHERE date_of_time >= CURRENT_DATE 
+                                    OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1) 
+                                 ORDER BY date_of_time ASC 
+                                 LIMIT 1)
+             ORDER BY submitted DESC
+             LIMIT 1),
+            'remove'
+                       ) AS event_type) == 'arrive' AS is_registered"""
+
+    result = db.custom_call(
+        connection=None,
+        cursor=cursor,
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+        variables=[user_id])
+
+    if result["success"] and result["data"] is None:
+        return {"success": False, "error": "User or stueble doesn't exist."}
+    return clean_single_data(result)

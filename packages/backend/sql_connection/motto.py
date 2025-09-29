@@ -5,7 +5,8 @@ import psycopg2
 
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
-
+# replace get_motto with get_info
+@DeprecationWarning
 def get_motto(cursor, date: date | None=None) -> dict:
     """
     gets the motto from the table motto
@@ -52,7 +53,7 @@ def get_info(cursor, date: date | None=None) -> dict:
     result = db.read_table(
         cursor=cursor,
         table_name="stueble_motto",
-        keywords=["id", "motto"],
+        keywords=["id", "motto", "date_of_time"],
         expect_single_answer=True,
         order_by=("date_of_time", "ASC"),
         **parameters
@@ -111,11 +112,15 @@ def update_stueble(connection, cursor, date: date, **kwargs) -> dict:
     if any(key not in allowed_keys for key in kwargs.keys()):
         return {"success": False, "error": "invalid field to update"}
 
+    arguments = {key: value for key, value in kwargs.items() if value is not None}
+    if len(arguments) == 0:
+        return {"success": False, "error": "no fields to update"}
+
     result = db.update_table(
         connection=connection,
         cursor=cursor,
         table_name="stueble_motto",
-        arguments=kwargs, 
+        arguments=arguments,
         conditions={"date_of_time": date},
         returning_column="id"
     )

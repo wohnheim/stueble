@@ -383,6 +383,7 @@ def logout():
         status=204)
     return response
 
+# TODO: test automatic deletion from all stueble parties
 @app.route("/auth/delete", methods=["DELETE"])
 def delete():
     """
@@ -434,6 +435,16 @@ def delete():
 
     # remove session from table
     result = sessions.remove_session(connection=conn, cursor=cursor, session_id=session_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    # remove from guest_list
+    result = events.remove_guest(connection=conn, cursor=cursor, user_id=user_id, stueble_id=-1)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -623,7 +634,7 @@ def confirm_code():
                         samesite='Lax')
     return response
 
-# TODO websocket change update user
+# NOTE: no websocket update, since neither password nor username are needed
 @app.route("/auth/change_password", methods=["POST"])
 @app.route("/auth/change_username", methods=["POST"])
 def change_user_data():
@@ -716,23 +727,6 @@ def change_user_data():
             status=401,
             mimetype="application/json")
         return response
-
-    user_info = {key: value for key, value in zip(keywords, data["data"])}
-    user_info["user_role"] = FrontendUserRole.EXTERN if user_info["user_role"] == "extern" else FrontendUserRole.INTERN
-
-    user_data = {
-        "id": user_uuid,
-        "present": present,
-        "firstName": user_info["first_name"],
-        "lastName": user_info["last_name"],
-        "extern": user_info["user_role"] == FrontendUserRole.EXTERN}
-
-    if user_info["user_role"] == FrontendUserRole.INTERN:
-        user_data["roomNumber"] = user_info["room"]
-        user_data["residence"] = user_info["residence"]
-        user_data["verified"] = True
-
-    asyncio.run(ws.broadcast(event="userModified", data=message, skip_sid=session_id))
 
     response = Response(
         status=204
@@ -906,6 +900,7 @@ def guest_change():
         status=204)
     return response
 
+# TODO broadcast add remove user
 @app.route("/guests", methods=["PUT", "DELETE"])
 def attend_stueble():
     """
@@ -1097,9 +1092,7 @@ def invitee():
     invitee_last_name = data.get("lastName", None)
     invitee_email = data.get("email", None)
 
-    # TODO: make date optional
-
-    if any(i is None for i in [session_id,  date,  invitee_first_name,  invitee_last_name,  invitee_email]):
+    if any(i is None for i in [session_id, invitee_first_name, invitee_last_name, invitee_email]):
         response = Response(
             response=json.dumps({"code": 401,
                 "message": f"session_id, date, invitee_first_name, invitee_last_name, invitee_email must be specified"}),
@@ -1306,6 +1299,7 @@ def invitee():
 
     # send a websocket message to all hosts that the guest list changed
     asyncio.run(ws.broadcast(event=action_type.value, data=invitee_data, skip_sid=session_id))
+    asyncio.run(ws.broadcast(event=action_type.value, data=invitee_data, skip_sid=session_id))
 
     if request.method == "DELETE":
         response = Response(
@@ -1366,8 +1360,6 @@ def user():
         mimetype="application/json")
     return response
 
-# TODO: PUT /user missing
-
 # TODO websocket change update user
 @app.route("/user/change_role", methods=["POST"])
 def change_user_role():
@@ -1412,6 +1404,7 @@ def change_user_role():
             status=403,
             mimetype="application/json")
         return response
+    user_id = result["data"]["user_id"]
 
     data = {}
     data["user_role"] = UserRole(new_role)
@@ -1422,8 +1415,8 @@ def change_user_role():
         user_uuid=user_uuid,
         **data)
 
-    close_conn_cursor(conn, cursor)
     if user["success"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -1436,6 +1429,61 @@ def change_user_role():
             status=400,
             mimetype="application/json")
         return response
+
+    capabilities = [i.value for i in get_leq_roles(result["data"]["user_role"]) if i.value in ["user", "host", "tutor", "admin"]]
+
+    data = {"code": "200",
+            "capabilities": capabilities,
+            "authorized": True}
+
+    asyncio.run(ws.send(websocket=ws.get_websocket_by_sid(sid=session_id), event="status", data=data))
+
+    # check if user is on guest list
+
+    result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    if result["data"] is True:
+        keywords = ["user_uuid", "first_name", "last_name", "user_role"]
+        result = users.get_user(cursor=cursor, user_id=user_id, keywords=keywords)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        user_info = {key: value for key, value in zip(keywords, result["data"])}
+
+        result = users.check_user_present(cursor=cursor, user_id=user_id)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        present = result["data"]
+
+        user_data = {
+            "id": user_info["user_uuid"],
+            "present": present,
+            "firstName": user_info["first_name"],
+            "lastName": user_info["last_name"],
+            "extern": user_info["user_role"] == FrontendUserRole.EXTERN}
+
+        if user_info["user_role"] == FrontendUserRole.INTERN:
+            user_data["roomNumber"] = user_info["room"]
+            user_data["residence"] = user_info["residence"]
+            user_data["verified"] = True
+
+        asyncio.run(ws.broadcast(event="guestModified", data=user_data, skip_sid=session_id))
 
     response = Response(
         status=204)
@@ -1584,11 +1632,32 @@ def search_intern():
 Motto management (GET via WebSocket)
 """
 
+# TODO allow date changes
 @app.route("/motto", methods=["POST"])
 def create_stueble():
     """
     creates a new stueble event
     """
+
+    # load data
+    data = request.get_json()
+    date = data.get("date", None)
+    stueble_motto = data.get("motto", None)
+    hosts = data.get("hosts", None)
+    shared_apartment = data.get("shared_apartment", None)
+
+    if stueble_motto is None and shared_apartment is None and hosts is None:
+        response = Response(
+            response=json.dumps({"code": 400, "message": "motto, hosts or shared_apartment must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    user_role = UserRole.TUTOR
+    # date can't be changed but rather acts as an identifier
+    if hosts is not None or shared_apartment is not None:
+        user_role = UserRole.HOST
+
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
@@ -1601,51 +1670,69 @@ def create_stueble():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts or above can change the motto
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=user_role)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 401, "message": str(result["error"])}),
-            status=401,
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
+            response=json.dumps({"code": 403, "message": f"invalid permissions, need role {user_role.value} or above"}),
             status=403,
             mimetype="application/json")
         return response
-
-    # load data
-    data = request.get_json()
-    date = data.get("date", None)
-    stueble_motto = data.get("motto", None)
-
-    if stueble_motto is None:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 400, "message": "motto must be specified"}),
-            status=400,
-            mimetype="application/json")
-        return response
+    actual_user_role = result["data"]["user_role"]
+    actual_user_role = UserRole(actual_user_role)
 
     if date is None:
         date = datetime.date.today()
         days_ahead = (2 - date.weekday() + 7) % 7
         date = date + datetime.timedelta(days=days_ahead)
 
+    if hosts is not None and hosts != []:
+        user_ids = users.get_users(cursor=cursor, information=hosts)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        if len(user_ids["data"]) != len(hosts):
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 400, "message": "One or more hosts not found"}),
+                status=400,
+                mimetype="application/json")
+            return response
+
     result = motto.update_stueble(connection=conn,
                                 cursor=cursor,
                                 date=date,
-                                motto=stueble_motto)
+                                motto=stueble_motto,
+                                hosts=hosts,
+                                shared_apartment=shared_apartment)
 
     if result["success"] is False:
         if result["error"] == "no stueble found":
+            if actual_user_role == UserRole.HOST:
+                close_conn_cursor(conn, cursor)
+                response = Response(
+                    response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above to create a new stueble"}),
+                    status=403,
+                    mimetype="application/json")
+                return response
+
             result = motto.create_stueble(connection=conn,
                                     cursor=cursor,
                                     date=date,
-                                    motto=stueble_motto)
+                                    motto=stueble_motto,
+                                    hosts=hosts,
+                                    shared_apartment=shared_apartment)
 
             if result["success"] is False:
                 close_conn_cursor(conn, cursor)
@@ -1669,8 +1756,6 @@ def create_stueble():
 """
 Hosts management (Changes via WebSocket)
 """
-
-# TODO: GET /hosts missing
 
 @app.route("/hosts", methods=["PUT", "DELETE"])
 def update_hosts():
@@ -1697,19 +1782,19 @@ def update_hosts():
         return response
     
     # get conn, cursor
-    conn, cursor = db.get_conn_cursor()
+    conn, cursor = get_conn_cursor()
 
     # check permissions, since only tutors or above can change user role
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.TUTOR)
     if result["success"] is False:
-        db.close_conn_cursor(conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result["error"])}),
             status=401,
             mimetype="application/json")
         return response
     if result["data"]["allowed"] is False:
-        db.close_conn_cursor(conn, cursor)
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
@@ -1822,6 +1907,7 @@ def get_hosts():
         mimetype="application/json")
     return response
 
+@app.route("/hosts/force_add_guest", methods=["POST"])
 def force_add_guest():
     """
     force add guest to current stueble
@@ -1897,13 +1983,33 @@ RESET additional.skip_triggers;"""
 Config management
 """
 
-# TODO: Move to other file
-def snake_case_to_camel_case(snake_case_string: str):
-   words = snake_case_string.split('_')
-   return words[0].lower() + ''.join(word.capitalize() for word in words[1:])
+def snake_to_camel_case(snake_case: str):
+    """
+    turns snake_case into camelCase
+    Parameters:
+        snake_case (str): the snake_case string
+    Returns:
+        str: the camelCase string
+    """
+    camel_case = re.sub(r"_([a-z])", lambda m: m.group(1).upper(), snake_case)
+    if "Qr" in camel_case:
+        camel_case = camel_case.replace("Qr", "QR")
+    return camel_case
 
-def camel_case_to_snake_case(camel_case_string: str):
-    return ''.join(['_' + c.lower() if c.isupper() else c for c in camel_case_string]).lstrip('_')
+
+
+def camel_to_snake_case(camel_case: str):
+    """
+    turns camelCase into snake_case
+    Parameters:
+        camel_case (str): the camelCase string
+    Returns:
+        snake_case (str): the snake_case string
+    """
+    snake_case = re.sub(r'(?<!^)(?=[A-Z])', '_', camel_case).lower()
+    if "_q_r_" in snake_case:
+        snake_case = snake_case.replace("_q_r_", "_qr_")
+        return snake_case
 
 @app.route("/config", methods=["GET", "POST"])
 def config():
@@ -1941,16 +2047,33 @@ def config():
 
     if request.method == "POST":
         data = request.get_json()
-        for key, value in data.items():
-            result = configs.change_configuration(connection=conn, cursor=cursor, key=camel_case_to_snake_case(key), value=value)
 
-            if result["success"] is False:
-                close_conn_cursor(conn, cursor)
-                response = Response(
-                    response=json.dumps({"code": 500, "message": str(result["error"])}),
-                    status=500,
-                    mimetype="application/json")
-                return response
+        case_statements = '\n'.join(["WHEN %s THEN %s" for i in range (len(data))])
+        keys = tuple(camel_to_snake_case(key) for key in data.keys())
+        values = tuple(value for value in data.values())
+
+        params = [i for i in zip(keys, values)] + [tuple(keys)]
+
+        query = f"""UPDATE configurations
+        SET value = CASE key
+        {case_statements}
+        END
+        WHERE key IN %s"""
+        result = db.custom_call(connection=conn,
+                                cursor=cursor,
+                                query=query,
+                                type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
+                                variables=params)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+
+        # send websocket message to all admins
+        asyncio.run(ws.broadcast(event="config_update", data=data, room=ws.Room.ADMINS))
 
     # Method GET & POST
     result = configs.get_all_configurations(cursor=cursor)
@@ -1964,7 +2087,7 @@ def config():
         return response
 
     response = Response(
-        response=json.dumps({snake_case_to_camel_case(key): value for key, value in result.get("data")}),
+        response=json.dumps({snake_to_camel_case(key): value for key, value in result.get("data")}),
         status=200,
         mimetype="application/json")
     return response

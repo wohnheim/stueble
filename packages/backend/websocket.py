@@ -7,6 +7,7 @@ import datetime
 from cryptography.hazmat.primitives import serialization
 import inspect
 from functools import wraps
+from enum import Enum
 
 from packages.backend.sql_connection.common_functions import check_permissions, get_motto
 from packages.backend.data_types import *
@@ -16,13 +17,25 @@ from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from packages.backend.sql_connection.conn_cursor_functions import *
 
+# load environment variables
 load_dotenv("~/stueble/packages/backend/.env")
 
+# initialize variables
 host_upwards_room = set()
+admins_room = set()
+
 connections = set()
 sid_to_websocket = {}
 websockets_info = {}
 message_log = {}
+
+# set room datatype
+class Room(str, Enum):
+    HOST_UPWARDS = "host_upwards"
+    ADMINS = "admins"
+
+def is_valid_room(room: str) -> bool:
+    return room in Room._value2member_map_
 
 # handle websocket_info and sid_to_websocket garbage collection
 
@@ -113,6 +126,7 @@ def add_to_message_log(func):
             if params.get("room", None) is None:
                 room = host_upwards_room
             if "skip_sid" in params:
+            if "skip_sid" in params:
                 room.discard(params["skip_sid"])
         elif func.__name__ == "send":
             if "websocket" in kwargs:
@@ -152,10 +166,10 @@ async def send(websocket, event: str, data: dict | bool, **kwargs):
     await websocket.send(message)
 
 @add_to_message_log
-async def broadcast(event, data, room=None, skip_sid=None, **kwargs):
+async def broadcast(event, data, room: None | Room=None, skip_sid=None, **kwargs):
     """
     broadcasts an event to a room
-
+le_
     Parameters:
         event (str): the event to broadcast
         data (dict): the data to send
@@ -163,8 +177,13 @@ async def broadcast(event, data, room=None, skip_sid=None, **kwargs):
         room (set): the room to broadcast to (optional, defaults to all connections)
         **kwargs: additional keyword arguments to send
     """
-    if room is None:
+    if room is None or room == Room.HOST_UPWARDS:
         room = host_upwards_room
+    elif room == Room.ADMINS:
+        room = admins_room
+    else:
+        raise NotImplementedError(f"room {room} not implemented")
+
 
     message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
     for ws in list(room):
@@ -265,6 +284,7 @@ async def handle_ws(websocket):
                 await request_public_key(websocket=websocket, req_id=req_id)
     finally:
         host_upwards_room.discard(session_id)
+        admins_room.discard(session_id)
         connections.discard(websocket)
         sid_to_websocket.pop(session_id, None)
 
@@ -353,7 +373,7 @@ async def connect(websocket):
                      "authorized": False})
         return False
 
-    capabilities = [i.value for i in get_leq_roles(result["data"]["user_role"]) if i.value in ["host", "tutor", "admin"]]
+    capabilities = [i.value for i in get_leq_roles(result["data"]["user_role"]) if i.value in ["user", "host", "tutor", "admin"]]
 
     if result["data"]["allowed"] is False:
         await send(websocket=websocket, event="status", data= {
@@ -367,6 +387,9 @@ async def connect(websocket):
         user_role = UserRole(user_role)
 
         host_upwards_room.add(websocket)
+
+        if user_role == UserRole.ADMIN:
+            admins_room.add(websocket)
 
         # can only be "authorized": True but still checking
         await send(websocket=websocket, event="status", data= {
@@ -386,10 +409,8 @@ async def disconnect(websocket):
     if session_id is None:
         return
 
-    try:
-        host_upwards_room.discard(websocket)
-    except ValueError:
-        pass
+    host_upwards_room.discard(websocket)
+    admins_room.discard(websocket)
     connections.discard(websocket)
     sid_to_websocket.pop(session_id, None)
     del websockets_info[id(websocket)]

@@ -42,23 +42,51 @@ def remove_guest(connection, cursor, user_id: int, stueble_id: int) -> dict:
         connection: connection to the db
         cursor: cursor for the connection
         user_id (int): id of the user
-        stueble_id (int): id of the stueble party
+        stueble_id (int): id of the stueble party, if -1 then removal from all added stueble parties
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
     """
 
-    result = db.insert_table(
-        connection=connection,
-        cursor=cursor,
-        table_name="events",
-        arguments={"user_id": user_id, "stueble_id": stueble_id, "event_type": "remove"},
-        returning_column="NOW()")
+    if stueble_id == -1:
+        # get all stueble ids where the user is currently added
+        query = f"""
+        INSERT INTO events (user_id, event_type, stueble_id)
+        SELECT user_id, 'remove', stueble_id FROM
+        (SELECT user_id, stueble_id
+        FROM
+            (SELECT DISTINCT ON (events.stueble_id) events.*
+            FROM events
+                LEFT JOIN stueble_motto sm ON sm.id = events.stueble_id
+            WHERE ((sm.date_of_time >= CURRENT_DATE)
+               OR (CURRENT_TIME <= '06:00:00' AND sm.date_of_time = CURRENT_DATE - 1))
+                      AND events.user_id = %s
+                      AND events.event_type IN ('add', 'remove')
+            ORDER BY events.stueble_id, events.submitted DESC ) AS stuebles
+        WHERE stuebles.event_type = 'add') AS to_remove
+        RETURNING stueble_id;
+        """
+        result = db.custom_call(
+            connection=None,
+            cursor=cursor,
+            query=query,
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+            variables=[user_id]
+        )
+        return result
+    else:
+        result = db.insert_table(
+            connection=connection,
+            cursor=cursor,
+            table_name="events",
+            arguments={"user_id": user_id, "stueble_id": stueble_id, "event_type": "remove"},
+            returning_column="NOW()")
 
-    # maybe shouldn't be possible, but still left in
-    if result["success"] and result["data"] is None:
-        return {"success": False, "error": "error occurred"}
-    return clean_single_data(result)
+        # maybe shouldn't be possible, but still left in
+        if result["success"] and result["data"] is None:
+            return {"success": False, "error": "error occurred"}
+        return clean_single_data(result)
 
+# use users.check_user_guest_list for automatic stueble_id handling
 def check_guest(cursor, user_id: int, stueble_id: int | None=None) -> dict:
     """
     checks if a user is currently a guest at a stueble party
@@ -71,6 +99,7 @@ def check_guest(cursor, user_id: int, stueble_id: int | None=None) -> dict:
         dict: {"success": bool, "data": bool} if successful, {"success": False, "error": e} if error occurred
     """
 
+    # TODO: add 6 o'clock handling
     if stueble_id is None:
         query = """
         SELECT id FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
