@@ -313,9 +313,9 @@ def verify_signup():
             cursor=cursor,
             returning_column="id",
             **user_info)
-    close_conn_cursor(conn, cursor)
     # if server error occurred, return error
     if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
             status=500,
@@ -1562,7 +1562,7 @@ def search_intern():
 
     # search room and / or residence
     elif "room" in data or "residence" in data:
-        conditions = [(key, value) for key, value in data.items() if key in ["room", "residence"]]
+        conditions = [[key, value] for key, value in data.items() if key in ["room", "residence"]]
         conditions[-1][1] = conditions[-1][1] + " AND user_role != USER_ROLE.EXTERN"
         conditions = dict(conditions)
         result = db.read_table(
