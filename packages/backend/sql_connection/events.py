@@ -1,15 +1,30 @@
+from datetime import datetime
+from typing import Literal, TypedDict, cast
+from psycopg2.extensions import cursor
+
 from packages.backend.sql_connection import database as db
+from packages.backend.sql_connection.common_types import (
+    GenericFailure,
+)
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
-from typing import Annotated
+class AddGuestSuccess(TypedDict):
+    success: Literal[True]
+    data: int
 
+class RemoveGuestSuccess(TypedDict):
+    success: Literal[True]
+    data: datetime
 
-def add_guest(connection, cursor, user_id: int, stueble_id: int, invited_by: int | None=None) -> dict:
+class CheckGuestSuccess(TypedDict):
+    success: Literal[True]
+    data: bool
+
+def add_guest(cursor: cursor, user_id: int, stueble_id: int, invited_by: int | None = None) -> AddGuestSuccess | GenericFailure:
     """
     adds a guest to the table events with event_type "add"
 
     Parameters:
-        connection: connection to the db
         cursor: cursor for the connection
         user_id (int): id of the user
         stueble_id (int): id of the stueble party
@@ -23,28 +38,28 @@ def add_guest(connection, cursor, user_id: int, stueble_id: int, invited_by: int
         arguments["invited_by"] = invited_by
 
     result = db.insert_table(
-        connection=connection,
         cursor=cursor,
         table_name="events",
         arguments=arguments,
         returning_column="NOW()")
 
+    if result["success"] is False:
+        return result
     # maybe shouldn't be possible, but still left in
-    if result["success"] and result["data"] is None:
+    if result["data"] is None:
         return {"success": False, "error": "error occurred"}
-    return clean_single_data(result)
+    return cast(AddGuestSuccess, clean_single_data(result))
 
-def remove_guest(connection, cursor, user_id: int, stueble_id: int) -> dict:
+def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> RemoveGuestSuccess | GenericFailure:
     """
     adds a guest to the table events with event_type "remove" effectively removing them from the guest list
 
     Parameters:
-        connection: connection to the db
         cursor: cursor for the connection
         user_id (int): id of the user
         stueble_id (int): id of the stueble party, if -1 then removal from all added stueble parties
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
+        dict: {"success": bool} by default, {"success": True, "data": timestamp} if returning is True, {"success": False, "error": e} if error occurred
     """
 
     if stueble_id == -1:
@@ -66,7 +81,6 @@ def remove_guest(connection, cursor, user_id: int, stueble_id: int) -> dict:
         RETURNING stueble_id;
         """
         result = db.custom_call(
-            connection=None,
             cursor=cursor,
             query=query,
             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
@@ -75,19 +89,20 @@ def remove_guest(connection, cursor, user_id: int, stueble_id: int) -> dict:
         return result
     else:
         result = db.insert_table(
-            connection=connection,
             cursor=cursor,
             table_name="events",
             arguments={"user_id": user_id, "stueble_id": stueble_id, "event_type": "remove"},
             returning_column="NOW()")
 
         # maybe shouldn't be possible, but still left in
-        if result["success"] and result["data"] is None:
+        if result["success"] is False:
+            return result
+        if result["success"] is True and result["data"] is None:
             return {"success": False, "error": "error occurred"}
-        return clean_single_data(result)
+        return cast(RemoveGuestSuccess, clean_single_data(result))
 
 # use users.check_user_guest_list for automatic stueble_id handling
-def check_guest(cursor, user_id: int, stueble_id: int | None=None) -> dict:
+def check_guest(cursor: cursor, user_id: int, stueble_id: int | None = None) -> CheckGuestSuccess | GenericFailure:
     """
     checks if a user is currently a guest at a stueble party
 
@@ -101,19 +116,17 @@ def check_guest(cursor, user_id: int, stueble_id: int | None=None) -> dict:
 
     # TODO: add 6 o'clock handling
     if stueble_id is None:
-        query = """
-        SELECT id FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
+        query = """SELECT id FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
         result = db.custom_call(
-            connection=None,
             cursor=cursor,
             query=query,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
         )
-        if not result["success"]:
+        if result["success"] is False:
             return result
         if result["data"] is None:
-            return {"success": False, "error": "no stueble paruser_ty found"}
-        stueble_id = result["data"]
+            return {"success": False, "error": "no stueble party_user found"}
+        stueble_id = result["data"][0]
 
 
     query = f"""
@@ -127,17 +140,16 @@ def check_guest(cursor, user_id: int, stueble_id: int | None=None) -> dict:
                              LIMIT 1), 'remove')
             """
     result = db.custom_call(
-        connection=None,
         cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         variables=[user_id, stueble_id]
     )
 
-    if not result["success"]:
+    if result["success"] is False:
         return result
 
     if result["data"] is None:
         return {"success": False, "error": "user not on guest_list"}
 
-    return result
+    return cast(CheckGuestSuccess, clean_single_data(result))

@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from packages.backend.sql_connection.conn_cursor_functions import *
 
 # load environment variables
-load_dotenv("~/stueble/packages/backend/.env")
+_ = load_dotenv("~/stueble/packages/backend/.env")
 
 # initialize variables
 host_upwards_room = set()
@@ -58,7 +58,7 @@ def parse_cookies(headers):
     Parameters:
         headers: the headers from the websocket connection
     """
-    cookies = {}
+    cookies: dict[str, str] = {}
     
     # Check if headers is a dict-like object (common in websockets library)
     if hasattr(headers, 'get'):
@@ -519,7 +519,7 @@ async def verify_guest(websocket, msg):
              "message": "invalid permissions, need role host or above"})
         return
 
-    result = users.add_verification_method(connection=conn, cursor=cursor, user_uuid=user_uuid, method=verification_method)
+    result = users.add_verification_method(cursor=cursor, user_uuid=user_uuid, method=verification_method)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         await send(websocket=websocket, event="error", data=
@@ -590,13 +590,20 @@ async def request_qrcode(websocket, msg, req_id):
     timestamp = int(datetime.datetime.now().timestamp())
 
     signature = hp.create_signature(message={"id": user_uuid, "timestamp": timestamp})
+    if signature["success"] is False:
+        await send(websocket=websocket, event="error", reqId=req_id, 
+                   data={"code": "500","message": str(signature["error"])})
+        return
 
-    data = {"data":
-                {"id": user_uuid,
-                 "timestamp": timestamp},
-            "signature": signature}
+    data = {
+        "data": {
+            "id": user_uuid,
+            "timestamp": timestamp
+        },
+        "signature": signature["data"]
+    }
 
-    await send(websocket=websocket, event="requestQRCode", reqId=req_id, data=data)
+    await send(websocket=websocket, event="qrCode", reqId=req_id, data=data)
     return
 
 async def request_public_key(websocket, req_id):

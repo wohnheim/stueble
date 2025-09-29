@@ -1,14 +1,28 @@
-from packages.backend.sql_connection import database as db
-from packages.backend.data_types import *
+from typing import Literal, TypedDict
 
-def validate_user_data(cursor,
+from psycopg2.extensions import cursor
+
+from packages.backend.data_types import Email, Residence, UserRole
+from packages.backend.sql_connection import database as db
+
+class FailureWithStatus(TypedDict):
+    success: Literal[False]
+    error: str
+    status: int
+
+class SuccessWithStatus(TypedDict):
+    success: Literal[True]
+    status: int
+    warning: str | None
+
+def validate_user_data(cursor: cursor,
                        user_role: UserRole,
                        room: str | int,
                        residence: Residence,
                        first_name: str,
                        last_name: str,
                        email: Email,
-                       user_name: str) -> dict:
+                       user_name: str) -> SuccessWithStatus | FailureWithStatus:
     """
     Validate user data for signup.
 
@@ -45,15 +59,13 @@ def validate_user_data(cursor,
 
     query = """SELECT email, user_name, room, residence FROM users WHERE email = %s OR user_name = %s OR (room = %s AND residence = %s);"""
     result = db.custom_call(
-        connection=None,
         cursor=cursor,
         query=query,
         variables=[email.email, user_name, room, residence.value],
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
     if result["success"] is False:
-        result["status"] = 500
-        return result
+        return {**result, "status": 500}
 
     email_list = [row[0] for row in result["data"]]
     user_name_list = [row[1] for row in result["data"]]
@@ -62,15 +74,13 @@ def validate_user_data(cursor,
     if len(result["data"]) != 0:
         query = """SELECT email, user_name, room, residence FROM users WHERE (email = %s OR user_name = %s OR (room = %s AND residence = %s)) AND password_hash IS NOT NULL"""
         result = db.custom_call(
-            connection=None,
             cursor=cursor,
             query=query,
             variables=[email.email, user_name, room, residence.value],
             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
         
         if result["success"] is False:
-            result["status"] = 500
-            return result
+            return {**result, "status": 500}
         
         if len(result["data"]) == 0:
             return {"success": True, "status": 200, "warning": "An account was already created, but deleted."}

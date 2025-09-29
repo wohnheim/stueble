@@ -1,23 +1,24 @@
-import select
 import json
-import psycopg2
-import requests
+import select
 import warnings
 
+import psycopg2
+from psycopg2.extensions import connection
+import requests
+
+from packages.backend.data_types import Event_Notify
 from packages.backend.sql_connection import database as db
 from packages.backend.sql_connection import users
-from packages.backend.data_types import *
 
 def is_valid_event_notify(other):
     if isinstance(other, Event_Notify):
         return other in Event_Notify._value2member_map_
     return NotImplemented
 
-conn = db.connect()
-cursor = conn.cursor()
+conn, cursor = db.connect()
 
 cursor.execute("LISTEN automatically_removed_users;")
-def listen_to_db(connection):
+def listen_to_db(connection: connection):
     """
     Listens to the database for notifications on the channel 'guest_list_update'.
     When a notification is received, it processes the payload and retrieves user information.
