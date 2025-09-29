@@ -1640,7 +1640,7 @@ def search_intern():
                       "id": entry[2]})
 
     response = Response(
-        response=json.dumps({"users": users}),
+        response=json.dumps(users),
         status=200,
         mimetype="application/json")
 
