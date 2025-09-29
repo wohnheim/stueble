@@ -126,7 +126,6 @@ def add_to_message_log(func):
             if params.get("room", None) is None:
                 room = host_upwards_room
             if "skip_sid" in params:
-            if "skip_sid" in params:
                 room.discard(params["skip_sid"])
         elif func.__name__ == "send":
             if "websocket" in kwargs:
