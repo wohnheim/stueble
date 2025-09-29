@@ -1,11 +1,22 @@
 import asyncio
 import datetime
 import json
+import re
 
 from flask import Flask, Response, request
 
 from packages.backend import hash_pwd as hp, websocket as ws
-from packages.backend.data_types import *
+from packages.backend.data_types import (
+    Action_Type,
+    Email,
+    EventType,
+    FrontendUserRole,
+    Residence,
+    UserRole,
+    get_leq_roles,
+    is_valid_residence,
+    is_valid_role,
+)
 from packages.backend.google_functions import gmail
 from packages.backend.sql_connection import (
     configs,
@@ -14,12 +25,14 @@ from packages.backend.sql_connection import (
     guest_events,
     motto,
     sessions,
-    signup_validation as signup_val,
     users,
 )
-from packages.backend.sql_connection.common_functions import *
-from packages.backend.sql_connection.conn_cursor_functions import *
-from packages.backend.sql_connection.ultimate_functions import *
+from packages.backend.sql_connection.common_functions import check_permissions
+from packages.backend.sql_connection.conn_cursor_functions import (
+    close_conn_cursor,
+    get_conn_cursor,
+)
+from packages.backend.sql_connection.signup_validation import validate_user_data
 
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
 # Initialize connections to database
@@ -58,7 +71,9 @@ def login():
             mimetype="application/json")
         return response
 
-    value = {}
+    user_email: Email | None = None
+    user_name: str | None = None
+
     if "@" in name:
         try:
             name = Email(email=name)
@@ -68,9 +83,9 @@ def login():
                 status=400,
                 mimetype="application/json")
             return response
-        value = {"user_email": name}
+        user_email = name
     else:
-        value = {"user_name": name}
+        user_name = name
 
     # if data is not valid return error
     if password is None:
@@ -84,13 +99,21 @@ def login():
     conn, cursor = get_conn_cursor()
 
     # get user data from table
-    result = users.get_user(cursor=cursor, keywords=["id", "password_hash", "user_role"], expect_single_answer=True, **value)
+    result = users.get_user(cursor=cursor, keywords=["id", "password_hash", "user_role"], user_email=user_email, user_name=user_name)
 
     # return error
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    if result["data"] is None:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": "Failed to find user"}),
             status=500,
             mimetype="application/json")
         return response
@@ -116,7 +139,7 @@ def login():
         return response
 
     # create a new session
-    result = sessions.create_session(connection=conn, cursor=cursor, user_id=user[0])
+    result = sessions.create_session(cursor=cursor, user_id=user[0])
 
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
@@ -211,7 +234,7 @@ def signup_data():
     check_info = user_info.copy()
     del check_info["password"]
     # check whether user data is unique
-    result = signup_val.validate_user_data(cursor=cursor, **check_info)
+    result = validate_user_data(cursor=cursor, **check_info)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -232,7 +255,7 @@ def signup_data():
     else:
         additional_data["method"] = "create"
 
-    result = users.create_verification_code(connection=conn, cursor=cursor, user_id=None, additional_data=additional_data)
+    result = users.create_verification_code(cursor=cursor, user_id=None, additional_data=additional_data)
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
@@ -303,13 +326,11 @@ def verify_signup():
         user_data["password_hash"] = user_info["password_hash"]
         user_data["user_name"] = user_info["user_name"]
         result = users.update_user(
-            connection=conn,
             cursor=cursor,
             user_email=user_info["email"],
             **user_data)
     else:
         result = users.add_user(
-            connection=conn,
             cursor=cursor,
             returning_column="id",
             **user_info)
@@ -325,7 +346,7 @@ def verify_signup():
     user_id = result["data"]
 
     # create a new session
-    result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
+    result = sessions.create_session(cursor=cursor, user_id=user_id)
 
     close_conn_cursor(conn, cursor)  # close conn, cursor
     if result["success"] is False:
@@ -366,7 +387,7 @@ def logout():
     conn, cursor = get_conn_cursor()
 
     # remove session from table
-    result = sessions.remove_session(connection=conn, cursor=cursor, session_id=session_id)
+    result = sessions.remove_session(cursor=cursor, session_id=session_id)
 
     close_conn_cursor(conn, cursor)
 
@@ -424,7 +445,7 @@ def delete():
     user_id = result["data"][0]
 
     # remove user from table
-    result = users.remove_user(connection=conn, cursor=cursor, user_id=user_id)
+    result = users.remove_user(cursor=cursor, user_id=user_id)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -434,7 +455,7 @@ def delete():
         return response
 
     # remove session from table
-    result = sessions.remove_session(connection=conn, cursor=cursor, session_id=session_id)
+    result = sessions.remove_session(cursor=cursor, session_id=session_id)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -444,7 +465,7 @@ def delete():
         return response
 
     # remove from guest_list
-    result = events.remove_guest(connection=conn, cursor=cursor, user_id=user_id, stueble_id=-1)
+    result = events.remove_guest(cursor=cursor, user_id=user_id, stueble_id=-1)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -474,25 +495,27 @@ def reset_password_mail():
             mimetype="application/json")
         return response
 
-    value = {}
+    user_email: Email | None = None
+    user_name: str | None = None
+
     if "@" in name:
         try:
             name = Email(email=name)
         except ValueError:
             response = Response(
-                response=json.dumps({"code": 403, "message": "Invalid email format"}),
-                status=403,
+                response=json.dumps({"code": 400, "message": "Invalid email format"}),
+                status=400,
                 mimetype="application/json")
             return response
-        value = {"user_email": name}
+        user_email = name
     else:
-        value = {"user_name": name}
+        user_name = name
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
     # check whether user with email exists
-    result = users.get_user(cursor=cursor, keywords=["id", "first_name", "last_name", "email", "password_hash"], expect_single_answer=True, **value)
+    result = users.get_user(cursor=cursor, keywords=["id", "first_name", "last_name", "email", "password_hash"], user_email=user_email, user_name=user_name)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -523,7 +546,7 @@ def reset_password_mail():
 
     email = Email(email=email)
 
-    result = users.create_verification_code(connection=conn, cursor=cursor, user_id=user_id)
+    result = users.create_verification_code(cursor=cursor, user_id=user_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -591,7 +614,7 @@ def confirm_code():
     hashed_password = hp.hash_pwd(new_password)
 
     # set new password
-    result = users.update_user(connection=conn, cursor=cursor, user_id=user_id, password_hash=hashed_password)
+    result = users.update_user(cursor=cursor, user_id=user_id, password_hash=hashed_password)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -601,7 +624,7 @@ def confirm_code():
         return response
 
     # remove all existing sessions of the user
-    result = sessions.remove_user_sessions(connection=conn, cursor=cursor, user_id=user_id)
+    result = sessions.remove_user_sessions(cursor=cursor, user_id=user_id)
     if result["success"] is False:
         if result["error"] != "no sessions found":
             close_conn_cursor(conn, cursor)
@@ -612,7 +635,7 @@ def confirm_code():
             return response
 
     # create a new session
-    result = sessions.create_session(connection=conn, cursor=cursor, user_id=user_id)
+    result = sessions.create_session(cursor=cursor, user_id=user_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -710,7 +733,7 @@ def change_user_data():
         data["user_name"] = username
 
     # get user id from session id
-    result = users.update_user(connection=conn, cursor=cursor, session_id=session_id,
+    result = users.update_user(cursor=cursor, session_id=session_id,
                                user_id=user_id, **data)
     close_conn_cursor(conn, cursor)
     if result["success"] is False and ("user_name" in data.keys()):
@@ -850,8 +873,7 @@ def guest_change():
     if event_type == EventType.ARRIVE:
         # verify guest if not verified yet
         if data["data"][4] is False:
-            result = users.update_user(connection=conn, 
-                                       cursor=cursor, 
+            result = users.update_user(cursor=cursor, 
                                        user_id=user_id, 
                                        verified=True)
             if result["success"] is False:
@@ -864,7 +886,7 @@ def guest_change():
 
 
     # change guest status to arrive / leave
-    result = guest_events.change_guest(connection=conn, cursor=cursor, user_uuid=user_uuid, event_type=event_type)
+    result = guest_events.change_guest(cursor=cursor, user_uuid=user_uuid, event_type=event_type)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -996,13 +1018,11 @@ def attend_stueble():
 
     if request.method == "PUT":
         result = events.add_guest(
-            connection=conn,
             cursor=cursor,
             user_id=user_id,
             stueble_id=stueble_id)
     else:
         result = events.remove_guest(
-            connection=conn,
             cursor=cursor,
             user_id=user_id,
             stueble_id=stueble_id)
@@ -1137,7 +1157,6 @@ def invitee():
     if request.method == "PUT":
         # add user to table
         result = users.add_user(
-            connection=conn,
             cursor=cursor,
             user_role=UserRole.EXTERN,
             first_name=invitee_first_name,
@@ -1146,7 +1165,7 @@ def invitee():
 
     else:
         # get user to remove
-        result = user.get_user(
+        result = users.get_user(
             cursor=cursor,
             keywords=["id", "user_uuid"],
             conditions={"first_name": invitee_first_name, "last_name": invitee_last_name, "user_role": UserRole.EXTERN.value},
@@ -1175,8 +1194,7 @@ def invitee():
             SELECT user_id FROM events
             WHERE user_id = %s AND stueble_id = %s AND event_type = 'add' AND invited_by = %s
             ORDER BY submitted DESC LIMIT 1"""
-            result = db.custom_call(connection=None,
-                                    cursor=cursor,
+            result = db.custom_call(cursor=cursor,
                                     query=query,
                                     type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
                                     variables=[i[0], stueble_id, user_id])
@@ -1233,14 +1251,12 @@ def invitee():
 
     if request.method == "PUT":
         result = events.add_guest(
-            connection=conn,
             cursor=cursor,
             user_id=invitee_id,
             stueble_id=stueble_id,
             invited_by=user_id)
     else:
         result = events.remove_guest(
-            connection=conn,
             cursor=cursor,
             user_id=invitee_id,
             stueble_id=stueble_id)
@@ -1334,7 +1350,7 @@ def user():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["first_name", "last_name", "room", "residence", "email", "user_uuid", "user_name", "id"])
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=("id", "user_role", "user_uuid", "room", "residence", "first_name", "last_name", "email", "user_name"))
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1345,13 +1361,13 @@ def user():
     data = result["data"]
 
     # initialize user
-    user = {"firstName": data[0],
-            "lastName": data[1],
-            "roomNumber": data[2],
-            "residence": data[3],
-            "email": data[4],
-            "id": data[5], 
-            "username": data[6]}
+    user = {"firstName": data[5],
+            "lastName": data[6],
+            "roomNumber": data[3],
+            "residence": data[4],
+            "email": data[7],
+            "id": data[0], 
+            "username": data[8]}
 
     close_conn_cursor(conn, cursor)
     response = Response(
@@ -1380,7 +1396,7 @@ def change_user_role():
     new_role = data.get("role", None)
     if new_role is None or is_valid_role(new_role) is False or new_role == "admin":
             response = Response(
-                response=json.dumps({"code": 400, "message": "The new_role must be specified and needs to be valid and can't be admin"}),
+                response=json.dumps({"code": 400, "message": "The new_role must be specified, needs to be valid and can't be admin"}),
                 status=400,
                 mimetype="application/json")
             return response
@@ -1406,16 +1422,12 @@ def change_user_role():
         return response
     user_id = result["data"]["user_id"]
 
-    data = {}
-    data["user_role"] = UserRole(new_role)
-
     result = users.update_user(
-        connection=conn,
         cursor=cursor,
         user_uuid=user_uuid,
-        **data)
+        user_role=UserRole(new_role))
 
-    if user["success"] is False:
+    if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -1539,7 +1551,7 @@ def search_intern():
     # json format data: {"session_id": str, data: {"first_name": str or None, "last_name": str or None, "room": str or None, "residence": str or None, "email": str or None}}
 
     # allowed keys to search for a user
-    allowed_keys = ["first_name", "last_name", "room_number", "residence", "email", "id", "username"]
+    allowed_keys = ["first_name", "last_name", "room", "residence", "email", "id", "username"]
 
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
@@ -1695,10 +1707,10 @@ def create_stueble():
 
     if hosts is not None and hosts != []:
         user_ids = users.get_users(cursor=cursor, information=hosts)
-        if result["success"] is False:
+        if user_ids["success"] is False:
             close_conn_cursor(conn, cursor)
             response = Response(
-                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                response=json.dumps({"code": 500, "message": str(user_ids["error"])}),
                 status=500,
                 mimetype="application/json")
             return response
@@ -1710,8 +1722,7 @@ def create_stueble():
                 mimetype="application/json")
             return response
 
-    result = motto.update_stueble(connection=conn,
-                                cursor=cursor,
+    result = motto.update_stueble(cursor=cursor,
                                 date=date,
                                 motto=stueble_motto,
                                 hosts=hosts,
@@ -1727,8 +1738,7 @@ def create_stueble():
                     mimetype="application/json")
                 return response
 
-            result = motto.create_stueble(connection=conn,
-                                    cursor=cursor,
+            result = motto.create_stueble(cursor=cursor,
                                     date=date,
                                     motto=stueble_motto,
                                     hosts=hosts,
@@ -1963,8 +1973,7 @@ def force_add_guest():
     query = """SET additional.skip_triggers = 'on';
 INSERT INTO events (user_id, stueble_id, event_type) VALUES (%s, %s, %s), (%s, %s, %s);  -- Triggers will be skipped
 RESET additional.skip_triggers;"""
-    result = db.custom_call(connection=conn,
-                            cursor=cursor,
+    result = db.custom_call(cursor=cursor,
                             query=query,
                             type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
                             variables=[user_id, 1, 'add', user_id, 1, 'arrive'])
@@ -2059,8 +2068,7 @@ def config():
         {case_statements}
         END
         WHERE key IN %s"""
-        result = db.custom_call(connection=conn,
-                                cursor=cursor,
+        result = db.custom_call(cursor=cursor,
                                 query=query,
                                 type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
                                 variables=params)

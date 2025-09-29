@@ -1,13 +1,43 @@
-from packages.backend.sql_connection import database as db, users
+from collections.abc import Sequence
 from datetime import date
-from typing import Annotated, Literal
-import psycopg2
+from typing import Annotated, Any, Literal, TypedDict, cast, overload
 
+from psycopg2 import DatabaseError
+from psycopg2.extensions import cursor
+from psycopg2.extras import execute_values
+
+from packages.backend.sql_connection import database as db
+from packages.backend.sql_connection.common_types import (
+    GenericFailure,
+    GenericSuccess,
+    SingleSuccessCleaned,
+    is_generic_failure,
+    is_multiple_tuple_success,
+    is_single_success,
+)
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
+class GetMottoSuccess(TypedDict):
+    success: Literal[True]
+    data: tuple[str, date, int]
+
+class GetInfoSuccess(TypedDict):
+    success: Literal[True]
+    data: tuple[int, str]
+
+class GetHostsData(TypedDict):
+    user_uuid: str
+    first_name: str
+    last_name: str
+    user_name: str
+
+class GetHostsSuccess(TypedDict):
+    success: Literal[True]
+    data: list[GetHostsData]
+
 # replace get_motto with get_info
-@DeprecationWarning
-def get_motto(cursor, date: date | None=None) -> dict:
+# TODO: Deprecated
+def get_motto(cursor: cursor, date: date | None = None) -> GetMottoSuccess | GenericFailure:
     """
     gets the motto from the table motto
     Parameters:
@@ -20,23 +50,23 @@ def get_motto(cursor, date: date | None=None) -> dict:
     if date is not None:
         result = db.read_table(
             cursor=cursor,
-            keywords=["motto", "date_of_time", "id"],
             table_name="stueble_motto",
+            keywords=["motto", "date_of_time", "id"],
             conditions={"date_of_time": date},
             expect_single_answer=True)
     else:
         result = db.read_table(
             cursor=cursor,
-            keywords=["motto", "date_of_time", "id"],
             table_name="stueble_motto",
+            keywords=["motto", "date_of_time", "id"],
             expect_single_answer=True,
             specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
 
-    if result["success"] and result["data"] is None:
+    if is_single_success(result) and result["data"] is None:
         return {"success": False, "error": "no motto found"}
-    return result
+    return cast(GetMottoSuccess | GenericFailure, result)
 
-def get_info(cursor, date: date | None=None) -> dict:
+def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | GenericFailure:
     """
     gets the info from the table motto for a party at a specific date
     Parameters:
@@ -45,29 +75,34 @@ def get_info(cursor, date: date | None=None) -> dict:
     Returns:
         dict: {"success": bool, "data": (info, author)}, {"success": False, "error": e} if error occurred
     """
-    parameters = {}
+    conditions = None
+    specific_where = ""
+
     if date is not None:
-        parameters["conditions"] = {"date_of_time": date}
+        conditions = {"date_of_time": date}
     else:
-        parameters["specific_where"] = "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"
+        specific_where = "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"
+
     result = db.read_table(
         cursor=cursor,
         table_name="stueble_motto",
         keywords=["id", "motto", "date_of_time"],
         expect_single_answer=True,
-        order_by=("date_of_time", "ASC"),
-        **parameters
+        order_by=("date_of_time", 1),
+        conditions=conditions,
+        specific_where=specific_where
     )
 
-    if result["success"] and result["data"] is None:
+    if is_single_success(result) and result["data"] is None:
         return {"success": False, "error": "no stueble party found"}
-    return result
 
-def create_stueble(connection, cursor, date: date, motto: str, hosts: list[int]=None, shared_apartment: str | None=None) -> dict:
+    return cast(GetInfoSuccess | GenericFailure, result)
+
+def create_stueble(cursor: cursor, date: date, motto: str, hosts: list[int] | None = None, 
+                   shared_apartment: str | None = None) -> SingleSuccessCleaned | GenericFailure:
     """
     creates a new entry in the table stueble_motto
     Parameters:
-        connection: connection to the database
         cursor: cursor for the connection
         date (datetime.date): date for which the motto is valid
         motto (str): motto for the stueble party
@@ -77,30 +112,29 @@ def create_stueble(connection, cursor, date: date, motto: str, hosts: list[int]=
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occurred
     """
 
-    arguments = {"date_of_time": date, "motto": motto}
+    arguments: dict[str, Any] = {"date_of_time": date, "motto": motto}
     if shared_apartment is not None:
         arguments["shared_apartment"] = shared_apartment
     if hosts is not None:
         arguments["hosts"] = hosts
 
     result = db.insert_table(
-        connection=connection,
         cursor=cursor,
         table_name="stueble_motto",
         arguments=arguments,
         returning_column="id"
     )
-    if result["success"] is True and result["data"] is None:
-        return {"success": False, "error": "error occurred"}
-    if result["success"] is True:
+
+    if is_single_success(result):
+        if result["data"] is None:
+            return {"success": False, "error": "error occurred"}
         return clean_single_data(result)
     return result
 
-def update_stueble(connection, cursor, date: date, **kwargs) -> dict:
+def update_stueble(cursor: cursor, date: date, **kwargs) -> SingleSuccessCleaned | GenericFailure:
     """
     updates an entry in the table stueble_motto
     Parameters:
-        connection: connection to the database
         cursor: cursor for the connection
         date (datetime.date): date for which the motto is valid
         kwargs: arguments to be updated, can be "motto", "hosts", "shared_apartment"
@@ -117,25 +151,36 @@ def update_stueble(connection, cursor, date: date, **kwargs) -> dict:
         return {"success": False, "error": "no fields to update"}
 
     result = db.update_table(
-        connection=connection,
         cursor=cursor,
         table_name="stueble_motto",
         arguments=arguments,
         conditions={"date_of_time": date},
         returning_column="id"
     )
-    if result["success"] is True and result["data"] is None:
-        return {"success": False, "error": "no stueble found"}
-    if result["success"] is True:
+
+    if is_single_success(result):
+        if result["data"] is None:
+            return {"success": False, "error": "no stueble found"}
         return clean_single_data(result)
     return result
 
-def update_hosts(connection, cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[list[int | None], "Explicit with user_uuid"]=None, user_uuids: Annotated[list[str | None], "Explicit with user_id"]=None)->dict:
+@overload
+def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: None = None, user_uuids: None = None) -> GenericFailure: ...
+
+@overload
+def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[Sequence[int], "Explicit with user_uuid"],
+                 user_uuids: None = None) -> GenericSuccess | GenericFailure: ...
+
+@overload
+def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: None = None,
+                 user_uuids: Annotated[Sequence[str], "Explicit with user_id"] = ()) -> GenericSuccess | GenericFailure: ...
+
+def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[Sequence[int] | None, "Explicit with user_uuid"] = None,
+                 user_uuids: Annotated[Sequence[str] | None, "Explicit with user_id"] = None) -> GenericSuccess | GenericFailure:
     """
     adds a host to a stueble
 
     Parameters:
-        connection: connection to the database
         cursor: cursor for the connection
         stueble_id (int): id of the stueble
         user_ids (list[int | None]): ids of the users to be added as host, if None user_uuids must be provided
@@ -150,32 +195,32 @@ def update_hosts(connection, cursor, stueble_id: str, method: Literal["add", "re
 
     if user_uuids is not None:
         query = """SELECT id FROM users WHERE id IN %s"""
-        result = db.custom_call(connection=None, 
-                       cursor=cursor, 
+        result = db.custom_call(cursor=cursor, 
                        query=query, 
                        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
                        variables=user_uuids)
-        if result["success"] is False:
+        if is_generic_failure(result):
             return result
-        if len(result["data"]) != len(user_uuids):
-            return {"success": False, "error": "one or more user_uuids are invalid"}
-        user_ids = result["data"]
+        if is_multiple_tuple_success(result):
+            if len(result["data"]) != len(user_uuids):
+                return {"success": False, "error": "one or more user_uuids are invalid"}
+            user_ids = list(map(lambda d: int(d[0]), result["data"]))
     
-    rows = [(user_id, stueble_id) for user_id in user_ids]
+    rows = [(user_id, stueble_id) for user_id in cast(list[int], user_ids)]
 
     if method == "add":
         query = """INSERT INTO hosts (user_id, stueble_id) VALUES %s"""
     else:
         query = """DELETE FROM hosts WHERE (user_id, stueble_id) IN %s"""
     try:
-        psycopg2.extras.execute_values(cursor, query, rows)
-        connection.commit()
-    except psycopg2.DatabaseError as e:
-        connection.rollback()
+        execute_values(cursor, query, rows)
+        cursor.connection.commit()
+    except DatabaseError as e:
+        cursor.connection.rollback()
         return {"success": False, "error": str(e)}
     return {"success": True}
 
-def get_hosts(cursor, stueble_id: int) -> dict:
+def get_hosts(cursor: cursor, stueble_id: int) -> GetHostsSuccess | GenericFailure:
     """
     gets the hosts for a stueble
 
@@ -187,13 +232,11 @@ def get_hosts(cursor, stueble_id: int) -> dict:
     params = ["user_uuid", "first_name", "last_name", "user_name"]
 
     query = f"""SELECT {', '.join(['u.' + i for i in params])} FROM hosts h JOIN users u ON u.id = h.user_id WHERE h.stueble_id = %s"""
-    result = db.custom_call(connection=None, 
-                   cursor=cursor, 
+    result = db.custom_call(cursor=cursor, 
                    query=query, 
                    type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
                    variables=[stueble_id])
     if result["success"] is False:
         return result
-    hosts = result["data"]
-    hosts = [dict(zip(params, host)) for host in hosts]
-    return {"success": True, "data": hosts}
+    hosts = [dict(zip(params, host)) for host in result["data"]]
+    return cast(GetHostsSuccess, cast(object, {"success": True, "data": hosts}))

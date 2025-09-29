@@ -1,6 +1,6 @@
-from flask import Response
-import msgpack
 import json
+
+from flask import Response
 
 def http_to_data(response: Response) -> bytes:
     """

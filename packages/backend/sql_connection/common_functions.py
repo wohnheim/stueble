@@ -1,8 +1,35 @@
-from packages.backend.sql_connection import sessions, motto, database as db
-from packages.backend.data_types import *
-from packages.backend.sql_connection.conn_cursor_functions import get_conn_cursor, close_conn_cursor
+import datetime
+from typing import Literal, TypedDict, cast
 
-def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
+from psycopg2.extensions import cursor
+
+from packages.backend.data_types import UserRole
+from packages.backend.sql_connection import database as db, motto, sessions
+from packages.backend.sql_connection.common_types import GenericFailure
+from packages.backend.sql_connection.conn_cursor_functions import (
+    close_conn_cursor,
+    get_conn_cursor,
+)
+
+class PermissionCheckData(TypedDict):
+    allowed: bool
+    user_id: int
+    user_role: UserRole
+    user_uuid: str
+
+class PermissionCheckSuccess(TypedDict):
+    success: Literal[True]
+    data: PermissionCheckData
+
+class GetMottoData(TypedDict):
+    motto: str
+    date: str
+
+class GetMottoSuccess(TypedDict):
+    success: Literal[True]
+    data: GetMottoData | list[GetMottoData]
+
+def check_permissions(cursor: cursor, session_id: str | None, required_role: UserRole) -> PermissionCheckSuccess | GenericFailure:
     """
     checks whether the user with the given session_id has the required role
     Parameters:
@@ -13,12 +40,16 @@ def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
         dict: {"success": bool, "data": {"allowed": bool, "user_id": int, "user_role": UserRole}, {"success": False, "error": e} if error occurred
     """
 
+    if session_id is None:
+        return {"success": False, "error": "The session id must be specified"}
+
     # get the user_id, user_role by session_id
     result = sessions.get_user(cursor=cursor, session_id=session_id)
 
     # if error occurred, return error
-    if result["success"] is False:
+    if (result["success"] is False):
         return result
+
     user_id = result["data"][0]
     user_role = result["data"][1]
     user_role = UserRole(user_role)
@@ -27,7 +58,7 @@ def check_permissions(cursor, session_id: str, required_role: UserRole) -> dict:
         return {"success": True, "data": {"allowed": True, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid}}
     return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid}}
 
-def get_motto(date: str | None = None):
+def get_motto(date: datetime.date | None = None) -> GetMottoSuccess | GenericFailure:
     """
     returns the motto for the next stueble party
 
@@ -51,8 +82,8 @@ def get_motto(date: str | None = None):
         close_conn_cursor(conn, cursor) # close conn, cursor
         if result["success"] is False:
             return result
-        data = [{"motto": entry[0], "date": entry[1].isoformat()} for entry in result["data"]]
-        return {"success": True, "data": data}
+
+        return {"success": True, "data": [{"motto": entry[0], "date": cast(datetime.date, entry[1]).isoformat()} for entry in result["data"]]}
 
     # get motto from table
     result = motto.get_motto(cursor=cursor, date=date)
@@ -60,5 +91,4 @@ def get_motto(date: str | None = None):
     if result["success"] is False:
         return result
 
-    data = {"motto": result["data"][0], "date": result["data"][1].isoformat()} if result["data"] is not None else {}
-    return {"success": True, "data": data}
+    return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1].isoformat()}}
