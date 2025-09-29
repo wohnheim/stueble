@@ -37,7 +37,7 @@ def create_signature(message: str | dict) -> dict:
         private_key.encode('utf-8'),
         password=None,
     )
-    signature = private_key.sign(message)
+    signature = private_key.sign(message.encode())
     signature = base64.b64encode(signature).decode()
     return {"success": True, "data": signature}
 
