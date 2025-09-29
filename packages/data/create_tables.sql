@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS stueble_motto (
     date_of_time DATE NOT NULL UNIQUE CHECK (date_of_time > CURRENT_DATE),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     shared_apartment TEXT,
-    hosts JSONB NOT NULL DEFAULT '[]'::jsonb
+    description TEXT
 );
 
 -- table to save login sessions
@@ -126,9 +126,9 @@ CREATE TABLE IF NOT EXISTS websocket_messages (
 
 CREATE TABLE IF NOT EXISTS websockets_affected (
     id SERIAL PRIMARY KEY, 
-    message_id REFERENCES websocket_messages(id) NOT NULL,
+    message_id INTEGER REFERENCES websocket_messages(id) NOT NULL,
     session_id INTEGER REFERENCES sessions(id) NOT NULL, 
-    received NOT NULL DEFAULT FALSE, 
+    received BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_DATE
 );
 

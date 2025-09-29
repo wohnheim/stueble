@@ -482,8 +482,8 @@ def get_users(cursor: cursor,
         expect_single_answer=False,
         specific_where=specific_where)
 
-    if is_multiple_success(result) and len(result["data"]) == 0:
-        return {"success": False, "error": "No users found."}
+    if is_multiple_success(result) and len(result["data"]) != len(information):
+        return {"success": False, "error": "Not all users found."}
     return result
 
 def check_user_guest_list(cursor: cursor, user_id: int) -> SingleSuccess | GenericFailure:

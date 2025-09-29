@@ -164,17 +164,6 @@ def update_stueble(cursor: cursor, date: date, **kwargs) -> SingleSuccessCleaned
         return clean_single_data(result)
     return result
 
-@overload
-def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: None = None, user_uuids: None = None) -> GenericFailure: ...
-
-@overload
-def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[Sequence[int], "Explicit with user_uuid"],
-                 user_uuids: None = None) -> GenericSuccess | GenericFailure: ...
-
-@overload
-def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: None = None,
-                 user_uuids: Annotated[Sequence[str], "Explicit with user_id"] = ()) -> GenericSuccess | GenericFailure: ...
-
 def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[Sequence[int] | None, "Explicit with user_uuid"] = None,
                  user_uuids: Annotated[Sequence[str] | None, "Explicit with user_id"] = None) -> GenericSuccess | GenericFailure:
     """
@@ -199,12 +188,11 @@ def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove
                        query=query, 
                        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
                        variables=user_uuids)
-        if is_generic_failure(result):
+        if result["success"] is False:
             return result
-        if is_multiple_tuple_success(result):
-            if len(result["data"]) != len(user_uuids):
-                return {"success": False, "error": "one or more user_uuids are invalid"}
-            user_ids = list(map(lambda d: int(d[0]), result["data"]))
+        if len(result["data"]) != len(user_uuids):
+            return {"success": False, "error": "one or more user_uuids are invalid"}
+        user_ids = [i[0] for i in result["data"]]
     
     rows = [(user_id, stueble_id) for user_id in cast(list[int], user_ids)]
 
@@ -218,7 +206,7 @@ def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove
     except DatabaseError as e:
         cursor.connection.rollback()
         return {"success": False, "error": str(e)}
-    return {"success": True}
+    return {"success": True, "data": user_ids}
 
 def get_hosts(cursor: cursor, stueble_id: int) -> GetHostsSuccess | GenericFailure:
     """

@@ -1835,7 +1835,7 @@ def update_hosts():
         return response
     stueble_id = result["data"][2]
 
-    result = motto.get_hosts(cursor=cursor, stueble_id=stueble_id)
+    result = users.get_users(cursor=cursor, information=user_uuids, keywords=["user_uuid", "first_name", "last_name"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1843,7 +1843,28 @@ def update_hosts():
             status=500,
             mimetype="application/json")
         return response
-    hosts = result["data"]
+    hosts_data = result["data"]
+    hosts_data = [{"id": i[0], "firstName": i[1], "lastName": i[2]} for i in hosts_data]
+
+    result = motto.update_hosts(cursor=cursor, stueble_id=stueble_id, method="add" if request.method == "PUT" else "remove", user_uuids=user_uuids)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    user_ids = result["data"]
+
+    query = """SELECT id FROM sessions WHERE user_id IN %s"""
+    result = db.custom_call(
+        cursor=cursor,
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+        variables=tuple(user_ids)
+    )
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
@@ -1853,10 +1874,16 @@ def update_hosts():
             mimetype="application/json")
         return response
 
+    session_ids = [i[0] for i in result["data"]]
+
+    result = ws.update_hosts(session_ids, "add" if request.method == "PUT" else "remove")
+
+    for host in hosts_data:
+        asyncio.run(ws.broadcast(event="hostAdded" if request.method == "PUT" else "hostRemoved", data=host, skip_sid=session_id))
+
     response = Response(
         status=204)
     return response
-# TODO update host room and send websocket message
 
 @app.route("/hosts", methods=["GET"])
 def get_hosts():

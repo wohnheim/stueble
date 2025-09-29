@@ -1,6 +1,8 @@
 import asyncio
 import base64
 import os
+from typing import Literal
+
 import websockets
 import msgpack
 import datetime
@@ -33,6 +35,27 @@ message_log = {}
 class Room(str, Enum):
     HOST_UPWARDS = "host_upwards"
     ADMINS = "admins"
+
+def update_hosts(hosts: list[str], method: Literal["add", "remove"]):
+    """
+    Update the list of hosts
+
+    Parameters:
+        hosts (list): list of host session ids
+        method (str): "add" to add hosts, "remove" to remove hosts
+    """
+
+    if method not in ["add", "remove"]:
+        return {"success": False, "error": "method must be 'add' or 'remove'"}
+
+    for i in hosts:
+        if not i in sid_to_websocket.keys():
+            continue
+        if method == "add":
+            host_upwards_room.add(sid_to_websocket[i])
+        else:
+            host_upwards_room.discard(sid_to_websocket[i])
+    return {"success": True}
 
 def is_valid_room(room: str) -> bool:
     return room in Room._value2member_map_
@@ -282,7 +305,7 @@ async def handle_ws(websocket):
                          "message": "reqId must be specified"})
                 await request_public_key(websocket=websocket, req_id=req_id)
     finally:
-        host_upwards_room.discard(session_id)
+        host_upwards_room.discard(websocket)
         admins_room.discard(session_id)
         connections.discard(websocket)
         sid_to_websocket.pop(session_id, None)
