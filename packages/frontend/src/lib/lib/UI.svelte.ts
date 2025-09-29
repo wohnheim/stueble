@@ -252,6 +252,7 @@ export interface DialogEdit {
   mode: "edit";
 
   title: string;
+  description?: string;
   value: string;
 
   length?: number;
