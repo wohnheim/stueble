@@ -82,7 +82,7 @@ def get_motto(date: datetime.date | None = None) -> GetMottoSuccess | GenericFai
         if result["success"] is False:
             return result
 
-        return {"success": True, "data": [{"motto": entry[0], "date": date} for entry in result["data"]]}
+        return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1]}}
 
     # get motto from table
     result = motto.get_motto(cursor=cursor, date=date)
