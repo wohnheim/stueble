@@ -273,12 +273,15 @@ class HTTPClient {
 
   /* Motto */
 
-  async modifyMotto(motto: string, date?: Date) {
+  async modifyMotto(motto?: string, description?: string, date?: Date) {
+    if (motto === undefined && description == undefined) return false;
+
     const res = await fetch("/api/motto", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         motto,
+        description,
         date: date?.toISOString(),
       }),
     });

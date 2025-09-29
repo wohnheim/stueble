@@ -876,14 +876,27 @@ components:
         - lastName
 
     MottoModificationRequest:
-      type: object
-      properties:
-        motto:
-          type: string
-        date:
-          $ref: "#/components/schemas/Date"
-      required:
-        - motto
+      oneOf:
+        - type: object
+          properties:
+            motto:
+              type: string
+            description:
+              type: string
+            date:
+              $ref: "#/components/schemas/Date"
+          required:
+            - motto
+        - type: object
+          properties:
+            motto:
+              type: string
+            description:
+              type: string
+            date:
+              $ref: "#/components/schemas/Date"
+          required:
+            - description
 
     HostsModificationRequest:
       type: object
