@@ -1,5 +1,5 @@
 import datetime
-from typing import Literal, TypedDict, cast
+from typing import Literal, TypedDict
 
 from psycopg2.extensions import cursor
 
@@ -82,7 +82,7 @@ def get_motto(date: datetime.date | None = None) -> GetMottoSuccess | GenericFai
         if result["success"] is False:
             return result
 
-        return {"success": True, "data": [{"motto": entry[0], "date": cast(datetime.date, entry[1]).isoformat()} for entry in result["data"]]}
+        return {"success": True, "data": [{"motto": entry[0], "date": datetime.date.isoformat(entry[1])} for entry in result["data"]]}
 
     # get motto from table
     result = motto.get_motto(cursor=cursor, date=date)
