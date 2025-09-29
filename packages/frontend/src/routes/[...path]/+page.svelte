@@ -77,18 +77,12 @@
       // Load via WebSocket
       ui_object.user = await apiClient("http").getUser();
 
-      ui_object.qrCodeData = await apiClient("ws").sendMessage({
-        event: "requestQRCode",
-      });
-
       ui_object.motto = await apiClient("ws").sendMessage({
         event: "requestMotto",
       });
 
       // Store in IndexedDB
       await settings.set("user", JSON.stringify(ui_object.user));
-
-      await settings.set("qrCodeData", JSON.stringify(ui_object.qrCodeData));
 
       await settings.set("motto", ui_object.motto);
     }
@@ -128,6 +122,18 @@
 
   $effect(() => {
     if (browser && loaded) {
+      if (ui_object.status?.registered)
+        untrack(() =>
+          apiClient("ws")
+            .sendMessage({
+              event: "requestQRCode",
+            })
+            .then((data) => {
+              ui_object.qrCodeData = data;
+              settings.set("qrCodeData", JSON.stringify(data))
+            }),
+        );
+
       if (ui_object.capabilities.find((c) => c == "host"))
         untrack(() =>
           loadHostDataFromServer().catch(() => loadHostDataFromDatabase()),

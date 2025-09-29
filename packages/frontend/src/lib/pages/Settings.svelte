@@ -68,13 +68,17 @@
     <p id="header" class="bold">Administrative Funktionen</p>
 
     <Button
-      onclick={async () =>
-        apiClient("http").modifyMotto(
-          await ui_object.openEditDialog(
-            { title: "Motto", placeholder: "Motto", type: "string" },
-            ui_object.motto,
-          ),
-        )}
+      onclick={async () => {
+        const motto = await ui_object.openEditDialog(
+          { title: "Motto", placeholder: "Motto", type: "string" },
+          ui_object.motto,
+        );
+
+        if (await apiClient("http").modifyMotto(motto)) {
+          ui_object.motto = motto;
+          settings.set("motto", motto);
+        }
+      }}
     >
       <div>
         <p id="title">Motto</p>
