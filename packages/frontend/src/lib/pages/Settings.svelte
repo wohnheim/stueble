@@ -70,7 +70,13 @@
     <Button
       onclick={async () => {
         const motto = await ui_object.openEditDialog(
-          { title: "Motto", placeholder: "Motto", type: "string" },
+          {
+            title: "Motto dieser Woche",
+            description:
+              "Ändere das Motto dieser Woche. Dieses Motto wird den Besuchern auf der Anmeldeseite anzeigt und am Morgen nach dem Stüble zurückgesetzt.",
+            placeholder: "Motto",
+            type: "string",
+          },
           ui_object.motto,
         );
 
@@ -81,7 +87,7 @@
       }}
     >
       <div>
-        <p id="title">Motto</p>
+        <p id="title">Motto dieser Woche</p>
         <p id="subtitle">
           {ui_object.motto}
         </p>
