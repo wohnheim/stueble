@@ -1594,7 +1594,7 @@ def search_intern():
         
     # search first_name and/or last_name
     else:
-        conditions = {key: value if index != (len(data.keys())-1) else f"{value} AND user_role != USER_ROLE.EXTERN" for index, (key, value) in enumerate(data.items()) if value is not None}
+        conditions = {key: value if index != (len(data.keys())-1) else f"{value} AND user_role != extern" for index, (key, value) in enumerate(data.items()) if value is not None}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
