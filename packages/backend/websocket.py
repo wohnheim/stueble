@@ -311,6 +311,9 @@ async def handle_ws(websocket):
                          "message": "reqId must be specified"})
                 await request_public_key(websocket=websocket, req_id=req_id)
     finally:
+        await send(websocket=websocket, event="status", data={"code": "200",
+                                                              "capabilities": [],
+                                                              "authorized": False})
         host_upwards_room.discard(websocket)
         admins_room.discard(session_id)
         connections.discard(websocket)
