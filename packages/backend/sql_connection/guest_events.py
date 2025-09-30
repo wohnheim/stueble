@@ -153,12 +153,25 @@ def guest_list(cursor: cursor, stueble_id: int | None = None) -> GuestListSucces
         stueble_info = "%s"
         parameters["variables"] = [stueble_id]
 
-    query = f"""
-    SELECT u.id, u.first_name, u.last_name, u.user_role, event_type, submitted, u.user_uuid, u.verified, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY submitted DESC) as rn
-    FROM events
-    LEFT JOIN users u ON events.user_id = u.id
-    WHERE stueble_id = {stueble_info} and event_type in ('arrive', 'leave')
-    ORDER BY user_id, submitted ASC;
+    query = f"""SELECT *
+FROM (
+    SELECT
+        u.id,
+        u.first_name,
+        u.last_name,
+        u.user_role,
+        u.user_uuid,
+        u.verified,
+        e.event_type,
+        e.submitted,
+        ROW_NUMBER() OVER (PARTITION BY e.user_id ORDER BY e.submitted DESC) as rn
+    FROM events e
+    LEFT JOIN users u ON e.user_id = u.id
+    WHERE e.stueble_id = {stueble_info}
+      AND e.event_type IN ('add', 'remove')
+) AS all_events
+WHERE rn = 1
+  AND event_type = 'add';
     """
 
     result = db.custom_call(
