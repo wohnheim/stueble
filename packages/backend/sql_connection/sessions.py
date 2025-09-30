@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import Literal, TypedDict, cast, overload
 
@@ -129,9 +128,9 @@ def get_user(cursor: cursor, session_id: str, keywords: None = None) -> GetUserS
 def get_user(cursor: cursor, session_id: str, keywords: tuple[Literal["id"], Literal["user_role"], Literal["user_uuid"], Literal["room"], Literal["residence"],
              Literal["first_name"], Literal["last_name"], Literal["email"], Literal["user_name"]]) -> GetUserSuccessFull | GenericFailure: ...
 @overload
-def get_user(cursor: cursor, session_id: str, keywords: Sequence[str]) -> SingleSuccess | SingleSuccessCleaned | GenericFailure: ...
+def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str]) -> SingleSuccess | SingleSuccessCleaned | GenericFailure: ...
 
-def get_user(cursor: cursor, session_id: str, keywords: Sequence[str] | None = None) -> SingleSuccess | SingleSuccessCleaned | GenericFailure:
+def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str] | None = None) -> SingleSuccess | SingleSuccessCleaned | GenericFailure:
     """
     gets the user role of a user from the table users via the sessions table
     Parameters:

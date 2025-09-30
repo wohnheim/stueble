@@ -316,18 +316,18 @@ def remove_table(cursor: cursor, table_name: str, conditions: dict[str, Any],
 
 @overload
 def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.NO_ANSWER],
-                variables: Sequence[Any] | None = None) -> GenericSuccess | GenericError: ...
+                variables: list[Any] | tuple[Any] | None = None) -> GenericSuccess | GenericError: ...
 
 @overload
 def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.SINGLE_ANSWER],
-                variables: Sequence[Any] | None = None) -> SingleSuccess | GenericError: ...
+                variables: list[Any] | tuple[Any] | None = None) -> SingleSuccess | GenericError: ...
 
 @overload
 def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.LIST_ANSWER],
-                variables: Sequence[Any] | None = None) -> MultipleTupleSuccess | GenericError: ...
+                variables: list[Any] | tuple[Any] | None = None) -> MultipleTupleSuccess | GenericError: ...
 
 def custom_call(cursor: cursor, query: str, type_of_answer: ANSWER_TYPE, 
-                variables: Sequence[Any] | None = None) -> GenericSuccess | SingleSuccess | MultipleTupleSuccess | GenericError:
+                variables: list[Any] | tuple[Any] | None = None) -> GenericSuccess | SingleSuccess | MultipleTupleSuccess | GenericError:
     """
     send a custom query to the database
 
