@@ -1668,11 +1668,12 @@ def create_stueble():
     data = request.get_json()
     date = data.get("date", None)
     stueble_motto = data.get("motto", None)
+    description = data.get("description", None)
     shared_apartment = data.get("shared_apartment", None)
 
-    if stueble_motto is None and shared_apartment is None:
+    if stueble_motto is None and shared_apartment is None or description is None:
         response = Response(
-            response=json.dumps({"code": 400, "message": "motto or shared_apartment must be specified"}),
+            response=json.dumps({"code": 400, "message": "motto or shared_apartment or description must be specified"}),
             status=400,
             mimetype="application/json")
         return response
@@ -1720,6 +1721,7 @@ def create_stueble():
     result = motto.update_stueble(cursor=cursor,
                                 date=date,
                                 motto=stueble_motto,
+                                description=description,
                                 shared_apartment=shared_apartment)
 
     if result["success"] is False:
@@ -1735,6 +1737,7 @@ def create_stueble():
             result = motto.create_stueble(cursor=cursor,
                                     date=date,
                                     motto=stueble_motto,
+                                    description=description,
                                     shared_apartment=shared_apartment)
 
             if result["success"] is False:
@@ -1821,8 +1824,7 @@ def update_hosts():
         return response
     stueble_id = result["data"][2]
 
-    # TODO: change to UUIDs
-    result = users.get_users(cursor=cursor, information=user_uuids, keywords=["user_uuid", "first_name", "last_name"])
+    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
