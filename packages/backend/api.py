@@ -1847,7 +1847,7 @@ def update_hosts():
 
     user_ids = result["data"]
 
-    query = """SELECT id FROM sessions WHERE user_id IN %s"""
+    query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
     result = db.custom_call(
         cursor=cursor,
         query=query,

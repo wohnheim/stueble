@@ -295,7 +295,7 @@ IF (SELECT date_of_time FROM stueble_motto WHERE id = NEW.stueble_id) = (SELECT 
                                OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1))))
 THEN
     UPDATE users
-    SET user_role = USER_ROLE.HOST
+    SET user_role = 'host'
     WHERE id IN (SELECT user_id FROM hosts WHERE stueble_id = NEW.stueble_id) AND user_role = 'user';
 END IF;
 RETURN NEW;
