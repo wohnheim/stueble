@@ -474,7 +474,7 @@ def get_users(cursor: cursor,
     keywords = list(keywords)
     # users_list = [(i, "email") if isinstance(i, str) and "@" in i else (i, "user_name") for i in information]
 
-    query = f"SELECT {', '.join(keywords)} FROM users WHERE user_uuid IN ({', '.join(['%s' for _ in range(len(user_uuids))])})"
+    query = f"SELECT {', '.join(keywords)} FROM users WHERE user_uuid IN \({', '.join(['%s' for _ in range(len(user_uuids))])}\)"
     result = db.custom_call(
         cursor=cursor,
         query=query,
