@@ -474,7 +474,7 @@ def get_users(cursor: cursor,
     keywords = list(keywords)
     # users_list = [(i, "email") if isinstance(i, str) and "@" in i else (i, "user_name") for i in information]
 
-    specific_where = f"user_uuid IN ({'%s ' * len(user_uuids)})"
+    specific_where = f"user_uuid IN ({'%s, ' * len(user_uuids)})"
     result = db.read_table(
         cursor=cursor,
         table_name="users",
