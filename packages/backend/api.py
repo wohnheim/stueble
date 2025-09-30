@@ -917,6 +917,9 @@ def guest_change():
     # send a websocket message to all hosts that the guest list changed
     asyncio.run(ws.broadcast(event="guestModified", data=message, skip_sid=session_id))
 
+    # send a websocket message to the user
+    asyncio.run(ws.stueble_status(session_id=session_id, registered=True, present=present))
+
     # return 204
     response = Response(
         status=204)
@@ -1094,6 +1097,9 @@ def attend_stueble():
 
     # send a websocket message to all hosts that the guest list changed
     asyncio.run(ws.broadcast(event=action_type.value, data=user_data, skip_sid=session_id))
+
+    # send a websocket message to the user
+    asyncio.run(ws.stueble_status(session_id=session_id, date=date, registered=True if request.method == "PUT" else False, present=False))
 
     return response
 
