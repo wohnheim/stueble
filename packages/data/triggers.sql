@@ -297,7 +297,7 @@ IF  NEW.date_of_time = (SELECT MIN(date_of_time)
 THEN
     UPDATE users
     SET user_role = USER_ROLE.HOST
-    WHERE id = ANY(ARRAY(SELECT jsonb_array_elements_text(NEW.hosts)::INTEGER)) AND user_role = 'user';
+    WHERE id IN (SELECT user_id FROM hosts WHERE stueble_id = NEW.stueble_id) AND user_role = 'user';
 END IF;
 RETURN NEW;
 END;
