@@ -5,6 +5,7 @@ from psycopg2.extensions import cursor
 from packages.backend.sql_connection import database as db
 from packages.backend.sql_connection.common_types import (
     GenericFailure,
+    error_to_failure,
 )
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
@@ -44,7 +45,7 @@ def add_guest(cursor: cursor, user_id: int, stueble_id: int, invited_by: int | N
         returning_column="NOW()")
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     # maybe shouldn't be possible, but still left in
     if result["data"] is None:
         return {"success": False, "error": "error occurred"}
@@ -86,6 +87,9 @@ def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> RemoveGuestSu
             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
             variables=[user_id]
         )
+
+        if result["success"] is False:
+            return error_to_failure(result)
         return result
     else:
         result = db.insert_table(
@@ -96,7 +100,7 @@ def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> RemoveGuestSu
 
         # maybe shouldn't be possible, but still left in
         if result["success"] is False:
-            return result
+            return error_to_failure(result)
         if result["success"] is True and result["data"] is None:
             return {"success": False, "error": "error occurred"}
         return cast(RemoveGuestSuccess, clean_single_data(result))
@@ -123,7 +127,7 @@ def check_guest(cursor: cursor, user_id: int, stueble_id: int | None = None) -> 
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
         )
         if result["success"] is False:
-            return result
+            return error_to_failure(result)
         if result["data"] is None:
             return {"success": False, "error": "no stueble party_user found"}
         stueble_id = result["data"][0]
@@ -147,7 +151,7 @@ def check_guest(cursor: cursor, user_id: int, stueble_id: int | None = None) -> 
     )
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
 
     if result["data"] is None:
         return {"success": False, "error": "user not on guest_list"}

@@ -1,6 +1,5 @@
-from collections.abc import Sequence
 from datetime import date
-from typing import Annotated, Any, Literal, TypedDict, cast, overload
+from typing import Annotated, Any, Literal, TypedDict, cast
 
 from psycopg2 import DatabaseError
 from psycopg2.extensions import cursor
@@ -11,9 +10,7 @@ from packages.backend.sql_connection.common_types import (
     GenericFailure,
     GenericSuccess,
     SingleSuccessCleaned,
-    is_generic_failure,
-    is_multiple_tuple_success,
-    is_single_success,
+    error_to_failure,
 )
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
@@ -62,9 +59,12 @@ def get_motto(cursor: cursor, date: date | None = None) -> GetMottoSuccess | Gen
             expect_single_answer=True,
             specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
 
-    if is_single_success(result) and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": "no motto found"}
-    return cast(GetMottoSuccess | GenericFailure, result)
+
+    return cast(GetMottoSuccess, cast(object, result))
 
 def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | GenericFailure:
     """
@@ -93,10 +93,12 @@ def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | Generic
         specific_where=specific_where
     )
 
-    if is_single_success(result) and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": "no stueble party found"}
-
-    return cast(GetInfoSuccess | GenericFailure, result)
+    
+    return cast(GetInfoSuccess, cast(object, result))
 
 def create_stueble(cursor: cursor, date: date, motto: str, hosts: list[int] | None = None, 
                    shared_apartment: str | None = None) -> SingleSuccessCleaned | GenericFailure:
@@ -125,11 +127,11 @@ def create_stueble(cursor: cursor, date: date, motto: str, hosts: list[int] | No
         returning_column="id"
     )
 
-    if is_single_success(result):
-        if result["data"] is None:
-            return {"success": False, "error": "error occurred"}
-        return clean_single_data(result)
-    return result
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
+        return {"success": False, "error": "error occurred"}
+    return clean_single_data(result)
 
 def update_stueble(cursor: cursor, date: date, **kwargs) -> SingleSuccessCleaned | GenericFailure:
     """
@@ -157,15 +159,15 @@ def update_stueble(cursor: cursor, date: date, **kwargs) -> SingleSuccessCleaned
         conditions={"date_of_time": date},
         returning_column="id"
     )
+    
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
+        return {"success": False, "error": "no stueble found"}
+    return clean_single_data(result)
 
-    if is_single_success(result):
-        if result["data"] is None:
-            return {"success": False, "error": "no stueble found"}
-        return clean_single_data(result)
-    return result
-
-def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[Sequence[int] | None, "Explicit with user_uuid"] = None,
-                 user_uuids: Annotated[Sequence[str] | None, "Explicit with user_id"] = None) -> GenericSuccess | GenericFailure:
+def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[list[int] | tuple[int] | None, "Explicit with user_uuid"] = None,
+                 user_uuids: Annotated[list[str] | tuple[str] | None, "Explicit with user_id"] = None) -> GenericSuccess | GenericFailure:
     """
     adds a host to a stueble
 
@@ -189,7 +191,7 @@ def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove
                        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
                        variables=user_uuids)
         if result["success"] is False:
-            return result
+            return error_to_failure(result)
         if len(result["data"]) != len(user_uuids):
             return {"success": False, "error": "one or more user_uuids are invalid"}
         user_ids = [i[0] for i in result["data"]]
@@ -225,6 +227,6 @@ def get_hosts(cursor: cursor, stueble_id: int) -> GetHostsSuccess | GenericFailu
                    type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
                    variables=[stueble_id])
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     hosts = [dict(zip(params, host)) for host in result["data"]]
     return cast(GetHostsSuccess, cast(object, {"success": True, "data": hosts}))
