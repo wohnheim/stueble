@@ -76,8 +76,8 @@
     class="center"
     disabled={ui_object.userParams.firstName == "" ||
       ui_object.userParams.lastName == "" ||
-      ui_object.userParams.email == "" ||
-      !emailInput.validity.valid}
+      (ui_object.userParams.email != "" &&
+      !emailInput.validity.valid)}
     onclick={() =>
       apiClient("http").inviteExtern(
         ui_object.userParams.firstName,
