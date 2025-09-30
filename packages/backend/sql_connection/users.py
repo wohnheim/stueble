@@ -474,14 +474,14 @@ def get_users(cursor: cursor,
     keywords = list(keywords)
     # users_list = [(i, "email") if isinstance(i, str) and "@" in i else (i, "user_name") for i in information]
 
-    specific_where = f"user_uuid = ANY(%s)"
+    specific_where = f"user_uuid IN ({', '.join(['%s' for _ in range(len(user_uuids))])})"
     result = db.read_table(
         cursor=cursor,
         table_name="users",
         keywords=keywords,
         expect_single_answer=False,
         specific_where=specific_where,
-        variables=(user_uuids,))
+        variables=tuple(user_uuids))
 
     if result["success"] is False:
         return error_to_failure(result)
