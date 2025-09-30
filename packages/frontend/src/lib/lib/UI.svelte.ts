@@ -57,7 +57,7 @@ export type StuebleStatus = Overwrite<
   StuebleStatusUnparsed,
   {
     date: Date;
-    registrationStartsAt: Date;
+    registrationStartsAt?: Date;
   }
 >;
 
