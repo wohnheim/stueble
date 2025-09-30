@@ -64,8 +64,8 @@
     const verified = await window.crypto.subtle.verify(
       { name: "Ed25519" },
       ui_object.publicKey,
-      stringToArrayBuffer(data.signature) as ArrayBuffer,
-      stringToArrayBuffer(JSON.stringify(data.data)) as ArrayBuffer,
+      stringToArrayBuffer(atob(data.signature)) as ArrayBuffer,
+      stringToArrayBuffer(JSON.stringify(data.data, null, 0)) as ArrayBuffer,
     );
 
     if (!verified) {

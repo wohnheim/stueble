@@ -4,6 +4,9 @@
   import { ui_object } from "$lib/lib/UI.svelte";
 
   let extended = $state(false);
+  let hostCapability = $derived(
+    ui_object.capabilities.some((c) => c == "host"),
+  );
 </script>
 
 <div id="center-container" class="middle-align center-align">
@@ -24,7 +27,7 @@
   <h5>{settings.settings["motto"]}</h5>
 
   {#if !extended}
-    <div class="margin-left margin-right">
+    <div id="partial-text" class="margin-left margin-right row center-align">
       <p>{settings.settings["description"]?.split(" ", 7).join(" ")}</p>
       <button class="chip fill round" onclick={() => (extended = true)}>
         ...
@@ -38,7 +41,7 @@
     </p>
   {/if}
 
-  {#if !ui_object.capabilities.some((c) => c == "host") && !ui_object.status?.registered}
+  {#if !hostCapability && !ui_object.status?.registered}
     {#if ui_object.status !== undefined && (ui_object.status.registrationStartsAt === undefined || ui_object.status.registrationStartsAt <= new Date())}
       <button
         class="top-margin-small"
@@ -51,10 +54,12 @@
 
     <span class="expand"></span>
   {:else}
-    <p class="bold">Du bist angemeldet!</p>
+    {#if !hostCapability}
+      <p class="bold">Du bist angemeldet!</p>
+    {/if}
 
     <div>
-      {#if !ui_object.capabilities.some((c) => c == "host")}
+      {#if !hostCapability}
         <button
           class="top-margin-small"
           onclick={() => ui_object.openDialog({ mode: "qrcode" })}
@@ -75,7 +80,7 @@
 
     <span class="expand"></span>
 
-    {#if ui_object.status !== undefined && !ui_object.status.present}
+    {#if ui_object.status !== undefined && ui_object.status.registered && !ui_object.status.present}
       <p>Doch kein Bock?</p>
 
       <button
@@ -84,7 +89,7 @@
           (await ui_object.openDialog({
             mode: "confirm",
             title: "Von Stüble abmelden",
-            description: `Möchtest du dich wirklich vom Stüble abmelden? Eingeladene Gäste werden ebenfalls abgemeldet.${ui_object.capabilities.some((c) => c == "host") ? " Beachte, dass Du hiermit deine Rechte als Wirt*in verlierst." : ""}`,
+            description: `Möchtest du dich wirklich vom Stüble abmelden? Eingeladene Gäste werden ebenfalls abgemeldet.${hostCapability ? " Beachte, dass Du hiermit deine Rechte als Wirt*in verlierst." : ""}`,
           })) && apiClient("http").removeFromGuestList()}
       >
         <i>cancel</i>
@@ -100,6 +105,10 @@
     width: 100%;
 
     flex-flow: column;
+  }
+
+  #partial-text {
+    gap: 0.5rem;
   }
 
   .expand {
