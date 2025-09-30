@@ -85,7 +85,7 @@ export const stuebleStatus = z.object({
   event: constant("stuebleStatus"),
   data: z.object({
     date: z.iso.date(),
-    registrationStartsAt: z.iso.datetime(),
+    registrationStartsAt: z.iso.datetime().optional(),
     registered: z.boolean(),
     present: z.boolean(),
   }),

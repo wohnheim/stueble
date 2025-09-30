@@ -2,6 +2,8 @@
   import { apiClient } from "$lib/api/client";
   import { settings } from "$lib/lib/settings.svelte";
   import { ui_object } from "$lib/lib/UI.svelte";
+
+  let extended = $state(false);
 </script>
 
 <div id="center-container" class="middle-align center-align">
@@ -9,18 +11,29 @@
 
   <h4 class="no-margin">Willkommen Stüble-Besucher*in!</h4>
 
-  {#if !ui_object.status?.registered}
-    <p class="margin-left margin-right">
-      {#if settings.settings["motto"]}
-        {#each settings.settings["motto"].split("\n") as line}
-          {line}<br />
-        {/each}
-      {:else}
-        Melde dich gleich für das beste Stüble dieser Woche an!
-      {/if}
-    </p>
+  <p>
+    Das Motto am {ui_object.status?.date.toLocaleDateString("de-DE")} lautet:
+  </p>
 
-    {#if ui_object.status !== undefined && ui_object.status.registrationStartsAt <= new Date()}
+  <h5>{ui_object.motto}!</h5>
+
+  {#if !extended}
+    <div class="row margin-left margin-right">
+      <p>{ui_object.description.split(" ", 7).join(" ")}</p>
+      <button class="chip fill round" onclick={() => (extended = true)}
+        >...</button
+      >
+    </div>
+  {:else if settings.settings["motto"]}
+    <p class="margin-left margin-right">
+      {#each settings.settings["motto"].split("\n") as line}
+        {line}<br />
+      {/each}
+    </p>
+  {/if}
+
+  {#if !ui_object.status?.registered}
+    {#if ui_object.status !== undefined && (ui_object.status.registrationStartsAt === undefined || ui_object.status.registrationStartsAt <= new Date())}
       <button
         class="top-margin-small"
         onclick={() => apiClient("http").addToGuestList()}
@@ -32,10 +45,7 @@
 
     <span class="expand"></span>
   {:else}
-    <p class="margin-left margin-right">
-      Auf dieser Seite kannst du dir deinen personalisierten QR-Code anzeigen
-      lassen und einen Gast zum nächsten Stüble einladen.
-    </p>
+    <p class="bold">Du bist angemeldet!</p>
 
     <div>
       <button
@@ -51,7 +61,7 @@
           ui_object.changePath({ main: "main", sub: "invitation" })}
       >
         <i>person_add</i>
-        <span>Gast einladen</span>
+        <span>Externer Gast</span>
       </button>
     </div>
 
