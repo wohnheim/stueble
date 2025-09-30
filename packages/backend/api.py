@@ -6,17 +6,7 @@ import re
 from flask import Flask, Response, request
 
 from packages.backend import hash_pwd as hp, websocket as ws
-from packages.backend.data_types import (
-    Action_Type,
-    Email,
-    EventType,
-    FrontendUserRole,
-    Residence,
-    UserRole,
-    get_leq_roles,
-    is_valid_residence,
-    is_valid_role,
-)
+from packages.backend.data_types import *
 from packages.backend.google_functions import email as mail
 from packages.backend.sql_connection import (
     configs,
@@ -28,10 +18,7 @@ from packages.backend.sql_connection import (
     users,
 )
 from packages.backend.sql_connection.common_functions import check_permissions
-from packages.backend.sql_connection.conn_cursor_functions import (
-    close_conn_cursor,
-    get_conn_cursor,
-)
+from packages.backend.sql_connection.conn_cursor_functions import *
 from packages.backend.sql_connection.signup_validation import validate_user_data
 
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
@@ -1203,7 +1190,7 @@ def invitee():
         return response
 
     stueble_id = result["data"][0]
-    motto = result["data"][1]
+    motto_name = result["data"][1]
     stueble_date = result["data"][2]
     stueble_date = stueble_date.strftime("%d.%m.%Y", stueble_date)
 
@@ -1377,7 +1364,7 @@ def invitee():
 
     if invitee_email is not None:
         subject = "Einladung zum Stüble"
-        body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
+        body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto_name}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
         mail.send_mail(Email(invitee_email), subject, body)
 
     response = Response(
