@@ -14,6 +14,13 @@
       (u) => !database.hosts.some((h) => u.id == h.id),
     ),
   );
+  let hostsSearchInput = $state("");
+  let hostsSearchResultsUnfiltered = $state<Host[]>([]);
+  let hostsSearchResults = $derived(
+    hostsSearchResultsUnfiltered.filter(
+      (u) => !database.hosts.some((h) => u.id == h.id),
+    ),
+  );
 
   onMount(() => {
     ui_object.largeDialog?.addEventListener("close", () => {
@@ -24,6 +31,8 @@
         setTimeout(() => {
           hostsPage = "list";
           hostsSelectedUnfiltered = [];
+          hostsSearchInput = "";
+          hostsSearchResultsUnfiltered = [];
         }, 400);
     });
   });
@@ -35,6 +44,9 @@
       bind:page={hostsPage}
       bind:selectedUnfiltered={hostsSelectedUnfiltered}
       bind:selected={hostsSelected}
+      bind:searchInput={hostsSearchInput}
+      bind:searchResultsUnfiltered={hostsSearchResultsUnfiltered}
+      bind:searchResults={hostsSearchResults}
     />
   {/if}
 </dialog>

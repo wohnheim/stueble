@@ -23,10 +23,10 @@
       })}
   >
     <i>home</i>
-    <span>Home</span>
+    <span>Start</span>
   </a>
 
-  {#if ui_object.capabilities.find((c) => c == "host")}
+  {#if ui_object.capabilities.some((c) => c == "host")}
     <a
       class={ui_object.path.main == "host" ? "active" : ""}
       onclick={() =>
@@ -47,6 +47,6 @@
       })}
   >
     <i>admin_panel_settings</i>
-    <span>Settings</span>
+    <span>Einstellungen</span>
   </a>
 </nav>

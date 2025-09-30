@@ -12,19 +12,17 @@
     page = $bindable(),
     selectedUnfiltered = $bindable(),
     selected = $bindable(),
+    searchInput = $bindable(),
+    searchResultsUnfiltered = $bindable(),
+    searchResults = $bindable(),
   }: {
     page: "list" | "add";
     selectedUnfiltered: Host[];
     selected: Host[];
+    searchInput: string;
+    searchResultsUnfiltered: Host[];
+    searchResults: Host[];
   } = $props();
-
-  let searchInput = $state("");
-  let searchResultsUnfiltered = $state<Host[]>([]);
-  let searchResults = $derived(
-    searchResultsUnfiltered.filter(
-      (u) => !database.hosts.some((h) => u.id == h.id),
-    ),
-  );
 
   const select = (host: Host) => {
     const index = selectedUnfiltered.findIndex((s) => s.id == host.id);
