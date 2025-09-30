@@ -260,7 +260,7 @@ async def handle_ws(websocket):
     result = await stueble_status(session_id=session_id)
     if result["success"] is False:
         await send(websocket=websocket, event="error", data={"code": "500",
-            "message": result["error"]})
+            "message": "Couldn't send stueble_status"})
 
     try:
         async for message in websocket:
@@ -765,13 +765,14 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
             close_conn_cursor(conn, cursor)
             if result["success"] is False:
                 return result
-            registered = result["data"]
+            registered = True
+            present = result["data"]
     else:
         close_conn_cursor(conn, cursor)
 
     date = date.isoformat()
 
-    data = {"date": date, "registrationStartsAt": None, "registered": registered, "present": present}
+    data = {"date": date, "registered": registered, "present": present}
 
     user_room = [sid_to_websocket.get(i, None) for i in session_ids]
     try:
