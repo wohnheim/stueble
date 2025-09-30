@@ -1568,7 +1568,7 @@ def search_intern():
             mimetype="application/json")
         return response
 
-    keywords = ["first_name", "last_name", "id"]
+    keywords = ["first_name", "last_name", "user_uuid"]
     negated_conditions = {"user_role": "extern"}
     if "username" in data:
         conditions = {"user_name": data["username"]}
