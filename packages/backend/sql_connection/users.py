@@ -459,30 +459,31 @@ def add_verification_method(cursor: cursor, method: VerificationMethod,
     return {"success": True}
 
 def get_users(cursor: cursor,
-              information: list[str | int],
+              user_uuids: list[str],
               keywords: Sequence[str] = ("id",)) -> MultipleSuccess | GenericFailure:
     """
     retrieves users from the table users
 
     Parameters:
         cursor: cursor for the connection
-        information (list[str | int]): list of user emails / usernames
+        user_uuids (list[str | int]): list of user uuids
         keywords (tuple[str] | list[str]): list of fields to be retrieved, defaults to ["*"]
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": users} otherwise
     """
     keywords = list(keywords)
-    users_list = [(i, "email") if isinstance(i, str) and "@" in i else (i, "user_name") for i in information]
+    # users_list = [(i, "email") if isinstance(i, str) and "@" in i else (i, "user_name") for i in information]
 
-    specific_where = f' OR '.join([f"{i[1]} = {i[0]}"  for i in users_list])
+    specific_where = "user_uuid IN %s"
     result = db.read_table(
         cursor=cursor,
         table_name="users",
         keywords=keywords,
         expect_single_answer=False,
-        specific_where=specific_where)
+        specific_where=specific_where,
+        variables=tuple(user_uuids))
 
-    if is_multiple_success(result) and len(result["data"]) != len(information):
+    if is_multiple_success(result) and len(result["data"]) != len(user_uuids):
         return {"success": False, "error": "Not all users found."}
     return result
 
