@@ -287,13 +287,12 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION add_hosts()
 RETURNS trigger AS $$
 BEGIN
-IF  NEW.date_of_time = (SELECT MIN(date_of_time)
+IF (SELECT date_of_time FROM stueble_motto WHERE id = NEW.stueble_id) = (SELECT MIN(date_of_time)
                         FROM (
                             SELECT date_of_time
                             FROM stueble_motto
                             WHERE ((date_of_time >= CURRENT_DATE)
                                OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1))))
-        AND NEW.hosts != OLD.hosts
 THEN
     UPDATE users
     SET user_role = USER_ROLE.HOST
@@ -331,5 +330,5 @@ CREATE OR REPLACE TRIGGER set_reset_code_trigger
     FOR EACH ROW EXECUTE FUNCTION set_reset_code();
 
 CREATE OR REPLACE TRIGGER add_hosts
-    AFTER INSERT OR UPDATE ON stueble_motto
+    AFTER INSERT OR UPDATE ON hosts
     FOR EACH ROW EXECUTE FUNCTION add_hosts();
