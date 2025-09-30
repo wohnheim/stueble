@@ -76,7 +76,8 @@ def add_user(cursor: cursor,
     if result["success"] is False:
         return error_to_failure(result)
     if is_single_success(result):
-        result = clean_single_data(result)
+        if not ", " in returning_column:
+            result = clean_single_data(result)
 
         if result["data"] is None:
             return {"success": False, "error": "Insert of user failed"}
