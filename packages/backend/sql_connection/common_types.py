@@ -9,9 +9,9 @@ class GenericFailure(TypedDict):
     success: Literal[False]
     error: str
 
-# class GenericError(TypedDict):
-#     success: Literal[False]
-#     error: Exception
+class GenericError(TypedDict):
+    success: Literal[False]
+    error: Exception
 
 # Database
 
@@ -36,11 +36,7 @@ class MultipleTupleSuccess(TypedDict):
 def is_single_success(result: GenericSuccess | SingleSuccess | GenericFailure) -> TypeGuard[SingleSuccess]:
   return result['success'] and 'data' in result
 
-def is_multiple_success(result: MultipleSuccess | GenericFailure) -> TypeGuard[MultipleSuccess]:
-  return result['success']
+# Error convertion
 
-def is_multiple_tuple_success(result: MultipleTupleSuccess | GenericFailure) -> TypeGuard[MultipleTupleSuccess]:
-  return result['success']
-
-def is_generic_failure(result: SingleSuccess | MultipleSuccess | MultipleTupleSuccess | GenericFailure) -> TypeGuard[GenericFailure]:
-  return result['success'] is False
+def error_to_failure(error: GenericError) -> GenericFailure:
+  return {"success": False, "error": str(error['error'])}

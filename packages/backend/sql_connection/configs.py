@@ -8,6 +8,7 @@ from packages.backend.sql_connection.common_types import (
     MultipleSuccess,
     SingleSuccess,
     SingleSuccessCleaned,
+    error_to_failure,
     is_single_success,
 )
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
@@ -34,7 +35,7 @@ def get_configuration(cursor: cursor, key: str) -> SingleSuccessCleaned | Generi
         conditions={"key": key})
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     if is_single_success(result) and result["data"] is None:
         return {"success": False, "error": f"no configuration for {key} found"}
     return clean_single_data(result)
@@ -52,6 +53,9 @@ def get_all_configurations(cursor: cursor) -> MultipleSuccess | GenericFailure:
         keywords=["key", "value"],
         table_name="configurations",
         expect_single_answer=False)
+
+    if result["success"] is False:
+        return error_to_failure(result)
     return result
 
 def change_configuration(cursor: cursor, key: str, value: Any) -> SingleSuccess | GenericFailure:
@@ -70,7 +74,9 @@ def change_configuration(cursor: cursor, key: str, value: Any) -> SingleSuccess 
         returning_column="key"
     )
 
-    if is_single_success(result) and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": f"no configuration for {key} found"}
     return result
 

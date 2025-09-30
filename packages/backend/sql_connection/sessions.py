@@ -12,7 +12,7 @@ from packages.backend.sql_connection.common_types import (
     GenericSuccess,
     SingleSuccess,
     SingleSuccessCleaned,
-    is_single_success,
+    error_to_failure,
 )
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
@@ -50,7 +50,7 @@ def create_session(cursor: cursor, user_id: int) -> CreateSessionSuccess | Gener
     # load the configuration variable for session expiration time in days from table configurations
     expiration_time = db.read_table(cursor=cursor, keywords=["value"], table_name="configurations", conditions={"key": "session_expiration_days"}, expect_single_answer=True)
     if expiration_time["success"] is False:
-        return expiration_time
+        return error_to_failure(expiration_time)
     elif expiration_time["data"] is None:
         return {"success": False, "error": "Invalid result data"}
 
@@ -69,12 +69,12 @@ def create_session(cursor: cursor, user_id: int) -> CreateSessionSuccess | Gener
         arguments={"user_id": user_id, "expiration_date": expiration_date},
         returning_column="session_id")
 
-    if is_single_success(result):
-        if result["data"] is None:
-            return {"success": False, "error": "error occurred"}
-        else:
-            return {"success": True, "data": list(result["data"]) + [expiration_date]}
-    return cast(GenericFailure, result)
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
+        return {"success": False, "error": "error occurred"}
+    else:
+        return {"success": True, "data": list(result["data"]) + [expiration_date]}
 
 def get_session(cursor: cursor, session_id: str) -> GetSessionSuccess | GenericFailure:
     """
@@ -94,9 +94,12 @@ def get_session(cursor: cursor, session_id: str) -> GetSessionSuccess | GenericF
         specific_where="session_id = %s AND expiration_date > NOW()",
         variables=[session_id]
         )
-    if is_single_success(result) and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": "no session found"}
-    return cast(GetSessionSuccess | GenericFailure, result)
+
+    return cast(GetSessionSuccess, cast(object, result))
 
 def remove_session(cursor: cursor, session_id: str) -> GenericSuccess | GenericFailure:
     """
@@ -113,7 +116,9 @@ def remove_session(cursor: cursor, session_id: str) -> GenericSuccess | GenericF
         table_name="sessions",
         conditions={"session_id": session_id},
         returning_column="session_id")
-    if is_single_success(result) and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": "no session found"}
     return result
 
@@ -153,11 +158,13 @@ def get_user(cursor: cursor, session_id: str, keywords: Sequence[str] | None = N
         expect_single_answer=True,
         conditions={"s.session_id": session_id})
 
-    if is_single_success(result):
-        if result["data"] is None:
-            return {"success": False, "error": "no matching session and user found"}
-        elif len(keywords) == 1:
-            return clean_single_data(result)
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
+        return {"success": False, "error": "no matching session and user found"}
+    elif len(keywords) == 1:
+        return clean_single_data(result)
+
     return result
 
 def remove_user_sessions(cursor: cursor, user_id: int) -> SingleSuccess | GenericSuccess | GenericFailure:
@@ -175,11 +182,13 @@ def remove_user_sessions(cursor: cursor, user_id: int) -> SingleSuccess | Generi
         table_name="sessions",
         conditions={"user_id": user_id},
         returning_column="session_id")
-    if is_single_success(result) and result["data"] is None:
+
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": "no sessions found"}
 
-    # TODO: Improve
-    return cast(SingleSuccess | GenericFailure, cast(object, result))
+    return result
 
 def check_session_id(cursor: cursor, session_id: int) -> CheckSessionIdSuccess | GenericFailure:
     """
@@ -194,9 +203,9 @@ def check_session_id(cursor: cursor, session_id: int) -> CheckSessionIdSuccess |
                            table_name="sessions", 
                            conditions={"id": session_id}, 
                            expect_single_answer=True)
-    if is_single_success(result) and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": True, "data": False}
-    elif result["success"] is True:
-        return {"success": True, "data": True}
-    else:
-        return result
+
+    return {"success": True, "data": True}

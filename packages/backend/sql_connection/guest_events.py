@@ -7,7 +7,7 @@ from psycopg2.extensions import cursor
 from packages.backend.data_types import EventType
 from packages.backend.data_types import FrontendUserRole
 from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import GenericFailure, SingleSuccess
+from packages.backend.sql_connection.common_types import GenericFailure, SingleSuccess, error_to_failure
 
 class GuestListPresentData(TypedDict):
     first_name: str
@@ -57,7 +57,7 @@ def change_guest(cursor: cursor, event_type: EventType, user_uuid: Annotated[uui
             conditions={"user_uuid": str(user_uuid)})
 
         if result["success"] is False:
-            return result
+            return error_to_failure(result)
         if result["data"] is None:
             return {"success": False, "error": "no user found"}
 
@@ -72,7 +72,7 @@ def change_guest(cursor: cursor, event_type: EventType, user_uuid: Annotated[uui
         specific_where="date_of_time = CURRENT_DATE OR date_of_time = (CURRENT_DATE - INTERVAL '1 day')")
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     if result["data"] is None:
         return {"success": False, "error": "no stueble party found for today or yesterday"}
 
@@ -85,7 +85,9 @@ def change_guest(cursor: cursor, event_type: EventType, user_uuid: Annotated[uui
         arguments={"user_id": user_id, "event_type": event_type.value, "stueble_id": stueble_id},
         returning_column="id")
 
-    if result["success"] is True and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": "error occurred"}
 
     return result
@@ -126,7 +128,7 @@ def guest_list_present(cursor: cursor, stueble_id: int | None = None) -> GuestLi
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         **parameters)
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
 
     data = result["data"]
 
@@ -166,7 +168,7 @@ def guest_list(cursor: cursor, stueble_id: int | None = None) -> GuestListSucces
         **parameters)
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
 
     # Group by user_uuid
     infos: dict[str, GuestListData] = {}

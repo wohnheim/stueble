@@ -1,4 +1,4 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from enum import Enum
 import os
 from typing import Any, Literal, overload
@@ -8,7 +8,7 @@ import psycopg2 as pg
 from psycopg2.extensions import connection, cursor
 
 from packages.backend.sql_connection.common_types import (
-    GenericFailure,
+    GenericError,
     GenericSuccess,
     MultipleSuccess,
     MultipleTupleSuccess,
@@ -85,20 +85,20 @@ def connect(**kwargs):
 
 @overload
 def read_table(cursor: cursor, table_name: str, expect_single_answer: Literal[True], keywords: tuple[str] | list[str] = ("*",),
-               conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None, 
-               order_by: tuple[str, Literal[0, 1]] | None = None) -> SingleSuccess | GenericFailure: ...
+               conditions: dict[str, Any] | None = None, negated_conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None, 
+               order_by: tuple[str, Literal[0, 1]] | None = None) -> SingleSuccess | GenericError: ...
 
 @overload
 def read_table(cursor: cursor, table_name: str, expect_single_answer: Literal[False] = False, keywords: tuple[str] | list[str] = ("*",),
-               conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None, 
-               order_by: tuple[str, Literal[0, 1]] | None = None) -> MultipleSuccess | GenericFailure: ...
+               conditions: dict[str, Any] | None = None, negated_conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None, 
+               order_by: tuple[str, Literal[0, 1]] | None = None) -> MultipleSuccess | GenericError: ...
 
 # TODO can't return success: False right now
 # TODO for arguments as list might not be completely implemented
 # @catch_exception
 def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = False, keywords: tuple[str] | list[str] = ("*",), 
                conditions: dict[str, Any] | None = None, negated_conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None,
-               order_by: tuple[str, Literal[0, 1]] | None = None) -> SingleSuccess | MultipleSuccess | GenericFailure:
+               order_by: tuple[str, Literal[0, 1]] | None = None) -> SingleSuccess | MultipleSuccess | GenericError:
     """
     read_table \n
     read data from a table
@@ -118,7 +118,7 @@ def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = Fal
     """
 
     if specific_where == "" and variables is not None:
-        return GenericFailure(success=False, error="if specific_where is empty, variables must be None as well")
+        return {"success": False, "error": ValueError("if specific_where is empty, variables must be None as well")}
 
     keywords = list(keywords)
     conditions = {} if conditions is None else conditions
@@ -159,16 +159,16 @@ def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = Fal
 
 @overload
 def insert_table(cursor: cursor, table_name: str, returning_column: None = None,
-                 arguments: dict[str, Any] | list[str] | None = None) -> GenericSuccess | GenericFailure: ...
+                 arguments: dict[str, Any] | list[str] | None = None) -> GenericSuccess | GenericError: ...
 
 @overload
 def insert_table(cursor: cursor, table_name: str, returning_column: str,
-                 arguments: dict[str, Any] | list[str] | None = None) -> SingleSuccess | GenericFailure: ...
+                 arguments: dict[str, Any] | list[str] | None = None) -> SingleSuccess | GenericError: ...
 
 # NOTE arguments is either of type dict or of type list
 # @catch_exception
 def insert_table(cursor: cursor, table_name: str, returning_column: str | None = None, 
-                 arguments: dict[str, Any] | list[str] | None = None) -> GenericSuccess | SingleSuccess | GenericFailure:
+                 arguments: dict[str, Any] | list[str] | None = None) -> GenericSuccess | SingleSuccess | GenericError:
     """
     insert data into table
 
@@ -212,19 +212,19 @@ def insert_table(cursor: cursor, table_name: str, returning_column: str | None =
         return {"success": True}
     except Exception as e:
         cursor.connection.rollback()
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": e}
 
 @overload
 def update_table(cursor: cursor, table_name: str, returning_column: None = None, arguments: dict[str, Any] | None = None,
-                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> GenericSuccess | GenericFailure: ...
+                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> GenericSuccess | GenericError: ...
 
 @overload
 def update_table(cursor: cursor, table_name: str, returning_column: str, arguments: dict[str, Any] | None = None,
-                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> SingleSuccess | GenericFailure: ...
+                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> SingleSuccess | GenericError: ...
 
 # for specific_where conditions must be empty, otherwise conditions will be ignored IMPORTANT what is being ignored differs from the other functions
 def update_table(cursor: cursor, table_name: str, returning_column: str | None = None, arguments: dict[str, Any] | None = None,
-                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> GenericSuccess | SingleSuccess | GenericFailure:
+                 conditions: dict[str, Any] | None = None, specific_where: str = "", specific_set: str = "") -> GenericSuccess | SingleSuccess | GenericError:
     """
     updates values in a table \n
     already has try catch
@@ -270,18 +270,18 @@ def update_table(cursor: cursor, table_name: str, returning_column: str | None =
         return {"success": True}
     except Exception as e:
         cursor.connection.rollback()
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": e}
 
 @overload
 def remove_table(cursor: cursor, table_name: str, conditions: dict[str, Any],
-                 returning_column: None = None) -> GenericSuccess | GenericFailure: ...
+                 returning_column: None = None) -> GenericSuccess | GenericError: ...
 
 @overload
 def remove_table(cursor: cursor, table_name: str, conditions: dict[str, Any],
-                 returning_column: str) -> SingleSuccess | GenericFailure: ...
+                 returning_column: str) -> SingleSuccess | GenericError: ...
 
 def remove_table(cursor: cursor, table_name: str, conditions: dict[str, Any],
-                 returning_column: str | None = None) -> GenericSuccess | SingleSuccess | GenericFailure:
+                 returning_column: str | None = None) -> GenericSuccess | SingleSuccess | GenericError:
     """
     removes data from table \n
     already has try catch
@@ -312,22 +312,22 @@ def remove_table(cursor: cursor, table_name: str, conditions: dict[str, Any],
         return {"success": True}
     except Exception as e:
         cursor.connection.rollback()
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": e}
 
 @overload
 def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.NO_ANSWER],
-                variables: Sequence[Any] | None = None) -> GenericSuccess | GenericFailure: ...
+                variables: Sequence[Any] | None = None) -> GenericSuccess | GenericError: ...
 
 @overload
 def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.SINGLE_ANSWER],
-                variables: Sequence[Any] | None = None) -> SingleSuccess | GenericFailure: ...
+                variables: Sequence[Any] | None = None) -> SingleSuccess | GenericError: ...
 
 @overload
 def custom_call(cursor: cursor, query: str, type_of_answer: Literal[ANSWER_TYPE.LIST_ANSWER],
-                variables: Sequence[Any] | None = None) -> MultipleTupleSuccess | GenericFailure: ...
+                variables: Sequence[Any] | None = None) -> MultipleTupleSuccess | GenericError: ...
 
 def custom_call(cursor: cursor, query: str, type_of_answer: ANSWER_TYPE, 
-                variables: Sequence[Any] | None = None) -> GenericSuccess | SingleSuccess | MultipleTupleSuccess | GenericFailure:
+                variables: Sequence[Any] | None = None) -> GenericSuccess | SingleSuccess | MultipleTupleSuccess | GenericError:
     """
     send a custom query to the database
 
@@ -357,7 +357,7 @@ def custom_call(cursor: cursor, query: str, type_of_answer: ANSWER_TYPE,
             return {"success": False, "error": "parameter type_of_answer of the function must be of enum type ANSWER_TYPE"}
     except Exception as e:
         cursor.connection.rollback()
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": e}
 
 # TODO can only return success True right now
 # @catch_exception

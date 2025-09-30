@@ -5,7 +5,7 @@ from psycopg2.extensions import cursor
 
 from packages.backend.data_types import UserRole
 from packages.backend.sql_connection import database as db, motto, sessions
-from packages.backend.sql_connection.common_types import GenericFailure
+from packages.backend.sql_connection.common_types import GenericFailure, error_to_failure
 from packages.backend.sql_connection.conn_cursor_functions import (
     close_conn_cursor,
     get_conn_cursor,
@@ -82,6 +82,6 @@ def get_motto(cursor: cursor | None=None, date: datetime.date | None = None) -> 
     if init_cursor is True:
         close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
 
     return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1], "description": result["data"][2], "stueble_id": result["data"][3]}}
