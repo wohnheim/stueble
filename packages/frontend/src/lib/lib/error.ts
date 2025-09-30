@@ -21,7 +21,7 @@ class VisibleError {
     console.log("Offline");
     this.error.set({
       icon: "cloud_off",
-      text: "Offline, please connect to the internet.",
+      text: "Offline, bitte verbinde Dich mit dem Internet.",
     });
   };
 
@@ -29,7 +29,7 @@ class VisibleError {
     console.log("Unauthorized");
     this.error.set({
       icon: "warning",
-      text: "Unauthorized, forwarding to setup.",
+      text: "Unerlaubter Zugriff, Weiterleitung zur Einrichtung.",
     });
 
     setTimeout(() => (location.href = "/setup"), 2000);
@@ -39,7 +39,7 @@ class VisibleError {
     console.log("Disconnected");
     this.error.set({
       icon: "sync_problem",
-      text: `Disconnected, retrying ${seconds == 0 ? "now" : `in ${seconds} seconds`}.`,
+      text: `Getrennt, erneuter Versuch${seconds == 0 ? "" : ` in ${seconds} Sekunden`}.`,
     });
 
     return timeoutPromise(seconds * 1000);

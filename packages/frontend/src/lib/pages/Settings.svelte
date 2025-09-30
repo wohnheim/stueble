@@ -77,11 +77,10 @@
             placeholder: "Motto",
             type: "string",
           },
-          ui_object.motto,
+          settings.settings["motto"],
         );
 
         if (await apiClient("http").modifyMotto(motto)) {
-          ui_object.motto = motto;
           await settings.set("motto", motto);
         }
       }}
@@ -89,7 +88,7 @@
       <div>
         <p id="title">Motto dieser Woche</p>
         <p id="subtitle">
-          {ui_object.motto}
+          {settings.settings["motto"]}
         </p>
       </div>
     </Button>
@@ -104,19 +103,17 @@
             placeholder: "Beschreibung",
             type: "string",
           },
-          ui_object.description,
+          settings.settings["description"],
         );
 
-        if (await apiClient("http").modifyMotto(undefined, description)) {
-          ui_object.description = description;
+        if (await apiClient("http").modifyMotto(undefined, description))
           await settings.set("description", description);
-        }
       }}
     >
       <div>
         <p id="title">Motto-Beschreibung dieser Woche</p>
         <p id="subtitle">
-          {ui_object.description}
+          {settings.settings["description"]}
         </p>
       </div>
     </Button>

@@ -119,13 +119,11 @@
             placeholder: "Beschreibung",
             type: "string",
           },
-          ui_object.description,
+          settings.settings["description"],
         );
 
-        if (await apiClient("http").modifyMotto(undefined, description)) {
-          ui_object.description = description;
+        if (await apiClient("http").modifyMotto(undefined, description))
           await settings.set("description", description);
-        }
       }}
     >
       <i>edit</i>
