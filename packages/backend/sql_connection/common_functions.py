@@ -58,18 +58,20 @@ def check_permissions(cursor: cursor, session_id: str | None, required_role: Use
         return {"success": True, "data": {"allowed": True, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid}}
     return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid}}
 
-def get_motto(date: datetime.date | None = None) -> GetMottoSuccess | GenericFailure:
+def get_motto(cursor: cursor | None=None, date: datetime.date | None = None) -> GetMottoSuccess | GenericFailure:
     """
     returns the motto for the next stueble party
 
     Parameters:
+        cursor (cursor | None): cursor for the connection, if None a new connection will be created
         date (str | None): the date of the motto
     """
     if date == "":
         date = None
-
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
+    init_cursor = True if cursor is None else False
+    if init_cursor is True:
+        # get connection and cursor
+        conn, cursor = get_conn_cursor()
     arguments = {"conditions": {"date_of_time": date}} if date is not None else {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
     result = db.read_table(
         cursor=cursor,
@@ -77,8 +79,9 @@ def get_motto(date: datetime.date | None = None) -> GetMottoSuccess | GenericFai
         keywords=["motto", "date_of_time", "description", "id"],
         expect_single_answer=True,
         **arguments)
-    close_conn_cursor(conn, cursor) # close conn, cursor
+    if init_cursor is True:
+        close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         return result
 
-    return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1], "description": result["data"][2]}}
+    return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1], "description": result["data"][2], "stueble_id": result["data"][3]}}

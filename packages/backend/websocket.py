@@ -188,7 +188,7 @@ async def send(websocket, event: str, data: dict | bool, **kwargs):
     await websocket.send(message)
 
 @add_to_message_log
-async def broadcast(event, data, room: None | Room=None, skip_sid=None, **kwargs):
+async def broadcast(event, data, room: None | Room | list=None, skip_sid=None, **kwargs):
     """
     broadcasts an event to a room
 le_
@@ -204,7 +204,10 @@ le_
     elif room == Room.ADMINS:
         room = admins_room
     else:
-        raise NotImplementedError(f"room {room} not implemented")
+        if isinstance(list):
+            pass
+        else:
+            raise NotImplementedError(f"room {room} not implemented")
 
 
     message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
@@ -245,6 +248,9 @@ async def handle_ws(websocket):
     unsent_messages = [value["params"] for key, value in message_log.items() if session_id in value["session_ids"]]
     for message in unsent_messages:
         await send(websocket=websocket, **message)
+
+    # send stueble_status
+    await stueble_status(session_id=session_id)
 
     try:
         async for message in websocket:
@@ -667,6 +673,72 @@ async def request_public_key(websocket, req_id):
 
     await send(websocket=websocket, event="publicKey", reqId=req_id, data=jwk)
     return
+
+async def stueble_status(session_id: str | int, date: datetime.date | None=None, registered: bool | None=None, present: bool | None=None, skip_sid: str | int | None=None):
+    """
+    broadcasts a user
+
+    Parameters:
+        session_id (str | int): the session id of the user whose status changed
+        date (date): the stueble id of the stueble party
+        registered (bool): whether the user is registered or not
+        present (bool): whether the user is present or not
+    """
+
+    # get conn, cursor
+    conn, cursor = get_conn_cursor()
+
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id"])
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        return result
+    user_id = result["data"]
+
+    result = db.read_table(
+        cursor=cursor,
+        table_name="sessions",
+        conditions={"user_id": user_id},
+        keywords=["id"],
+        expect_single_answer=False)
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        return result
+
+    session_ids = [i[0] for i in result["data"]]
+
+    if date is None:
+        result = get_motto(cursor=cursor, date=None)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            return result
+        date = result["data"]["date"]
+        # stueble_id = result["data"]["stueble_id"]
+    if registered is None or present is None:
+        result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            return result
+        if result["data"] is False:
+            close_conn_cursor(conn, cursor)
+            registered = False
+            present = False
+        else:
+            result = users.check_user_present(cursor=cursor, user_id=user_id)
+            close_conn_cursor(conn, cursor)
+            if result["success"] is False:
+                return result
+            registered = result["data"]
+    else:
+        close_conn_cursor(conn, cursor)
+
+    data = {"date": date, "registrationStartsAt": None, "registered": registered, "present": present}
+
+    user_room = [sid_to_websocket.get(i, None) for i in session_ids]
+    user_room.remove(None)
+    await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
+    return
+
 
 # Start server
 async def main():
