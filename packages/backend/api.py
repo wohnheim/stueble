@@ -1176,25 +1176,28 @@ def invitee():
             mimetype="application/json")
         return response
 
+    user_role = UserRole(result["data"]["user_role"])
+
     user_id = result["data"]["user_id"]
     first_name = result["data"]["first_name"]
     last_name = result["data"]["last_name"]
 
-    result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-    if result["data"] is False:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 403, "message": "You need to be on the guest list to invite someone"}),
-            status=403,
-            mimetype="application/json")
-        return response
+    if user_role < UserRole.HOST:
+        result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        if result["data"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 403, "message": "You need to be on the guest list to invite someone"}),
+                status=403,
+                mimetype="application/json")
+            return response
 
     result = motto.get_info(cursor=cursor, date=date)
     if result["success"] is False:
