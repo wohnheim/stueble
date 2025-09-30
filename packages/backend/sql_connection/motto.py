@@ -100,7 +100,7 @@ def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | Generic
     
     return cast(GetInfoSuccess, cast(object, result))
 
-def create_stueble(cursor: cursor, date: date, motto: str, hosts: list[int] | None = None, 
+def create_stueble(cursor: cursor, date: date, motto: str,
                    shared_apartment: str | None = None) -> SingleSuccessCleaned | GenericFailure:
     """
     creates a new entry in the table stueble_motto
@@ -108,7 +108,6 @@ def create_stueble(cursor: cursor, date: date, motto: str, hosts: list[int] | No
         cursor: cursor for the connection
         date (datetime.date): date for which the motto is valid
         motto (str): motto for the stueble party
-        hosts (list[int]): list of user ids who are the hosts for the stueble party
         shared_apartment (str): shared apartment for the stueble party, can be None
     Returns:
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occurred
@@ -117,8 +116,6 @@ def create_stueble(cursor: cursor, date: date, motto: str, hosts: list[int] | No
     arguments: dict[str, Any] = {"date_of_time": date, "motto": motto}
     if shared_apartment is not None:
         arguments["shared_apartment"] = shared_apartment
-    if hosts is not None:
-        arguments["hosts"] = hosts
 
     result = db.insert_table(
         cursor=cursor,
