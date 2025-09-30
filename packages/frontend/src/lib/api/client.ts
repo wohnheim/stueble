@@ -423,6 +423,11 @@ class WebSocketClient {
         "WebSocket closed" + (event.reason ? ", reason: " + event.reason : "."),
       );
 
+      // Don't reconnect if unauthorized
+      const e = get(error.error);
+      if (e !== false && e.icon == "warning") return;
+
+      // Higher reconnect interval if request crashed the connection
       const newestPromise = this.promises[this.messageId];
       if (newestPromise !== undefined && this.reconnectSeconds == 0)
         this.reconnectSeconds = 3;
