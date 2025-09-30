@@ -23,7 +23,7 @@
       if (hostsPage)
         setTimeout(() => {
           hostsPage = "list";
-          hostsSelected = [];
+          hostsSelectedUnfiltered = [];
         }, 400);
     });
   });
