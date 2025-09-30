@@ -410,14 +410,15 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
         table_name="verification_codes",
         keywords=keywords,
         conditions={"reset_code": reset_code},
-        expect_single_answer=(len(keywords) == 1)
+        expect_single_answer=True
     )
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     if result["data"] is None:
         return {"success": False, "error": "Reset code doesn't exist."}
-    return clean_single_data(result)
+
+    return result
 
 def add_verification_method(cursor: cursor, method: VerificationMethod,
                             user_id: Annotated[str | None, "Explicit with user_uuid"]=None,
