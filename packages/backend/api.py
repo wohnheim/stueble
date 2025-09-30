@@ -1403,7 +1403,7 @@ def invitee():
 </body>
 </html>"""
         # body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto_name}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
-        mail.send_mail(Email(invitee_email), subject, body)
+        mail.send_mail(Email(invitee_email), subject, body, html=True)
 
     response = Response(
         response=json.dumps(data),
