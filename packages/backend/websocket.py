@@ -225,6 +225,9 @@ async def handle_ws(websocket):
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     result = await connect(websocket)
     if result is False:
+        await send(websocket=websocket, event="status", data={"code": "200",
+                                                              "capabilities": [],
+                                                              "authorized": False})
         return
     
     # get connection and cursor
@@ -311,9 +314,6 @@ async def handle_ws(websocket):
                          "message": "reqId must be specified"})
                 await request_public_key(websocket=websocket, req_id=req_id)
     finally:
-        await send(websocket=websocket, event="status", data={"code": "200",
-                                                              "capabilities": [],
-                                                              "authorized": False})
         host_upwards_room.discard(websocket)
         admins_room.discard(session_id)
         connections.discard(websocket)
@@ -439,9 +439,7 @@ async def disconnect(websocket):
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     if session_id is None:
         return
-    await send(websocket=websocket, event="status", data={"code": "200",
-                                                          "capabilities": [],
-                                                          "authorized": False})
+
     host_upwards_room.discard(websocket)
     admins_room.discard(websocket)
     connections.discard(websocket)
