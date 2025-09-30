@@ -1087,12 +1087,13 @@ def attend_stueble():
 
     if request.method == "PUT":
         timestamp = int(datetime.datetime.now().timestamp())
+        
+        information = {"id": user_uuid, "timestamp": timestamp, "extern": False}
 
-        signature = hp.create_signature(message={"id": user_uuid, "timestamp": timestamp})
+        signature = hp.create_signature(message=information)
 
         data = {"data":
-                    {"id": user_uuid,
-                    "timestamp": timestamp},
+                    information,
                 "signature": signature}
         response = Response(
             response=json.dumps(data),
@@ -1189,6 +1190,8 @@ def invitee():
         return response
 
     user_id = result["data"]["user_id"]
+    first_name = result["data"]["first_name"]
+    last_name = result["data"]["last_name"]
 
     result = motto.get_info(cursor=cursor, date=date)
     if result["success"] is False:
@@ -1200,6 +1203,9 @@ def invitee():
         return response
 
     stueble_id = result["data"][0]
+    motto = result["data"][1]
+    stueble_date = result["data"][2]
+    stueble_date = stueble_date.strftime("%d.%m.%Y", stueble_date)
 
     if request.method == "PUT":
         # add user to table
@@ -1325,11 +1331,11 @@ def invitee():
     if request.method == "PUT":
         timestamp = int(datetime.datetime.now().timestamp())
 
-        signature = hp.create_signature(message={"id": invitee_uuid, "timestamp": timestamp})
+        information = {"id": invitee_uuid, "timestamp": timestamp, "extern": True}
 
-        data = {"data":
-                    {"id": invitee_uuid,
-                     "timestamp": timestamp},
+        signature = hp.create_signature(message=information)
+
+        data = {"data":information,
                 "signature": signature}
 
     # get user data
@@ -1368,6 +1374,11 @@ def invitee():
         response = Response(
             status=204)
         return response
+
+    if invitee_email is not None:
+        subject = "Einladung zum Stüble"
+        body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
+        mail.send_mail(Email(invitee_email), subject, body)
 
     response = Response(
         response=json.dumps(data),

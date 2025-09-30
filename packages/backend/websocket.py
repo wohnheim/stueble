@@ -618,7 +618,7 @@ async def request_qrcode(websocket, msg, req_id):
 
     conn, cursor = get_conn_cursor()
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_uuid"])
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_uuid", "user_role"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="status", data={"code": "401",
@@ -627,7 +627,7 @@ async def request_qrcode(websocket, msg, req_id):
         return
     user_id = result["data"][0]
     user_uuid = result["data"][1]
-
+    extern = result["data"][2] == "extern"
 
     result = events.check_guest(cursor=cursor,
                                 user_id=user_id,
@@ -657,17 +657,16 @@ async def request_qrcode(websocket, msg, req_id):
 
     timestamp = int(datetime.datetime.now().timestamp())
 
-    signature = hp.create_signature(message={"id": user_uuid, "timestamp": timestamp})
+    information = {"id": user_uuid, "timestamp": timestamp, "extern": extern}
+
+    signature = hp.create_signature(message=information)
     if signature["success"] is False:
         await send(websocket=websocket, event="error", reqId=req_id, 
                    data={"code": "500","message": str(signature["error"])})
         return
 
     data = {
-        "data": {
-            "id": user_uuid,
-            "timestamp": timestamp
-        },
+        "data": information,
         "signature": signature["data"]
     }
 
