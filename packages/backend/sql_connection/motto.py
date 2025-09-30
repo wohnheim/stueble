@@ -185,7 +185,7 @@ def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove
         return {"success": False, "error": "invalid method"}
 
     if user_uuids is not None:
-        query = """SELECT id FROM users WHERE id IN %s"""
+        query = """SELECT id FROM users WHERE user_uuid IN %s"""
         result = db.custom_call(cursor=cursor, 
                        query=query, 
                        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
