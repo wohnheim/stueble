@@ -1192,7 +1192,7 @@ def invitee():
     stueble_id = result["data"][0]
     motto_name = result["data"][1]
     stueble_date = result["data"][2]
-    stueble_date = stueble_date.strftime("%d.%m.%Y", stueble_date)
+    stueble_date = stueble_date.strftime("%d.%m.%Y")
 
     if request.method == "PUT":
         # add user to table
