@@ -81,14 +81,11 @@
         event: "requestMotto",
       });
 
-      ui_object.motto = mottoRes.motto;
-      ui_object.description = mottoRes.description;
-
       // Store in IndexedDB
       await settings.set("user", JSON.stringify(ui_object.user));
 
-      await settings.set("motto", ui_object.motto);
-      await settings.set("motto", ui_object.description);
+      await settings.set("motto", mottoRes.motto);
+      await settings.set("motto", mottoRes.description);
     }
   };
 
@@ -101,12 +98,6 @@
 
     if (settings.settings["qrCodeData"])
       ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
-
-    if (settings.settings["motto"])
-      ui_object.motto = settings.settings["motto"];
-
-    if (settings.settings["description"])
-      ui_object.description = settings.settings["description"];
   };
 
   onMount(() => {
