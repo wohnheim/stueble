@@ -153,6 +153,13 @@ class Database {
     this.guests.push(guest);
   };
 
+  addGuests = async (guests: (GuestIntern | GuestExtern)[]) => {
+    for (const guest of guests) {
+      if (guest.extern) this.addGuestExtern(guest);
+      else this.addGuestIntern(guest);
+    }
+  };
+
   /* Hosts */
 
   addHost = async (host: Host) => {
