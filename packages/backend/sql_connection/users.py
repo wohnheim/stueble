@@ -481,7 +481,7 @@ def get_users(cursor: cursor,
         keywords=keywords,
         expect_single_answer=False,
         specific_where=specific_where,
-        variables=tuple(user_uuids))
+        variables=(user_uuids,)
 
     if result["success"] is False:
         return error_to_failure(result)
