@@ -423,6 +423,10 @@ class WebSocketClient {
         "WebSocket closed" + (event.reason ? ", reason: " + event.reason : "."),
       );
 
+      const newestPromise = this.promises[this.messageId];
+      if (newestPromise !== undefined && this.reconnectSeconds == 0)
+        this.reconnectSeconds = 3;
+
       error
         .disconnected(this.reconnectSeconds > 10 ? 10 : this.reconnectSeconds++)
         .then(undefined, () => this.connect());
