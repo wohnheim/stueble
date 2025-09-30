@@ -9,6 +9,8 @@
   import HostComponent from "$lib/components/buttons/Host.svelte";
 
   let {
+    title,
+    subtitle,
     page = $bindable(),
     selectedUnfiltered = $bindable(),
     selected = $bindable(),
@@ -16,6 +18,8 @@
     searchResultsUnfiltered = $bindable(),
     searchResults = $bindable(),
   }: {
+    title: string,
+    subtitle: string,
     page: "list" | "add";
     selectedUnfiltered: Host[];
     selected: Host[];

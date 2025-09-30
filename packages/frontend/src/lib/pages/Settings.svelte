@@ -133,6 +133,17 @@
 
     {#if ui_object.capabilities.some((c) => c == "admin")}
       <Button
+        onclick={() => {
+          ui_object.changePath({ main: "settings", sub: "tutors" });
+        }}
+      >
+        <div>
+          <p id="title">Tutor*innen</p>
+          <p id="subtitle">Tutor*innen hinzufügen oder entfernen</p>
+        </div>
+      </Button>
+
+      <Button
         onclick={async () => {
           if (!ui_object.config) return;
 
