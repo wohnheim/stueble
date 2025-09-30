@@ -175,7 +175,7 @@ class HTTPClient {
   async inviteExtern(
     firstName: string,
     lastName: string,
-    email: string,
+    email?: string,
     date?: Date,
   ) {
     const res = await fetch("/api/guests/invitee", {

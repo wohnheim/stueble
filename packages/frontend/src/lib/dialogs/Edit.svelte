@@ -68,13 +68,19 @@
   <p>{properties.description}</p>
 {/if}
 
-<div class="field">
+<div class="field {properties.type == 'textarea' ? 'textarea border' : ''}">
   {#if properties.type == "string"}
     <input
       bind:value={properties.value}
       placeholder={properties.placeholder}
       maxlength={properties.length}
     />
+  {:else if properties.type == "textarea"}
+    <textarea
+      bind:value={properties.value}
+      placeholder={properties.placeholder}
+      maxlength={properties.length}
+    ></textarea>
   {:else if properties.type == "number"}
     <input
       bind:value={properties.value}

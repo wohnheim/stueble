@@ -52,8 +52,8 @@
       bind:value={ui_object.userParams.email}
       onchange={() =>
         (emailValid =
-          (emailInput?.validity.valid ?? false) &&
-          !!ui_object.userParams.email)}
+          ui_object.userParams.email.length == 0 ||
+          (emailInput?.validity.valid ?? false))}
       onfocusout={() =>
         (emailValid =
           (emailInput?.validity.valid ?? false) &&
@@ -64,11 +64,7 @@
     <label>E-Mail-Adresse</label>
     {#if !emailValid}
       <i>error</i>
-      {#if !ui_object.userParams.email}
-        <span class="error">Diese Angabe ist erforderlich</span>
-      {:else}
-        <span class="error">Geben Sie eine valide E-Mail-Adresse ein</span>
-      {/if}
+      <span class="error">Gib eine valide E-Mail-Adresse ein</span>
     {/if}
   </div>
 
@@ -76,13 +72,12 @@
     class="center"
     disabled={ui_object.userParams.firstName == "" ||
       ui_object.userParams.lastName == "" ||
-      (ui_object.userParams.email != "" &&
-      !emailInput.validity.valid)}
+      (ui_object.userParams.email != "" && !emailInput.validity.valid)}
     onclick={() =>
       apiClient("http").inviteExtern(
         ui_object.userParams.firstName,
         ui_object.userParams.lastName,
-        ui_object.userParams.email,
+        ui_object.userParams.email != "" ? ui_object.userParams.email : undefined,
       )}
   >
     <i>send</i>

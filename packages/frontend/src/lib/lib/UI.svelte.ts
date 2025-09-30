@@ -257,7 +257,7 @@ export interface DialogEdit {
 
   length?: number;
   placeholder?: string;
-  type: "string" | "number" | "qrcode";
+  type: "string" | "textarea" | "number" | "qrcode";
 }
 
 export interface DialogCheckIn {
