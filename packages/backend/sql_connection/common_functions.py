@@ -70,24 +70,15 @@ def get_motto(date: datetime.date | None = None) -> GetMottoSuccess | GenericFai
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
-
-    if date is None:
-        result = db.read_table(
-            cursor=cursor,
-            table_name="stueble_motto",
-            keywords=["motto", "date_of_time", "id"],
-            expect_single_answer=True,
-            specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
-        close_conn_cursor(conn, cursor) # close conn, cursor
-        if result["success"] is False:
-            return result
-
-        return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1]}}
-
-    # get motto from table
-    result = motto.get_motto(cursor=cursor, date=date)
+    arguments = {"conditions": {"date_of_time": date}} if date is not None else {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
+    result = db.read_table(
+        cursor=cursor,
+        table_name="stueble_motto",
+        keywords=["motto", "date_of_time", "description", "id"],
+        expect_single_answer=True,
+        **arguments)
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         return result
 
-    return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1].isoformat()}}
+    return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1], "description": result["data"][2]}}
