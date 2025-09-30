@@ -840,7 +840,7 @@ def guests():
     )
     return response
 
-@app.route("/guests", methods=["POST"])
+@app.route("/guest", methods=["POST"])
 def guest_change():
     """
     add / remove a guest to the guest_list of present people
