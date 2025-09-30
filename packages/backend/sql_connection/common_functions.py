@@ -83,5 +83,7 @@ def get_motto(cursor: cursor | None=None, date: datetime.date | None = None) -> 
         close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
         return error_to_failure(result)
+    if result["data"] is None:
+        return {"success": False, "error": "no stueble found"}
 
     return {"success": True, "data": {"motto": result["data"][0], "date": result["data"][1], "description": result["data"][2], "stueble_id": result["data"][3]}}
