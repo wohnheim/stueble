@@ -1668,19 +1668,18 @@ def create_stueble():
     data = request.get_json()
     date = data.get("date", None)
     stueble_motto = data.get("motto", None)
-    hosts = data.get("hosts", None)
     shared_apartment = data.get("shared_apartment", None)
 
-    if stueble_motto is None and shared_apartment is None and hosts is None:
+    if stueble_motto is None and shared_apartment is None:
         response = Response(
-            response=json.dumps({"code": 400, "message": "motto, hosts or shared_apartment must be specified"}),
+            response=json.dumps({"code": 400, "message": "motto or shared_apartment must be specified"}),
             status=400,
             mimetype="application/json")
         return response
 
     user_role = UserRole.TUTOR
     # date can't be changed but rather acts as an identifier
-    if hosts is not None or shared_apartment is not None:
+    if shared_apartment is not None:
         user_role = UserRole.HOST
 
     session_id = request.cookies.get("SID", None)
@@ -1717,23 +1716,6 @@ def create_stueble():
         date = datetime.date.today()
         days_ahead = (2 - date.weekday() + 7) % 7
         date = date + datetime.timedelta(days=days_ahead)
-
-    if hosts is not None and hosts != []:
-        user_ids = users.get_users(cursor=cursor, user_uuids=hosts)
-        if user_ids["success"] is False:
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(user_ids["error"])}),
-                status=500,
-                mimetype="application/json")
-            return response
-        if len(user_ids["data"]) != len(hosts):
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 400, "message": "One or more hosts not found"}),
-                status=400,
-                mimetype="application/json")
-            return response
 
     result = motto.update_stueble(cursor=cursor,
                                 date=date,
