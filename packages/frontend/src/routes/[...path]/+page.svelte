@@ -81,6 +81,11 @@
         event: "requestMotto",
       });
 
+      if (settings.settings["guestListFetched"] === undefined) {
+        database.addGuests(await apiClient("http").getGuestList());
+        settings.set("guestListFetched", JSON.stringify(true));
+      }
+
       // Store in IndexedDB
       await settings.set("user", JSON.stringify(ui_object.user));
 
@@ -99,6 +104,18 @@
     if (settings.settings["qrCodeData"])
       ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
   };
+
+  let interval: ReturnType<typeof setInterval> | undefined = undefined;
+
+  const updateQRCode = () =>
+    apiClient("ws")
+      .sendMessage({
+        event: "requestQRCode",
+      })
+      .then((data) => {
+        ui_object.qrCodeData = data;
+        settings.set("qrCodeData", JSON.stringify(data));
+      });
 
   onMount(() => {
     if (!loaded && !loading) {
@@ -120,18 +137,19 @@
 
   $effect(() => {
     if (browser && loaded) {
-      if (ui_object.status?.registered)
-        untrack(() =>
-          apiClient("ws")
-            .sendMessage({
-              event: "requestQRCode",
-            })
-            .then((data) => {
-              ui_object.qrCodeData = data;
-              settings.set("qrCodeData", JSON.stringify(data))
-            }),
-        );
+      if (ui_object.status?.registered) {
+        untrack(() => {
+          updateQRCode();
+          interval = setInterval(updateQRCode, 5 * 60 * 1000);
+        });
+      } else {
+        untrack(() => interval && clearInterval(interval));
+      }
+    }
+  });
 
+  $effect(() => {
+    if (browser && loaded) {
       if (ui_object.capabilities.find((c) => c == "host"))
         untrack(() =>
           loadHostDataFromServer().catch(() => loadHostDataFromDatabase()),
