@@ -1671,7 +1671,7 @@ def create_stueble():
     description = data.get("description", None)
     shared_apartment = data.get("shared_apartment", None)
 
-    if stueble_motto is None and shared_apartment is None or description is None:
+    if stueble_motto is None and shared_apartment is None and description is None:
         response = Response(
             response=json.dumps({"code": 400, "message": "motto or shared_apartment or description must be specified"}),
             status=400,
