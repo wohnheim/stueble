@@ -31,7 +31,9 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False):
     else:
         msg.attach(MIMEText(body, "html"))
     with smtplib.SMTP_SSL("smtp.gmail.com", 587) as smtp:
-        smtp.starttls()
+        smtp.ehlo()
+        smtp.starttls()  # Upgrade to secure connection
+        smtp.ehlo()
         smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         smtp.send_message(msg)
     return {"success": True}
