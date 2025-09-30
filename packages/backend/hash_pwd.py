@@ -24,7 +24,7 @@ def match_pwd(password: str, hashed: str) -> bool:
 
 def create_signature(message: str | dict[str, Any]) -> CreateSignatureSuccess | GenericFailure:
     """
-    Create a digital signature for a given message using RSA private key.
+    Create a digital signature for a given message using Ed25519 private key.
 
     Parameters:
         cursor: Database cursor to read the private key.
