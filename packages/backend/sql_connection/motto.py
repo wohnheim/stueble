@@ -78,10 +78,11 @@ def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | Generic
     conditions = None
     specific_where = ""
 
+    arguments = {}
     if date is not None:
-        conditions = {"date_of_time": date}
+        arguments = {"conditions": {"date_of_time": date}}
     else:
-        specific_where = "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"
+        arguments = {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
 
     result = db.read_table(
         cursor=cursor,
@@ -89,8 +90,7 @@ def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | Generic
         keywords=["id", "motto", "date_of_time"],
         expect_single_answer=True,
         order_by=("date_of_time", 1),
-        conditions=conditions,
-        specific_where=specific_where
+        **arguments
     )
 
     if result["success"] is False:
@@ -101,7 +101,7 @@ def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | Generic
     return cast(GetInfoSuccess, cast(object, result))
 
 def create_stueble(cursor: cursor, date: date, motto: str,
-                   shared_apartment: str | None = None) -> SingleSuccessCleaned | GenericFailure:
+                   shared_apartment: str | None = None, description: str | None = None) -> SingleSuccessCleaned | GenericFailure:
     """
     creates a new entry in the table stueble_motto
     Parameters:
@@ -109,6 +109,7 @@ def create_stueble(cursor: cursor, date: date, motto: str,
         date (datetime.date): date for which the motto is valid
         motto (str): motto for the stueble party
         shared_apartment (str): shared apartment for the stueble party, can be None
+        description (str): description for the stueble party
     Returns:
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occurred
     """
@@ -116,6 +117,8 @@ def create_stueble(cursor: cursor, date: date, motto: str,
     arguments: dict[str, Any] = {"date_of_time": date, "motto": motto}
     if shared_apartment is not None:
         arguments["shared_apartment"] = shared_apartment
+    if description is not None:
+        arguments["description"] = description
 
     result = db.insert_table(
         cursor=cursor,
@@ -136,12 +139,11 @@ def update_stueble(cursor: cursor, date: date, **kwargs) -> SingleSuccessCleaned
     Parameters:
         cursor: cursor for the connection
         date (datetime.date): date for which the motto is valid
-        kwargs: arguments to be updated, can be "motto", "hosts", "shared_apartment"
     Returns:
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occurred
     """
 
-    allowed_keys = ["motto", "shared_apartment"]
+    allowed_keys = ["motto", "shared_apartment", "description"]
     if any(key not in allowed_keys for key in kwargs.keys()):
         return {"success": False, "error": "invalid field to update"}
 
