@@ -83,6 +83,7 @@ class Action_Type(str, Enum):
     GuestLeft = 'guestLeft'
     GuestAdded = 'guestAdded'
     GuestRemoved = 'guestRemoved'
+    GuestModified = 'guestModified'
     UserVerification = 'userVerification'
 
 def valid_action_type(value):
