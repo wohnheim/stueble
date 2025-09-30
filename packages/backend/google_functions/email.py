@@ -30,10 +30,7 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False):
         msg.set_content(body)
     else:
         msg.attach(MIMEText(body, "html"))
-    with smtplib.SMTP_SSL("smtp.gmail.com", 587) as smtp:
-        smtp.ehlo()
-        smtp.starttls()  # Upgrade to secure connection
-        smtp.ehlo()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         smtp.send_message(msg)
     return {"success": True}
