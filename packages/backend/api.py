@@ -1835,6 +1835,7 @@ def update_hosts():
         return response
     stueble_id = result["data"][2]
 
+    # TODO: change to UUIDs
     result = users.get_users(cursor=cursor, information=user_uuids, keywords=["user_uuid", "first_name", "last_name"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
