@@ -263,19 +263,34 @@ def signup_data():
             <img src="data:image/png;base64,{wohnheime_logo}" alt="Stüble Logo" width="150">
     </div>
     <h2>Hallo {user_info["first_name"]} {user_info["last_name"]},</h2>
-    <p>Du hast dich einen Account für das Stüble registriert.</p>
-    <p>Nun musst du diesen noch bestätigen.</p>
+    <p>Du hast einen Account für das Stüble erstellt.</p>
+    <p>Um die Registrierung abzuschließen, musst du noch deine Email bestätigen.</p>
     </br>
-    <p>Klicke dazu einfach den Button</p>
-    
+    <div style="text-align:center; margin: 20px 0;">
+  <a href="https://stueble.pages.dev/verify?token={verification_token}"
+     style="
+       background-color: #0b9a79;
+       color: #ffffff;
+       padding: 12px 24px;
+       text-decoration: none;
+       border-radius: 5px;
+       display: inline-block;
+       font-weight: bold;
+       box-shadow: 0 0 10px #da6cff;
+       font-family: Arial, sans-serif;
+     ">
+    Email bestätigen
+  </a>
+</div>
+
     </br>
     <p>Wir freuen uns auf dich!</p>
     <p>Dein Stüble-Team</p>
 </body>
 </html>"""
-    body = f"""Hallo {user_info["first_name"]} {user_info["last_name"]},\n\nklicke diesen Link, um deinen Account zu bestätigen:\n\nhttps://stueble.pages.dev/verify?token={verification_token}\n\nFalls du keinen neuen Account erstellt hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+    # body = f"""Hallo {user_info["first_name"]} {user_info["last_name"]},\n\nklicke diesen Link, um deinen Account zu bestätigen:\n\nhttps://stueble.pages.dev/verify?token={verification_token}\n\nFalls du keinen neuen Account erstellt hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
-    result = mail.send_mail(recipient=user_info["email"], subject=subject, body=body)
+    result = mail.send_mail(recipient=user_info["email"], subject=subject, body=body, html=True)
 
     if result["success"] is False:
         response = Response(
