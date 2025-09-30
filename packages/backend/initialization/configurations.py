@@ -24,9 +24,7 @@ pem_private = private_key_obj.private_bytes(
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
-private_key_string = pem_private.decode('utf-8')
-
-# PEM format
+private_key_string = pem_private.decode(
 pem_public = public_key_obj.public_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PublicFormat.SubjectPublicKeyInfo
