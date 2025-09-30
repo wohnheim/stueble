@@ -95,6 +95,7 @@ def read_table(cursor: cursor, table_name: str, expect_single_answer: Literal[Fa
 
 # TODO can't return success: False right now
 # TODO for arguments as list might not be completely implemented
+# TODO: specific_where and variables don't work together
 # @catch_exception
 def read_table(cursor: cursor, table_name: str, expect_single_answer: bool = False, keywords: tuple[str] | list[str] = ("*",), 
                conditions: dict[str, Any] | None = None, negated_conditions: dict[str, Any] | None = None, select_max_of_key: str = "", specific_where: str = "", variables: list[str] | None = None,

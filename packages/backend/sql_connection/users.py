@@ -474,14 +474,12 @@ def get_users(cursor: cursor,
     keywords = list(keywords)
     # users_list = [(i, "email") if isinstance(i, str) and "@" in i else (i, "user_name") for i in information]
 
-    specific_where = f"user_uuid IN ({', '.join(['%s' for _ in range(len(user_uuids))])})"
-    result = db.read_table(
+    query = f"SELECT {', '.join(keywords)} FROM users WHERE user_uuid IN ({', '.join(['%s' for _ in range(len(user_uuids))])})"
+    result = db.custom_call(
         cursor=cursor,
-        table_name="users",
-        keywords=keywords,
-        expect_single_answer=False,
-        specific_where=specific_where,
-        variables=tuple(user_uuids))
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+        variables=user_uuids)
 
     if result["success"] is False:
         return error_to_failure(result)
