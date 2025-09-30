@@ -1,11 +1,12 @@
 import asyncio
+import base64
 import datetime
 import json
-import re
+import os
 
 from flask import Flask, Response, request
 
-from packages.backend import hash_pwd as hp, websocket as ws
+from packages.backend import hash_pwd as hp, websocket as ws, qr_code as qr
 from packages.backend.data_types import *
 from packages.backend.google_functions import email as mail
 from packages.backend.sql_connection import (
@@ -1382,8 +1383,26 @@ def invitee():
         return response
 
     if invitee_email is not None:
+        wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime.png")
+        qr_code = base64.b64encode(qr.generate(json.dumps(data)).read()).decode("utf-8")
         subject = "Einladung zum Stüble"
-        body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto_name}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
+        body = f"""<html lang="de">
+<body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
+    <div>
+            <img src="{wohnheime_logo}" alt="Stüble Logo" width="150">
+    </div>
+    <h2>Hallo {invitee_first_name} {invitee_last_name},</h2>
+    <p>Du wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen 🥳.</p>
+    <p>Das Motto lautet {motto_name}.</p>
+    </br>
+    <p>Zeige bitte diesen QR-Code beim Einlass vor:</p>
+    <img src="data:image/png;base64,{qr_code}" alt="QR-Code" width="300">
+    </br>
+    <p>Wir freuen uns auf dich!</p>
+    <p>Dein Stüble-Team</p>
+</body>
+</html>"""
+        # body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto_name}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
         mail.send_mail(Email(invitee_email), subject, body)
 
     response = Response(
