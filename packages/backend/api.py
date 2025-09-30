@@ -17,7 +17,7 @@ from packages.backend.data_types import (
     is_valid_residence,
     is_valid_role,
 )
-from packages.backend.google_functions import gmail
+from packages.backend.google_functions import email as mail
 from packages.backend.sql_connection import (
     configs,
     database as db,
@@ -269,7 +269,7 @@ def signup_data():
     subject = "Neuer Benutzeraccount für das Stüble"
     body = f"""Hallo {user_info["first_name"]} {user_info["last_name"]},\n\nklicke diesen Link, um deinen Account zu bestätigen:\n\nhttps://stueble.pages.dev/verify?token={verification_token}\n\nFalls du keinen neuen Account erstellt hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
-    result = gmail.send_mail(recipient=user_info["email"], subject=subject, body=body)
+    result = mail.send_mail(recipient=user_info["email"], subject=subject, body=body)
 
     if result["success"] is False:
         response = Response(
@@ -600,7 +600,7 @@ def reset_password_mail():
     subject = "Passwort zurücksetzen"
     body = f"""Hallo {first_name} {last_name},\n\nmit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
-    result = gmail.send_mail(recipient=email, subject=subject, body=body)
+    result = mail.send_mail(recipient=email, subject=subject, body=body)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),

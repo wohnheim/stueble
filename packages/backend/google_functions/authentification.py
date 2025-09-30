@@ -10,7 +10,7 @@ def authenticate():
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    SCOPES = ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/drive"]
+    SCOPES = ["https://www.googleapis.com/auth/drive"]
     SERVICE_ACCOUNT_FILE = "do_not_track/credentials/credentials.json"
 
     creds = service_account.Credentials.from_service_account_file(

@@ -41,6 +41,8 @@ set_key(env_file_path, "PORT", "5432")
 set_key(env_file_path, "DBNAME", "stueble_data")
 
 inputted_data = input("Enter the password for the postgres user 'stueble': ")
-
 set_key(env_file_path, "PASSWORD", inputted_data)
+
+inputted_email_data = input("Enter the password for the email account: ")
+set_key(env_file_path, "EMAIL_PASSWORD", inputted_email_data)
 print("Keys saved to .env file.")
