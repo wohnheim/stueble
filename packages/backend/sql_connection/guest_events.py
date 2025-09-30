@@ -153,7 +153,7 @@ def guest_list(cursor: cursor, stueble_id: int | None = None) -> GuestListSucces
         stueble_info = "%s"
         parameters["variables"] = [stueble_id]
 
-    query = f"""SELECT *
+    query = f"""SELECT id, first_name, last_name, user_role, user_uuid, verified
 FROM (
     SELECT
         u.id,
@@ -185,7 +185,7 @@ WHERE rn = 1
 
     # Group by user_uuid
     infos = {}
-
+    raise Exception(result)
     for sub in result["data"]:
         if infos.get(sub[6], None) is None:
             infos[sub[6]] = {"first_name": sub[1], "last_name": sub[2], "user_role": FrontendUserRole.EXTERN if sub[3] == "extern" else FrontendUserRole.INTERN, "events": []}
