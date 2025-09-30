@@ -205,7 +205,7 @@ le_
     elif room == Room.ADMINS:
         room = admins_room
     else:
-        if isinstance(list):
+        if isinstance(room, list):
             pass
         else:
             raise NotImplementedError(f"room {room} not implemented")
@@ -213,8 +213,11 @@ le_
 
     message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
     for ws in list(room):
-        if ws.parse_cookies(ws.request.headers).get("SID", None) != skip_sid:
+        ws_sid = websockets_info.get(id(ws), {}).get("session_id", None)
+        if ws_sid != skip_sid and ws_sid is not None:
             await ws.send(message)
+        if ws_sid is None:
+            pass
 
 async def handle_ws(websocket):
     """
@@ -254,7 +257,10 @@ async def handle_ws(websocket):
         await send(websocket=websocket, **message)
 
     # send stueble_status
-    await stueble_status(session_id=session_id)
+    result = await stueble_status(session_id=session_id)
+    if result["success"] is False:
+        await send(websocket=websocket, event="error", data={"code": "500",
+            "message": "Couldn't send stueble_status"})
 
     try:
         async for message in websocket:
@@ -326,7 +332,7 @@ async def handle_ws(websocket):
         # get all valid session_ids
         result = db.read_table(cursor=cursor, 
                                table_name="sessions", 
-                               keywords=["id"], 
+                               keywords=["session_id"],
                                expect_single_answer=False)
         close_conn_cursor(conn, cursor)
         if result["success"] is False:
@@ -591,7 +597,7 @@ async def verify_guest(websocket, msg):
 
     await send(websocket=websocket, event="guestVerification", data={})
 
-    await broadcast(room=host_upwards_room, websocket=websocket, event="guestVerified", reqId=req_id, data=user_data, skip_sid=session_id)
+    await broadcast(room=Room.HOST_UPWARDS, websocket=websocket, event="guestVerified", reqId=req_id, data=user_data, skip_sid=session_id)
     return
 
 async def request_qrcode(websocket, msg, req_id):
@@ -730,7 +736,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         cursor=cursor,
         table_name="sessions",
         conditions={"user_id": user_id},
-        keywords=["id"],
+        keywords=["session_id"],
         expect_single_answer=False)
 
     if result["success"] is False:
@@ -764,12 +770,14 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     else:
         close_conn_cursor(conn, cursor)
 
+    date = date.isoformat()
+
     data = {"date": date, "registrationStartsAt": None, "registered": registered, "present": present}
 
     user_room = [sid_to_websocket.get(i, None) for i in session_ids]
     user_room.remove(None)
     await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
-    return
+    return {"success": True}
 
 
 # Start server

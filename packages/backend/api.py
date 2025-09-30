@@ -404,8 +404,49 @@ def logout():
         status=204)
     return response
 
-# TODO: test automatic deletion from all stueble parties
 @app.route("/auth/delete", methods=["DELETE"])
+def TEST_DELETE_PLEASE_REMOVE():
+    """
+    TEST FUNCTION - PLEASE REMOVE
+    """
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 401, "message": "The session id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # get user id from session id
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_role"])
+
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # set user_id
+    user_id = result["data"][0]
+
+    result = db.remove_table(cursor=cursor, table_name="users", conditions={"id": user_id})
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    response = Response(status=204)
+    return response
+
+# TODO: test automatic deletion from all stueble parties
+# TODO: uncomment route
+# app.route("/auth/delete", methods=["DELETE"])
 def delete():
     """
     delete a user (set password to NULL)

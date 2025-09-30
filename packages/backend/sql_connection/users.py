@@ -512,7 +512,7 @@ def check_user_guest_list(cursor: cursor, user_id: int) -> SingleSuccess | Gener
    LIMIT 1
   ),
   'remove'
-) AS event_type) != 'remove' AS is_registered"""
+)) != 'remove'"""
 
     result = db.custom_call(
         cursor=cursor,
