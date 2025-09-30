@@ -106,30 +106,31 @@
         <i>checklist</i>
         <span>Zur Gästeliste</span>
       </button>
-      <button
-        class="top-margin tertiary"
-        onclick={async () => {
-          const description = await ui_object.openEditDialog(
-            {
-              title: "Motto-Beschreibung dieser Woche",
-              description:
-                "Was erwartet die Gäste auf eurer Party (Musik, Specials, Besonderes)? Dieses Nachricht wird den Besuchern auf der Anmeldeseite anzeigt.",
-              placeholder: "Beschreibung",
-              type: "string",
-            },
-            ui_object.description,
-          );
-
-          if (await apiClient("http").modifyMotto(undefined, description)) {
-            ui_object.description = description;
-            await settings.set("description", description);
-          }
-        }}
-      >
-        <i>edit</i>
-        <span>Motto-Beschreibung</span>
-      </button>
     </div>
+
+    <button
+      class="top-margin tertiary"
+      onclick={async () => {
+        const description = await ui_object.openEditDialog(
+          {
+            title: "Motto-Beschreibung dieser Woche",
+            description:
+              "Was erwartet die Gäste auf eurer Party (Musik, Specials, Besonderes)? Dieses Nachricht wird den Besuchern auf der Anmeldeseite anzeigt.",
+            placeholder: "Beschreibung",
+            type: "string",
+          },
+          ui_object.description,
+        );
+
+        if (await apiClient("http").modifyMotto(undefined, description)) {
+          ui_object.description = description;
+          await settings.set("description", description);
+        }
+      }}
+    >
+      <i>edit</i>
+      <span>Motto-Beschreibung</span>
+    </button>
   </div>
 {:else}
   <header>
