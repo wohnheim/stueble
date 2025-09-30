@@ -260,7 +260,7 @@ async def handle_ws(websocket):
     result = await stueble_status(session_id=session_id)
     if result["success"] is False:
         await send(websocket=websocket, event="error", data={"code": "500",
-            "message": "Couldn't send stueble_status"})
+            "message": result["error"]})
 
     try:
         async for message in websocket:
