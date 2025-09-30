@@ -153,7 +153,16 @@ def guest_list(cursor: cursor, stueble_id: int | None = None) -> GuestListSucces
         stueble_info = "%s"
         parameters["variables"] = [stueble_id]
 
-    query = f"""SELECT id, first_name, last_name, user_role, user_uuid, verified
+    query = f"""
+SELECT 
+    first_name, 
+    last_name, 
+    user_role = 'extern' AS extern, 
+    user_uuid, 
+    verified, 
+    room, 
+    residence, 
+    COALESCE((SELECT event_type FROM events WHERE user_id = id AND event_type IN ('arrive', 'leave', 'remove')), 'leave') = 'arrive' AS present
 FROM (
     SELECT
         u.id,
@@ -162,6 +171,8 @@ FROM (
         u.user_role,
         u.user_uuid,
         u.verified,
+        u.room,
+        u.residence,
         e.event_type,
         e.submitted,
         ROW_NUMBER() OVER (PARTITION BY e.user_id ORDER BY e.submitted DESC) as rn
@@ -183,8 +194,18 @@ WHERE rn = 1
     if result["success"] is False:
         return error_to_failure(result)
 
-    # Group by user_uuid
-    infos = [{"first_name": guest[1], "last_name": guest[2],
-      "user_role": FrontendUserRole.EXTERN if guest[3] == "extern" else FrontendUserRole.INTERN} for guest in result["data"]]
+    infos = []
+
+    for guest in result["data"]:
+        data_pack = {"firstName": guest[0],
+                     "lastName": guest[1],
+                     "extern": guest[2],
+                     "id": guest[3],
+                     "present": guest[7]}
+        if data_pack["present"] is True:
+            data_pack["roomNumber"] = guest[5]
+            data_pack["residence"] = guest[6]
+            data_pack["verified"] = guest[4]
+        infos.append(data_pack)
 
     return {"success": True, "data": infos}
