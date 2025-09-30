@@ -144,7 +144,7 @@ def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str] |
     allowed_keywords = ["id", "user_role", "user_uuid", "room", "residence", "first_name", "last_name", "email", "user_name"]
 
     if keywords is None:
-        keywords = ["id", "user_role","user_uuid"]
+        keywords = ["id", "user_role","user_uuid", "first_name", "last_name"]
     else:
         keywords = list(keywords)
         if not all(map(lambda k: k in allowed_keywords, keywords)):

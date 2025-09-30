@@ -54,8 +54,8 @@ def check_permissions(cursor: cursor, session_id: str | None, required_role: Use
     user_role = result["data"][1]
     user_role = UserRole(user_role)
     user_uuid = result["data"][2]
-    first_name = result["data"][5]
-    last_name = result["data"][6]
+    first_name = result["data"][3]
+    last_name = result["data"][4]
     if user_role >= required_role:
         return {"success": True, "data": {"allowed": True, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid, "first_name": first_name, "last_name": last_name}}
     return {"success": True, "data": {"allowed": False, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid, "first_name": first_name, "last_name": last_name}}
