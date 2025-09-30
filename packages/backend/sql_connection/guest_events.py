@@ -184,7 +184,7 @@ WHERE rn = 1
         return error_to_failure(result)
 
     # Group by user_uuid
-    infos: dict[str, GuestListData] = {}
+    infos = {}
 
     for sub in result["data"]:
         if infos.get(sub[6], None) is None:
@@ -192,4 +192,4 @@ WHERE rn = 1
 
         infos[sub[6]]["events"].append({"status": sub[4], "time": sub[5]})
 
-    return {"success": True, "data": list(infos.values())}
+    return {"success": True, "data": infos}
