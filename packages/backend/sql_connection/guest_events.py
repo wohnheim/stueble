@@ -148,7 +148,7 @@ def guest_list(cursor: cursor, stueble_id: int | None = None) -> GuestListSucces
     parameters = {}
 
     if stueble_id is None:
-        stueble_info = """(SELECT id FROM stueble_motto WHERE date_of_time = CURRENT_DATE OR date_of_time = (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time DESC LIMIT 1)"""
+        stueble_info = """(SELECT id FROM stueble_motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1)"""
     else:
         stueble_info = "%s"
         parameters["variables"] = [stueble_id]
