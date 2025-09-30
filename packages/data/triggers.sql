@@ -296,7 +296,7 @@ IF (SELECT date_of_time FROM stueble_motto WHERE id = NEW.stueble_id) = (SELECT 
 THEN
     UPDATE users
     SET user_role = USER_ROLE.HOST
-    WHERE id IN (SELECT user_id FROM hosts WHERE stueble_id = NEW.stueble_id) AND user_role = 'user';
+    WHERE id IN (SELECT user_id FROM hosts WHERE users.stueble_id = NEW.stueble_id) AND user_role = 'user';
 END IF;
 RETURN NEW;
 END;
@@ -331,4 +331,4 @@ CREATE OR REPLACE TRIGGER set_reset_code_trigger
 
 CREATE OR REPLACE TRIGGER add_hosts
     AFTER INSERT OR UPDATE ON hosts
-    FOR EACH ROW EXECUTE FUNCTION add_hosts()
+    FOR EACH ROW EXECUTE FUNCTION add_hosts();
