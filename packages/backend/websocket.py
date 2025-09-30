@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 from packages.backend.sql_connection.conn_cursor_functions import *
 
 # load environment variables
-_ = load_dotenv("~/stueble/packages/backend/.env")
+load_dotenv("~/stueble/packages/backend/.env")
 
 # initialize variables
 host_upwards_room = set()

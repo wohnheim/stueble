@@ -15,7 +15,7 @@ from packages.backend.sql_connection.common_types import (
     SingleSuccess,
 )
 
-_ = load_dotenv()
+load_dotenv()
 
 USER = os.getenv("USERDB") # stueble (like the linux user name!)
 PASSWORD = os.getenv("PASSWORD")

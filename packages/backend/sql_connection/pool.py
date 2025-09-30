@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from psycopg2.pool import ThreadedConnectionPool
 
-_ = load_dotenv()
+load_dotenv()
 
 USER = os.getenv("USERDB") # stueble (like the linux user name!)
 PASSWORD = os.getenv("PASSWORD")
