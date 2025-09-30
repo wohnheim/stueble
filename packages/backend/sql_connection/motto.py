@@ -144,7 +144,7 @@ def update_stueble(cursor: cursor, date: date, **kwargs) -> SingleSuccessCleaned
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occurred
     """
 
-    allowed_keys = ["motto", "hosts", "shared_apartment"]
+    allowed_keys = ["motto", "shared_apartment"]
     if any(key not in allowed_keys for key in kwargs.keys()):
         return {"success": False, "error": "invalid field to update"}
 
@@ -164,6 +164,7 @@ def update_stueble(cursor: cursor, date: date, **kwargs) -> SingleSuccessCleaned
         return error_to_failure(result)
     if result["data"] is None:
         return {"success": False, "error": "no stueble found"}
+
     return clean_single_data(result)
 
 def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[list[int] | tuple[int] | None, "Explicit with user_uuid"] = None,

@@ -1719,7 +1719,7 @@ def create_stueble():
         date = date + datetime.timedelta(days=days_ahead)
 
     if hosts is not None and hosts != []:
-        user_ids = users.get_users(cursor=cursor, information=hosts)
+        user_ids = users.get_users(cursor=cursor, user_uuids=hosts)
         if user_ids["success"] is False:
             close_conn_cursor(conn, cursor)
             response = Response(
@@ -1738,7 +1738,6 @@ def create_stueble():
     result = motto.update_stueble(cursor=cursor,
                                 date=date,
                                 motto=stueble_motto,
-                                hosts=hosts,
                                 shared_apartment=shared_apartment)
 
     if result["success"] is False:
@@ -1754,7 +1753,6 @@ def create_stueble():
             result = motto.create_stueble(cursor=cursor,
                                     date=date,
                                     motto=stueble_motto,
-                                    hosts=hosts,
                                     shared_apartment=shared_apartment)
 
             if result["success"] is False:
