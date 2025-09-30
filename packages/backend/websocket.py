@@ -232,12 +232,17 @@ async def handle_ws(websocket):
     
     # get connection and cursor
     conn, cursor = get_conn_cursor()
-    result = sessions.get_session(cursor=cursor, session_id=session_id)
+    try:
+        result = sessions.get_session(cursor=cursor, session_id=session_id)
+    except:
+        await send(websocket=websocket, event="status", data={"code": "401",
+                                                              "capabilities": [],
+                                                              "authorized": False})
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
-        await send(websocket=websocket, event="error", data=
-            {"code": "500" if result["error"] != "no session found" else "401",
-             "message": str(result["error"])})
+        await send(websocket=websocket, event="status", data={"code": "401",
+                                                              "capabilities": [],
+                                                              "authorized": False})
         return
     
     _, expiration_date = result["data"]
@@ -586,9 +591,9 @@ async def request_qrcode(websocket, msg, req_id):
     result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_uuid"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
-        await send(websocket=websocket, event="error", reqId=req_id, data=
-            {"code": "500" if result["error"] != "no matching session and user found" else "401",
-                "message": str(result["error"])})
+        await send(websocket=websocket, event="status", data={"code": "401",
+                                                              "capabilities": [],
+                                                              "authorized": False})
         return
     user_id = result["data"][0]
     user_uuid = result["data"][1]
