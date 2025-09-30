@@ -215,14 +215,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION update_websocket_sids()
-RETURNS trigger AS $$
-BEGIN
-DELETE FROM websocket_sids WHERE user_id = NEW.id AND ((SELECT user_role FROM users WHERE id = NEW.id) NOT IN ('admin', 'tutor', 'host'));
-RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION check_user_role()
 RETURNS trigger AS $$
 BEGIN
@@ -325,10 +317,6 @@ EXECUTE FUNCTION event_guest_change();
 CREATE OR REPLACE TRIGGER event_guest_change_two_trigger
 AFTER INSERT OR UPDATE ON events
 FOR EACH ROW EXECUTE FUNCTION add_to_affected_users();
-
-CREATE OR REPLACE TRIGGER update_websocket_sids_trigger
-    AFTER INSERT OR UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_websocket_sids();
 
 CREATE OR REPLACE TRIGGER set_uuid_hash_trigger
     BEFORE INSERT OR UPDATE ON users
