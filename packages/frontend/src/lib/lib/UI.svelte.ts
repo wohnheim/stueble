@@ -76,8 +76,6 @@ class UI {
   path = $state<Routes>({ main: "main" });
 
   // Persistent properties (using IndexedDB)
-  motto = $state("");
-  description = $state("")
   publicKey = $state<CryptoKey>();
   qrCodeData = $state<QRCodeData>();
   config = $state<Config>();
