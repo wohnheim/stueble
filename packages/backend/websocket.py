@@ -436,7 +436,9 @@ async def disconnect(websocket):
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     if session_id is None:
         return
-
+    await send(websocket=websocket, event="status", data={"code": "200",
+                                                          "capabilities": [],
+                                                          "authorized": False})
     host_upwards_room.discard(websocket)
     admins_room.discard(websocket)
     connections.discard(websocket)
