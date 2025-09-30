@@ -395,8 +395,10 @@ async def connect(websocket):
     try:
         uuid.UUID(session_id)
     except ValueError:
-        await send(websocket=websocket, event="error", data={})
-
+            await send(websocket=websocket, event="status", data={"code": "401",
+                                                                  "capabilities": [],
+                                                                  "authorized": False})
+            return
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
