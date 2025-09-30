@@ -184,12 +184,7 @@ WHERE rn = 1
         return error_to_failure(result)
 
     # Group by user_uuid
-    infos = {}
-    raise Exception(result)
-    for sub in result["data"]:
-        if infos.get(sub[6], None) is None:
-            infos[sub[6]] = {"first_name": sub[1], "last_name": sub[2], "user_role": FrontendUserRole.EXTERN if sub[3] == "extern" else FrontendUserRole.INTERN, "events": []}
-
-        infos[sub[6]]["events"].append({"status": sub[4], "time": sub[5]})
+    infos = [{"first_name": guest[1], "last_name": guest[2],
+      "user_role": FrontendUserRole.EXTERN if guest[3] == "extern" else FrontendUserRole.INTERN} for guest in result["data"]]
 
     return {"success": True, "data": infos}
