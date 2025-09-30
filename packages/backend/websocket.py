@@ -775,7 +775,10 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     data = {"date": date, "registrationStartsAt": None, "registered": registered, "present": present}
 
     user_room = [sid_to_websocket.get(i, None) for i in session_ids]
-    user_room.remove(None)
+    try:
+        user_room.remove(None)
+    except:
+        pass
     await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
     return {"success": True}
 
