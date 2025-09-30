@@ -9,7 +9,7 @@
 <div id="center-container" class="middle-align center-align">
   <span class="expand"></span>
 
-  <h4 class="no-margin">Willkommen Stüble-Besucher*in!</h4>
+  <h4 class="no-margin">Willkommen auf der Stüble-Website, habt ihr Lust mit uns zu feiern?</h4>
 
   <p>
     Das Motto am {ui_object.status?.date.toLocaleDateString("de-DE")} lautet:
@@ -32,7 +32,7 @@
     </p>
   {/if}
 
-  {#if !ui_object.status?.registered}
+  {#if !ui_object.status?.registered && false}
     {#if ui_object.status !== undefined && (ui_object.status.registrationStartsAt === undefined || ui_object.status.registrationStartsAt <= new Date())}
       <button
         class="top-margin-small"
@@ -67,7 +67,7 @@
 
     <span class="expand"></span>
 
-    {#if ui_object.status !== undefined && !ui_object.status.present}
+    {#if (ui_object.status !== undefined && !ui_object.status.present) || true}
       <button
         class="large-margin"
         onclick={() => apiClient("http").removeFromGuestList()}
