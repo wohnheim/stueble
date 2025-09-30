@@ -536,20 +536,19 @@ def check_user_present(cursor: cursor, user_id: int) -> SingleSuccessCleaned | G
         user_id (int): id of the user
     """
 
-    query = """SELECT (COALESCE(
+    query = """SELECT COALESCE(
             (SELECT event_type
              FROM events
-             WHERE user_id = %s
-               AND stueble_id = (SELECT id 
-                                 FROM stueble_motto 
-                                 WHERE date_of_time >= CURRENT_DATE 
-                                    OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1) 
-                                 ORDER BY date_of_time ASC 
+             WHERE user_id = 1
+               AND stueble_id = (SELECT id
+                                 FROM stueble_motto
+                                 WHERE date_of_time >= CURRENT_DATE
+                                    OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1)
+                                 ORDER BY date_of_time ASC
                                  LIMIT 1)
              ORDER BY submitted DESC
              LIMIT 1),
-            'remove'
-                       ) AS event_type) == 'arrive' AS is_registered"""
+            'remove') = 'arrive' AS is_registered"""
 
     result = db.custom_call(
         cursor=cursor,
