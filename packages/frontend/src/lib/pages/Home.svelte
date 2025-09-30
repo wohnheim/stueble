@@ -15,18 +15,18 @@
     Das Motto am {ui_object.status?.date.toLocaleDateString("de-DE")} lautet:
   </p>
 
-  <h5>{settings.settings["motto"]}!</h5>
+  <h5>{settings.settings["motto"]}</h5>
 
   {#if !extended}
     <div class="row margin-left margin-right">
       <p>{settings.settings["description"]?.split(" ", 7).join(" ")}</p>
-      <button class="chip fill round" onclick={() => (extended = true)}
-        >...</button
-      >
+      <button class="chip fill round" onclick={() => (extended = true)}>
+        ...
+      </button>
     </div>
-  {:else if settings.settings["motto"]}
+  {:else if settings.settings["description"] !== undefined}
     <p class="margin-left margin-right">
-      {#each settings.settings["motto"]?.split("\n") as line}
+      {#each settings.settings["description"]?.split("\n") as line}
         {line}<br />
       {/each}
     </p>
