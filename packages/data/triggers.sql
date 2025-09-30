@@ -296,7 +296,7 @@ IF (SELECT date_of_time FROM stueble_motto WHERE id = NEW.stueble_id) = (SELECT 
 THEN
     UPDATE users
     SET user_role = USER_ROLE.HOST
-    WHERE id IN (SELECT user_id FROM hosts WHERE users.stueble_id = NEW.stueble_id) AND user_role = 'user';
+    WHERE id IN (SELECT user_id FROM hosts WHERE stueble_id = NEW.stueble_id) AND user_role = 'user';
 END IF;
 RETURN NEW;
 END;
