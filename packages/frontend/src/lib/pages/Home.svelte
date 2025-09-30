@@ -9,7 +9,13 @@
 <div id="center-container" class="middle-align center-align">
   <span class="expand"></span>
 
-  <h4 class="no-margin">Willkommen auf der Stüble-Website, habt ihr Lust mit uns zu feiern?</h4>
+  {#if ui_object.capabilities.some((c) => c == "admin")}
+    <h6 class="no-margin">Angemeldet mit dem Administrator-Konto</h6>
+  {:else}
+    <h6 class="no-margin">
+      Willkommen auf der Stüble-Website! Habt ihr Lust mit uns zu feiern?
+    </h6>
+  {/if}
 
   <p>
     Das Motto am {ui_object.status?.date.toLocaleDateString("de-DE")} lautet:
@@ -18,7 +24,7 @@
   <h5>{settings.settings["motto"]}</h5>
 
   {#if !extended}
-    <div class="row margin-left margin-right">
+    <div class="margin-left margin-right">
       <p>{settings.settings["description"]?.split(" ", 7).join(" ")}</p>
       <button class="chip fill round" onclick={() => (extended = true)}>
         ...
@@ -32,7 +38,7 @@
     </p>
   {/if}
 
-  {#if !ui_object.status?.registered && false}
+  {#if !ui_object.capabilities.some((c) => c == "host") && !ui_object.status?.registered}
     {#if ui_object.status !== undefined && (ui_object.status.registrationStartsAt === undefined || ui_object.status.registrationStartsAt <= new Date())}
       <button
         class="top-margin-small"
@@ -48,13 +54,15 @@
     <p class="bold">Du bist angemeldet!</p>
 
     <div>
-      <button
-        class="top-margin-small"
-        onclick={() => ui_object.openDialog({ mode: "qrcode" })}
-      >
-        <i>qr_code</i>
-        <span>QR-Code anzeigen</span>
-      </button>
+      {#if !ui_object.capabilities.some((c) => c == "host")}
+        <button
+          class="top-margin-small"
+          onclick={() => ui_object.openDialog({ mode: "qrcode" })}
+        >
+          <i>qr_code</i>
+          <span>QR-Code anzeigen</span>
+        </button>
+      {/if}
       <button
         class="top-margin-small secondary"
         onclick={() =>
@@ -67,10 +75,17 @@
 
     <span class="expand"></span>
 
-    {#if (ui_object.status !== undefined && !ui_object.status.present) || true}
+    {#if ui_object.status !== undefined && !ui_object.status.present}
+      <p>Doch kein Bock?</p>
+
       <button
         class="large-margin"
-        onclick={() => apiClient("http").removeFromGuestList()}
+        onclick={async () =>
+          (await ui_object.openDialog({
+            mode: "confirm",
+            title: "Von Stüble abmelden",
+            description: `Möchtest du dich wirklich vom Stüble abmelden? Eingeladene Gäste werden ebenfalls abgemeldet.${ui_object.capabilities.some((c) => c == "host") ? " Beachte, dass Du hiermit deine Rechte als Wirt*in verlierst." : ""}`,
+          })) && apiClient("http").removeFromGuestList()}
       >
         <i>cancel</i>
         <span>Abmelden</span>

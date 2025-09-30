@@ -35,7 +35,7 @@ export type RouteHost = z.infer<typeof routeHost>;
 
 const routeSettings = z.object({
   main: z.enum(["settings"]),
-  sub: z.enum(["hosts"]).optional(),
+  sub: z.enum(["hosts", "tutors"]).optional(),
 });
 
 export type RouteSettings = z.infer<typeof routeSettings>;
@@ -243,6 +243,7 @@ export interface DialogConfirm {
   mode: "confirm";
 
   title: string;
+  description?: string;
   confirm?: string;
   cancel?: string;
 }
