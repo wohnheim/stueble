@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import os
+import uuid
 from typing import Literal
 
 import websockets
@@ -232,12 +233,7 @@ async def handle_ws(websocket):
     
     # get connection and cursor
     conn, cursor = get_conn_cursor()
-    try:
-        result = sessions.get_session(cursor=cursor, session_id=session_id)
-    except:
-        await send(websocket=websocket, event="status", data={"code": "401",
-                                                              "capabilities": [],
-                                                              "authorized": False})
+    result = sessions.get_session(cursor=cursor, session_id=session_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         await send(websocket=websocket, event="status", data={"code": "401",
@@ -358,6 +354,13 @@ async def acknowledgement(websocket, res_id: str | int):
                      "code": "401",
                      "message": "missing SID cookie"})
         return False
+    try:
+        uuid.UUID(session_id)
+    except:
+        await send(websocket=websocket, event="status", data={"code": "401",
+                                                              "capabilities": [],
+                                                              "authorized": False})
+        return
     message_id = res_id
     if message_id is None:
         await send(websocket=websocket, event="error", data={
@@ -386,8 +389,13 @@ async def connect(websocket):
     if session_id is None:
         await send(websocket=websocket, event="error", data={
                      "code": "401",
-                     "message": "missing SID cookie"})
+                     "message": "missing SID cookie",
+                     "authorized": False})
         return False
+    try:
+        uuid.UUID(session_id)
+    except ValueError:
+        await send(websocket=websocket, event="error", data={})
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
@@ -406,7 +414,8 @@ async def connect(websocket):
         await send(websocket=websocket, event="error", data= {
                      "code": "500",
                      "message": str(result["error"]), 
-                     "authorized": False})
+                     "authorized": False,
+                     "capabilities": []})
         return False
 
     capabilities = [i.value for i in get_leq_roles(result["data"]["user_role"]) if i.value in ["user", "host", "tutor", "admin"]]
@@ -444,7 +453,13 @@ async def disconnect(websocket):
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     if session_id is None:
         return
-
+    try:
+        uuid.UUID(session_id)
+    except:
+        await send(websocket=websocket, event="status", data={"code": "401",
+                                                              "capabilities": [],
+                                                              "authorized": False})
+        return
     host_upwards_room.discard(websocket)
     admins_room.discard(websocket)
     connections.discard(websocket)
@@ -523,6 +538,13 @@ async def verify_guest(websocket, msg):
         await send(websocket=websocket, event="error", data={
             "code": "401",
             "message": "missing SID cookie"})
+        return
+    try:
+        uuid.UUID(session_id)
+    except:
+        await send(websocket=websocket, event="status", data={"code": "401",
+                                                              "capabilities": [],
+                                                              "authorized": False})
         return
 
     if user_uuid is None or verification_method is None:
