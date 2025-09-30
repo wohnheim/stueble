@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 import enum
 import json
 from typing import Annotated, Any, Literal, TypedDict, cast, overload
@@ -14,8 +13,7 @@ from packages.backend.sql_connection.common_types import (
     MultipleTupleSuccess,
     SingleSuccess,
     SingleSuccessCleaned,
-    is_multiple_success,
-    is_multiple_tuple_success,
+    error_to_failure,
     is_single_success,
 )
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
@@ -75,6 +73,8 @@ def add_user(cursor: cursor,
         arguments=arguments,
         returning_column=returning_column)
 
+    if result["success"] is False:
+        return error_to_failure(result)
     if is_single_success(result):
         result = clean_single_data(result)
 
@@ -114,7 +114,7 @@ def remove_user(cursor: cursor, user_id: Annotated[int | None, "set EITHER user_
                              arguments={"password_hash": None}, conditions=conditions, returning_column="id, user_role")
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     if result["data"] is None:
         return {"success": False, "error": "User doesn't exist."}
     if result["data"][1] == UserRole.EXTERN.value:
@@ -165,7 +165,7 @@ def update_user(
                              conditions=conditions, returning_column="id")
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     if result["data"] is None:
         return {"success": False, "error": "User doesn't exist."}
 
@@ -279,7 +279,7 @@ def get_user(
         **value)
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
 
     if result["data"] is None or (isinstance(result["data"], list) and len(result["data"]) == 0):
         return {"success": False, "error": "No matching user found"}
@@ -320,7 +320,10 @@ def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> Multip
         variables=[user_id, stueble_id]
     )
 
-    if is_multiple_tuple_success(result) and len(result["data"]) == 0:
+    if result["success"] is False:
+        return error_to_failure(result)
+
+    if result["success"] is True and len(result["data"]) == 0:
         # if no friends were invited, check if user is registered for the specific stueble
         query = """
         SELECT 'add' =
@@ -338,10 +341,10 @@ def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> Multip
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
             variables=[user_id, stueble_id]
         )
+        if result["success"] is False:
+            return error_to_failure(result)
         if result["success"] is True and result["data"] is None:
             return {"success": False, "error": "User has to be in stueble in order to invite friends."}
-        elif result["success"] is False:
-            return result
         return {"success": True, "data": []}
 
     return result
@@ -374,7 +377,7 @@ def create_verification_code(cursor: cursor, user_id: int | None, additional_dat
         returning_column="reset_code")
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     # maybe shouldn't be possible, but still left in
     if result["success"] and result["data"] is None:
         return {"success": False, "error": "error occurred"}
@@ -411,7 +414,7 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
     )
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
     if result["data"] is None:
         return {"success": False, "error": "Reset code doesn't exist."}
 
@@ -451,7 +454,7 @@ def add_verification_method(cursor: cursor, method: VerificationMethod,
         returning_column="id")
 
     if result["success"] is False:
-        return result
+        return error_to_failure(result)
 
     if result["data"] is None:
         return {"success": False, "error": "error occurred"}
@@ -460,7 +463,7 @@ def add_verification_method(cursor: cursor, method: VerificationMethod,
 
 def get_users(cursor: cursor,
               user_uuids: list[str],
-              keywords: Sequence[str] = ("id",)) -> MultipleSuccess | GenericFailure:
+              keywords: list[str] | tuple[str] = ("id",)) -> MultipleSuccess | GenericFailure:
     """
     retrieves users from the table users
 
@@ -483,7 +486,9 @@ def get_users(cursor: cursor,
         specific_where=specific_where,
         variables=tuple(user_uuids))
 
-    if is_multiple_success(result) and len(result["data"]) != len(user_uuids):
+    if result["success"] is False:
+        return error_to_failure(result)
+    if len(result["data"]) != len(user_uuids):
         return {"success": False, "error": "Not all users found."}
     return result
 
@@ -520,11 +525,13 @@ def check_user_guest_list(cursor: cursor, user_id: int) -> SingleSuccess | Gener
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         variables=[user_id])
 
-    if is_single_success(result) and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": "User or stueble doesn't exist."}
     return clean_single_data(result)
 
-def check_user_present(cursor, user_id: int) -> dict:
+def check_user_present(cursor: cursor, user_id: int) -> SingleSuccessCleaned | GenericFailure:
     """
     checks, whether the user is currently present at the latest stueble
 
@@ -549,12 +556,13 @@ def check_user_present(cursor, user_id: int) -> dict:
                        ) AS event_type) == 'arrive' AS is_registered"""
 
     result = db.custom_call(
-        connection=None,
         cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         variables=[user_id])
 
-    if result["success"] and result["data"] is None:
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
         return {"success": False, "error": "User or stueble doesn't exist."}
     return clean_single_data(result)
