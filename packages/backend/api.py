@@ -253,8 +253,26 @@ def signup_data():
             mimetype="application/json")
         return response
     verification_token = result["data"]
-
+    wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime.png")
+    with open(wohnheime_logo, "rb") as image_file:
+        wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")
     subject = "Neuer Benutzeraccount für das Stüble"
+    body = f"""<html lang="de">
+<body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
+    <div>
+            <img src="data:image/png;base64,{wohnheime_logo}" alt="Stüble Logo" width="150">
+    </div>
+    <h2>Hallo {user_info["first_name"]} {user_info["last_name"]},</h2>
+    <p>Du hast dich einen Account für das Stüble registriert.</p>
+    <p>Nun musst du diesen noch bestätigen.</p>
+    </br>
+    <p>Klicke dazu einfach den Button</p>
+    
+    </br>
+    <p>Wir freuen uns auf dich!</p>
+    <p>Dein Stüble-Team</p>
+</body>
+</html>"""
     body = f"""Hallo {user_info["first_name"]} {user_info["last_name"]},\n\nklicke diesen Link, um deinen Account zu bestätigen:\n\nhttps://stueble.pages.dev/verify?token={verification_token}\n\nFalls du keinen neuen Account erstellt hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
 
     result = mail.send_mail(recipient=user_info["email"], subject=subject, body=body)
@@ -1384,12 +1402,17 @@ def invitee():
 
     if invitee_email is not None:
         wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime.png")
+        with open(wohnheime_logo, "rb") as image_file:
+            wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")
         qr_code = base64.b64encode(qr.generate(json.dumps(data)).read()).decode("utf-8")
         subject = "Einladung zum Stüble"
         body = f"""<html lang="de">
+        <head>
+    <meta charset="UTF-8">
+ </head>
 <body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
     <div>
-            <img src="{wohnheime_logo}" alt="Stüble Logo" width="150">
+            <img src="data:image/png;base64,{wohnheime_logo}" alt="Stüble Logo" width="150">
     </div>
     <h2>Hallo {invitee_first_name} {invitee_last_name},</h2>
     <p>Du wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen 🥳.</p>
