@@ -31,9 +31,9 @@
       }}
     >
       <i>home</i>
-      <span>Home</span>
+      <span>Start</span>
     </li>
-    {#if ui_object.capabilities.find((c) => c == "host")}
+    {#if ui_object.capabilities.some((c) => c == "host")}
       <li
         class="wave round {ui_object.path.main == 'host' ? 'fill' : ''}"
         onclick={() => {
@@ -49,25 +49,23 @@
     {/if}
 
     <div class="divider"></div>
-    <span class="section">Settings</span>
+    <span class="section">Einstellungen</span>
 
-    {#if ui_object.capabilities.find((c) => c == "admin")}
-      <li
-        class="wave round {ui_object.path.main == 'settings' ? 'fill' : ''}"
-        onclick={() => {
-          ui_object.changePath({
-            main: "settings",
-          });
-          ui(ui_object.menuDialog);
-        }}
-      >
-        <i>admin_panel_settings</i>
-        <span>Settings</span>
-      </li>
-    {/if}
+    <li
+      class="wave round {ui_object.path.main == 'settings' ? 'fill' : ''}"
+      onclick={() => {
+        ui_object.changePath({
+          main: "settings",
+        });
+        ui(ui_object.menuDialog);
+      }}
+    >
+      <i>admin_panel_settings</i>
+      <span>Einstellungen</span>
+    </li>
     <li class="wave round">
       <i>help</i>
-      <span>Information</span>
+      <span>Informationen</span>
     </li>
   </ul>
 </dialog>
