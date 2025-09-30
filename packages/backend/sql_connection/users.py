@@ -414,14 +414,10 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
     )
 
     if result["success"] is False:
-        return error_to_failure(result)
+        return result
     if result["data"] is None:
         return {"success": False, "error": "Reset code doesn't exist."}
-
-    if isinstance(result["data"], list) is False and is_single_success(result):
-        return clean_single_data(result)
-    else:
-        return result
+    return clean_single_data(result)
 
 def add_verification_method(cursor: cursor, method: VerificationMethod,
                             user_id: Annotated[str | None, "Explicit with user_uuid"]=None,
