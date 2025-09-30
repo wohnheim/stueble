@@ -1158,7 +1158,7 @@ def invitee():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    # check permissions, since only hosts can add guests
+    # check permissions, since only users can add guests
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
 
     if result["success"] is False:

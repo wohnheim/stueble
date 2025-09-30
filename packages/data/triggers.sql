@@ -3,7 +3,9 @@ CREATE OR REPLACE FUNCTION event_guest_change()
 RETURNS trigger AS $$
 DECLARE inviter_role USER_ROLE;
 DECLARE inviter_users INTEGER;
-DECLARE automatically_removed_users INTEGER;
+DECLARE automatically_removed_user INTEGER;
+DECLARE present BOOLEAN;
+DECLARE all_invitees_absent BOOLEAN;
 BEGIN
     -- skip for force insert
     IF current_setting('additional.skip_triggers', true) = 'on' THEN
@@ -161,28 +163,55 @@ BEGIN
                 RAISE EXCEPTION 'User cannot be removed from stueble % since not registered for stueble % yet; code: 400', NEW.stueble_id, NEW.stueble_id;
             END IF;
 
+            present := COALESCE((SELECT event_type
+                                FROM events
+                                WHERE user_id = NEW.user_id
+                                          AND stueble_id = NEW.stueble_id
+                                          AND event_type IN ('arrive', 'leave')
+                                ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive';
+
+            IF present
+            THEN
+                RAISE EXCEPTION 'User cannot be removed from stueble % since already arrived; code: 400', NEW.stueble_id;
+            END IF;
+
+            all_invitees_absent := (SELECT (SELECT COUNT(*) FROM
+            (SELECT * FROM (SELECT DISTINCT ON (events.user_id) event_type
+                      FROM events
+                      WHERE invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
+                      ORDER BY events.user_id, submitted DESC) AS invitees_event
+            WHERE event_type = 'arrive') AS arrived_invitees) = 0);
+
+            IF NOT all_invitees_absent
+            THEN
+                RAISE EXCEPTION 'User cannot be removed from stueble % since some of their invitees are still present; code: 400', NEW.stueble_id;
+            END IF;
+
             -- remove invitees of the removed user if user is not extern
             IF (SELECT user_role FROM users WHERE id = NEW.user_id) != 'extern'
             THEN
+                -- if already arrived at stueble forbid removing
                 INSERT INTO events (user_id, stueble_id, event_type, invited_by)
-                (SELECT DISTINCT ON (user_id) user_id, NEW.stueble_id, 'remove', NEW.user_id
+                (SELECT * FROM (SELECT DISTINCT ON (events.user_id) user_id, NEW.stueble_id, 'remove', NEW.user_id
                       FROM events
-                      WHERE event_type != 'arrive' AND invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
-                      ORDER BY events.user_id, submitted DESC)
-                RETURNING user_id INTO automatically_removed_users;
+                      WHERE invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
+                      ORDER BY events.user_id, submitted DESC) AS users_event
+                WHERE event_type != 'arrive')
+                RETURNING user_id INTO automatically_removed_user;
                 PERFORM pg_notify(
                     'automatically_removed_users',
                     json_build_object(
                             'event', 'remove',
-                            'user_id', automatically_removed_users,
+                            'user_id', automatically_removed_user,
                             'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
                     )::text);
             END IF;
-
+            /*
             -- TODO: remove this leave statement and block arriving until stueble begins as well as blocking removing after stueble began
             -- creates a bigger id; shouldn't be problematic since removal by user is banned during stueble, also leave is okay due to the same reason
             INSERT INTO events (user_id, stueble_id, event_type)
             VALUES (NEW.user_id, NEW.stueble_id, 'leave');
+             */
         END IF;
     END IF;
 
