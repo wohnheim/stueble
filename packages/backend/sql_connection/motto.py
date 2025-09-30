@@ -80,7 +80,7 @@ def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | Generic
 
     arguments = {}
     if date is not None:
-        arguments = {"conditions": {"date_of_time": date}}
+        arguments = {"conditions": {"date_of_time": date}, "order_by": ("date_of_time", 1)}
     else:
         arguments = {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
 
@@ -89,7 +89,6 @@ def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | Generic
         table_name="stueble_motto",
         keywords=["id", "motto", "date_of_time"],
         expect_single_answer=True,
-        order_by=("date_of_time", 1),
         **arguments
     )
 
