@@ -1434,7 +1434,7 @@ def invitee():
     <p>Das Motto lautet {motto_name}.</p>
     </br>
     <p>Zeige bitte diesen QR-Code beim Einlass vor:</p>
-    <img src="cid:{image_data[1]["name"]}" alt="QR-Code" width="300">
+    <img src="cid:{image_data[1]["name"]}" alt="QR-Code" width="300" style="border-radius: 20px;>
     </br>
     <p>Wir freuen uns auf dich!</p>
     <p>Dein Stüble-Team</p>
