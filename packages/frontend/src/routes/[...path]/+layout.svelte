@@ -111,7 +111,7 @@
 
 {#if $overlay}
   <!-- Dialogs -->
-  {#if ui_object.path.main == "settings"}
+  {#if ui_object.path.main == "einstellungen"}
     <LargeDialog />
   {/if}
   <Dialog />

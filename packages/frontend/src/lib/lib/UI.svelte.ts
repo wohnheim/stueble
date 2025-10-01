@@ -20,22 +20,22 @@ const routesTop = z.object({
 });
 
 const routeMain = z.object({
-  main: z.enum(["main"]),
-  sub: z.enum(["invitation"]).optional(),
+  main: z.enum(["start"]),
+  sub: z.enum(["einladen"]).optional(),
 });
 
 export type RouteMain = z.infer<typeof routeMain>;
 
 const routeHost = z.object({
-  main: z.enum(["host"]),
-  sub: z.enum(["list"]).optional(),
+  main: z.enum(["wirte"]),
+  sub: z.enum(["liste"]).optional(),
 });
 
 export type RouteHost = z.infer<typeof routeHost>;
 
 const routeSettings = z.object({
-  main: z.enum(["settings"]),
-  sub: z.enum(["hosts", "tutors"]).optional(),
+  main: z.enum(["einstellungen"]),
+  sub: z.enum(["wirte", "tutoren"]).optional(),
 });
 
 export type RouteSettings = z.infer<typeof routeSettings>;
@@ -73,7 +73,7 @@ class UI {
   capabilities = $state<Capabilities>([]);
 
   // Navigation
-  path = $state<Routes>({ main: "main" });
+  path = $state<Routes>({ main: "start" });
 
   // Persistent properties (using IndexedDB)
   publicKey = $state<CryptoKey>();
@@ -216,12 +216,12 @@ class UI {
       if (res.success) return res.data;
     }
 
-    return { main: "main" };
+    return { main: "start" };
   };
 
   changePath = (route: Routes) => {
     let url: string;
-    if (route.main == "main") {
+    if (route.main == "start") {
       url = "/";
     } else {
       url =

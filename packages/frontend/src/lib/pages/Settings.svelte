@@ -122,7 +122,7 @@
     {#if ui_object.capabilities.some((c) => c == "tutor")}
       <Button
         onclick={() => {
-          ui_object.changePath({ main: "settings", sub: "hosts" });
+          ui_object.changePath({ main: "einstellungen", sub: "wirte" });
         }}
       >
         <div>
@@ -135,7 +135,7 @@
     {#if ui_object.capabilities.some((c) => c == "admin")}
       <Button
         onclick={() => {
-          ui_object.changePath({ main: "settings", sub: "tutors" });
+          ui_object.changePath({ main: "einstellungen", sub: "tutoren" });
         }}
       >
         <div>
