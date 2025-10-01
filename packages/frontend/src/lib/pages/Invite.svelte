@@ -56,8 +56,8 @@
           (emailInput?.validity.valid ?? false))}
       onfocusout={() =>
         (emailValid =
-          (emailInput?.validity.valid ?? false) &&
-          !!ui_object.userParams.email)}
+          ui_object.userParams.email.length == 0 ||
+          (emailInput?.validity.valid ?? false))}
       type="email"
     />
     <!-- svelte-ignore a11y_label_has_associated_control -->
@@ -77,7 +77,9 @@
       apiClient("http").inviteExtern(
         ui_object.userParams.firstName,
         ui_object.userParams.lastName,
-        ui_object.userParams.email != "" ? ui_object.userParams.email : undefined,
+        ui_object.userParams.email != ""
+          ? ui_object.userParams.email
+          : undefined,
       )}
   >
     <i>send</i>

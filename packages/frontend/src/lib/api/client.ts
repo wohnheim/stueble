@@ -329,6 +329,40 @@ class HTTPClient {
     return false;
   }
 
+  /* Tutors */
+
+  async addTutors(tutors: string[]) {
+    const res = await fetch("/api/tutors", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tutors,
+      }),
+    });
+
+    if (res.ok) return true;
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return false;
+  }
+
+  async removeTutors(tutors: string[]) {
+    const res = await fetch("/api/tutors", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tutors,
+      }),
+    });
+
+    if (res.ok) return true;
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return false;
+  }
+
   /* Config */
 
   async getConfig() {
