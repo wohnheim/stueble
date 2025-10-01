@@ -1418,7 +1418,7 @@ def invitee():
     if invitee_email is not None:
         wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime_small.png")
         """with open(wohnheime_logo, "rb") as image_file:
-            wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")"""
+                    wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")"""
         qr_code = base64.b64encode(qr.generate(json.dumps(data)).read()).decode("utf-8")
         subject = "Einladung zum Stüble"
         body = f"""<html lang="de">
