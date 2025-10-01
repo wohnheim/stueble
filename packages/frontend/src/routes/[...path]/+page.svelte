@@ -176,14 +176,14 @@
   on:keydown={handleKeyDown}
 />
 
-{#if ui_object.path.main == "main"}
+{#if ui_object.path.main == "start"}
   {#if ui_object.path.sub === undefined}
     <Home />
   {:else}
     <Invite />
   {/if}
-{:else if ui_object.path.main == "host"}
+{:else if ui_object.path.main == "wirte"}
   <Guests />
-{:else if ui_object.path.main == "settings"}
+{:else if ui_object.path.main == "einstellungen"}
   <Settings />
 {/if}

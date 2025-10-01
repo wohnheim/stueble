@@ -16,10 +16,10 @@
   </header>
 
   <a
-    class={ui_object.path.main == "main" ? "active" : ""}
+    class={ui_object.path.main == "start" ? "active" : ""}
     onclick={() =>
       ui_object.changePath({
-        main: "main",
+        main: "start",
       })}
   >
     <i>home</i>
@@ -28,10 +28,10 @@
 
   {#if ui_object.capabilities.some((c) => c == "host")}
     <a
-      class={ui_object.path.main == "host" ? "active" : ""}
+      class={ui_object.path.main == "wirte" ? "active" : ""}
       onclick={() =>
         ui_object.changePath({
-          main: "host",
+          main: "wirte",
         })}
     >
       <i>nightlife</i>
@@ -40,10 +40,10 @@
   {/if}
 
   <a
-    class={ui_object.path.main == "settings" ? "active" : ""}
+    class={ui_object.path.main == "einstellungen" ? "active" : ""}
     onclick={() =>
       ui_object.changePath({
-        main: "settings",
+        main: "einstellungen",
       })}
   >
     <i>admin_panel_settings</i>

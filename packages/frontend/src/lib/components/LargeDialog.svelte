@@ -24,8 +24,8 @@
 
   onMount(() => {
     ui_object.largeDialog?.addEventListener("close", () => {
-      if (ui_object.path.main == "settings" && ui_object.path.sub !== undefined)
-        ui_object.changePath({ main: "settings" });
+      if (ui_object.path.main == "einstellungen" && ui_object.path.sub !== undefined)
+        ui_object.changePath({ main: "einstellungen" });
 
       if (hostsPage)
         setTimeout(() => {
@@ -39,9 +39,9 @@
 </script>
 
 <dialog id="dialog-large" bind:this={ui_object.largeDialog} class="right large">
-  {#if ui_object.path.main == "settings"}
+  {#if ui_object.path.main == "einstellungen"}
     <Hosts
-      title={ui_object.path.sub == "hosts" ? "Wirt*innen": "Tutor*innen"}
+      title={ui_object.path.sub == "wirte" ? "Wirt*innen": "Tutor*innen"}
       bind:page={hostsPage}
       bind:selectedUnfiltered={hostsSelectedUnfiltered}
       bind:selected={hostsSelected}

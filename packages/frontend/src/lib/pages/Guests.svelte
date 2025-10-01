@@ -101,7 +101,7 @@
       </button>
       <button
         class="top-margin secondary"
-        onclick={() => ui_object.changePath({ main: "host", sub: "list" })}
+        onclick={() => ui_object.changePath({ main: "wirte", sub: "liste" })}
       >
         <i>checklist</i>
         <span>Zur Gästeliste</span>

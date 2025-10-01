@@ -22,10 +22,10 @@
     </header>
 
     <li
-      class="wave round {ui_object.path.main == 'main' ? 'fill' : ''}"
+      class="wave round {ui_object.path.main == 'start' ? 'fill' : ''}"
       onclick={() => {
         ui_object.changePath({
-          main: "main",
+          main: "start",
         });
         ui(ui_object.menuDialog);
       }}
@@ -35,10 +35,10 @@
     </li>
     {#if ui_object.capabilities.some((c) => c == "host")}
       <li
-        class="wave round {ui_object.path.main == 'host' ? 'fill' : ''}"
+        class="wave round {ui_object.path.main == 'wirte' ? 'fill' : ''}"
         onclick={() => {
           ui_object.changePath({
-            main: "host",
+            main: "wirte",
           });
           ui(ui_object.menuDialog);
         }}
@@ -52,10 +52,10 @@
     <span class="section">Einstellungen</span>
 
     <li
-      class="wave round {ui_object.path.main == 'settings' ? 'fill' : ''}"
+      class="wave round {ui_object.path.main == 'einstellungen' ? 'fill' : ''}"
       onclick={() => {
         ui_object.changePath({
-          main: "settings",
+          main: "einstellungen",
         });
         ui(ui_object.menuDialog);
       }}
