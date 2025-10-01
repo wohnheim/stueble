@@ -1417,8 +1417,8 @@ def invitee():
 
     if invitee_email is not None:
         wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime_small.png")
-        with open(wohnheime_logo, "rb") as image_file:
-            wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")
+        """with open(wohnheime_logo, "rb") as image_file:
+            wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")"""
         qr_code = base64.b64encode(qr.generate(json.dumps(data)).read()).decode("utf-8")
         subject = "Einladung zum Stüble"
         body = f"""<html lang="de">
@@ -1427,7 +1427,7 @@ def invitee():
  </head>
 <body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
     <div>
-            <img src="data:image/png;base64,{wohnheime_logo}" alt="Stüble Logo" width="150">
+            <img src="cid:wohnheime_small" alt="Stüble Logo" width="150">
     </div>
     <h2>Hallo {invitee_first_name} {invitee_last_name},</h2>
     <p>Du wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen 🥳.</p>
@@ -1441,7 +1441,7 @@ def invitee():
 </body>
 </html>"""
         # body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto_name}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
-        mail.send_mail(Email(invitee_email), subject, body, html=True)
+        mail.send_mail(Email(invitee_email), subject, body, html=True, images=["wohnheime_small", wohnheime_logo])
 
     response = Response(
         response=json.dumps(data),
