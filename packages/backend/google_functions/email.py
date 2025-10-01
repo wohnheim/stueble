@@ -36,7 +36,7 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
     else:
         msg.attach(MIMEText(body, "html"))
     if html is True and images is not None:
-        for name, value in images.keys():
+        for name, value in images.items():
             if isinstance(value, str):
                 with open(value, "rb") as f:
                     img_mime = MIMEImage(f.read())
