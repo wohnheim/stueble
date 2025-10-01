@@ -16,7 +16,8 @@ load_dotenv(env_file_path)
 EMAIL_ADDRESS = "stuebleheshirte@gmail.com"
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
-def send_mail(recipient: Email, subject: str, body: str, html: bool=False, images: Annotated[dict[str, io.BytesIO | str] | None, "Only possible if html is True"] = None):
+# NOTE: Images must have the size, that is specified in the html and cid and Content-ID must match
+def send_mail(recipient: Email, subject: str, body: str, html: bool=False, images: Annotated[tuple[dict[str, str | io.BytesIO]] | None, "Only possible if html is True"] = None):
     """
     Sends an email message.
     Parameters:
@@ -36,7 +37,9 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
     else:
         msg.attach(MIMEText(body, "html"))
     if html is True and images is not None:
-        for name, value in images.items():
+        for info in images:
+            name = info["name"]
+            value = info["value"]
             if isinstance(value, str):
                 with open(value, "rb") as f:
                     img_mime = MIMEImage(f.read())

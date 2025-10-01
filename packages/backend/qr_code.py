@@ -3,11 +3,12 @@ from pyzbar.pyzbar import decode
 from PIL import Image
 import io
 
-def generate(code: str):
+def generate(code: str, size: int | None=None):
     """
     Generate a QR code image from the given string.
     Parameters:
         code (str): The string to generate the QR code image from.
+        size (int | None): The size of the QR code image
     Returns:
         io.BytesIO: The generated QR code image as buffer.
     """
@@ -17,7 +18,9 @@ def generate(code: str):
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
 
-    img = img.convert("RGB")  # Sicherstellen, dass es ein PIL.Image.Image ist
+    img = img.convert("RGB")
+    if size is not None:
+        img = img.resize((size, size))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
