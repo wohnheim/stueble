@@ -1416,32 +1416,32 @@ def invitee():
         return response
 
     if invitee_email is not None:
-        wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime_small.png")
-        """with open(wohnheime_logo, "rb") as image_file:
-                    wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")"""
-        qr_code = base64.b64encode(qr.generate(json.dumps(data)).read()).decode("utf-8")
+        stueble_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/favicon_150.png")
+        qr_code = qr.generate(json.dumps(data), size=300)
         subject = "Einladung zum Stüble"
+        image_data = ({"name": "stueble_logo", "value": stueble_logo}, {"name": "qr_code", "value": qr_code})
+        name = "wohnheime_small"
         body = f"""<html lang="de">
         <head>
     <meta charset="UTF-8">
  </head>
 <body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
     <div>
-            <img src="cid:wohnheime_small" alt="Stüble Logo" width="150">
+            <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
     </div>
     <h2>Hallo {invitee_first_name} {invitee_last_name},</h2>
     <p>Du wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen 🥳.</p>
     <p>Das Motto lautet {motto_name}.</p>
     </br>
     <p>Zeige bitte diesen QR-Code beim Einlass vor:</p>
-    <img src="data:image/png;base64,{qr_code}" alt="QR-Code" width="300">
+    <img src="cid:{image_data[1]["name"]}" alt="QR-Code" width="300">
     </br>
     <p>Wir freuen uns auf dich!</p>
     <p>Dein Stüble-Team</p>
 </body>
 </html>"""
         # body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto_name}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
-        mail.send_mail(Email(invitee_email), subject, body, html=True, images={"wohnheime_small": wohnheime_logo})
+        mail.send_mail(Email(invitee_email), subject, body, html=True, images=image_data)
 
     response = Response(
         response=json.dumps(data),
