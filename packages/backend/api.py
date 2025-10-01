@@ -1088,46 +1088,42 @@ def attend_stueble():
             response=json.dumps(data),
             status=200,
             mimetype="application/json")
+
+        # get user data
+        keywords = ["first_name", "last_name", "room", "residence", "verified"]
+        result = users.get_user(
+            cursor=cursor,
+            user_id=user_id,
+            keywords=keywords,
+            expect_single_answer=True)
+
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+
+        user_info = {key: value for key, value in zip(keywords, result["data"])}
+        user_info["user_role"] = FrontendUserRole.INTERN
+
+        user_data = {
+            "id": user_uuid,
+            "present": False,
+            "firstName": user_info["first_name"],
+            "lastName": user_info["last_name"],
+            "extern": False,
+            "roomNumber": user_info["room"],
+            "residence": user_info["residence"],
+            "verified": True if user_info["verified"] is not None else False}
     else:
         response = Response(
             status=204)
-
-    # get user data
-    keywords = ["first_name", "last_name", "room", "residence", "verified"]
-    result = users.get_user(
-        cursor=cursor,
-        user_id=user_id,
-        keywords=keywords,
-        expect_single_answer=True)
-
-    close_conn_cursor(conn, cursor)
-    if result["success"] is False:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    user_info = {key: value for key, value in zip(keywords, result["data"])}
-    user_info["user_role"] = FrontendUserRole.INTERN
-
-    user_data = {
-        "id": user_uuid,
-        "present": False,
-        "firstName": user_info["first_name"],
-        "lastName": user_info["last_name"],
-        "extern": False,
-        "roomNumber": user_info["room"],
-        "residence": user_info["residence"],
-        "verified": True if user_info["verified"] is not None else False}
-
-    if request.method == "PUT":
-        action_type = Action_Type("guestAdded")
-    else:
-        action_type = Action_Type("guestRemoved")
+    action_type = Action_Type("guestAdded" if request.method == "PUT" else "guestRemoved")
 
     # send a websocket message to all hosts that the guest list changed
-    asyncio.run(ws.broadcast(event=action_type.value, data=user_data, skip_sid=session_id))
+    asyncio.run(ws.broadcast(event=action_type.value, data=user_data if request.method == "PUT" else user_uuid, skip_sid=session_id))
 
     # send a websocket message to the user
     asyncio.run(ws.stueble_status(session_id=session_id, date=date, registered=True if request.method == "PUT" else False, present=False))
