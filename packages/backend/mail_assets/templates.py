@@ -52,7 +52,7 @@ def confirm_email(first_name: str, last_name: str, verification_token: str) -> d
         dict: A dictionary containing the subject, body, and images for the email.
     """
     stueble_logo = os.path.expanduser("~/stueble/packages/backend/mail_assets/images/favicon_150.png")
-    image_data = ({"name": "stueble_logo", "value": stueble_logo})
+    image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
 
     subject = "Neuer Benutzeraccount für das Stüble"
     body = f"""<html lang="de">
@@ -92,7 +92,7 @@ def reset_password(first_name: str, last_name: str, reset_token: str):
     """
     """
     stueble_logo = os.path.expanduser("~/stueble/packages/backend/mail_assets/images/favicon_150.png")
-    image_data = ({"name": "stueble_logo", "value": stueble_logo})
+    image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
 
     subject = "Passwort zurücksetzen"
     body = f"""<html lang="de">
