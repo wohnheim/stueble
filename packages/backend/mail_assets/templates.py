@@ -4,7 +4,7 @@ import os
 def stueble_guest(invitee_first_name: str, invitee_last_name: str, first_name: str, last_name: str, stueble_date: str, motto_name: str, qr_code: io.BytesIO):
     """
     """
-    stueble_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/favicon_150.png")
+    stueble_logo = os.path.expanduser("~/stueble/packages/backend/mail_assets/images/favicon_150.png")
     subject = f"Einladung zum Stüble am {stueble_date}"
     image_data = ({"name": "stueble_logo", "value": stueble_logo}, {"name": "qr_code", "value": qr_code})
     html_template = f"""<html lang="de">
