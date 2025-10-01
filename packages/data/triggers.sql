@@ -49,7 +49,7 @@ BEGIN
             END IF;
 
             -- check, whether inviter is still added for stueble
-            IF COALESCE((SELECT user_role FROM users WHERE id = NEW.user_id), 'extern')
+            IF COALESCE((SELECT user_role FROM users WHERE id = NEW.user_id), 'extern') = 'extern'
                 AND COALESCE((SELECT event_type
                               FROM events
                               WHERE user_id = NEW.invited_by
