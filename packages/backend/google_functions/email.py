@@ -47,7 +47,7 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
                 img_mime = MIMEImage(value.read(), _subtype="png")
             img_mime.add_header('Content-ID', name)
             # hardcore hardcoding to png
-            img_mime.add_header('Content-Disposition', 'inline', filename=f"{name}.png")
+            img_mime.add_header('Content-Disposition', 'inline', filename="image.png")
             msg.attach(img_mime)
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
