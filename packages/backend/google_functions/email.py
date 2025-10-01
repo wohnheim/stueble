@@ -28,7 +28,7 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
         images (list[str] | None): The list of images to attach to the email.
     """
 
-    msg = EmailMessage() if not html else MIMEMultipart("alternative")
+    msg = EmailMessage() if not html else MIMEMultipart("related")
     msg["Subject"] = subject
     msg["From"] = EMAIL_ADDRESS
     msg["To"] = recipient.email
