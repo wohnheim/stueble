@@ -1417,9 +1417,9 @@ def invitee():
 
     if invitee_email is not None:
         stueble_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/favicon_150.png")
-        qr_code = qr.generate(json.dumps(data), size=900)
+        qr_code = qr.generate(json.dumps(data), size=900, rounded_edges=10)
         subject = "Einladung zum Stüble"
-        image_data = ({"name": "stueble_logo", "value": stueble_logo}, {"name": "qr_code", "value": qr_code})
+        image_data = ({"name": "stueble_logo", "value": stueble_logo}, {"name": "qrcode", "value": qr_code})
         name = "wohnheime_small"
         body = f"""<html lang="de">
         <head>
@@ -1434,7 +1434,7 @@ def invitee():
     <p>Das Motto lautet {motto_name}.</p>
     </br>
     <p>Zeige bitte diesen QR-Code beim Einlass vor:</p>
-    <img src="cid:{image_data[1]["name"]}" alt="QR-Code" width="300" style="border-radius: 20px;>
+    <img src="cid:{image_data[1]["name"]}" alt="QR-Code" width="300">
     </br>
     <p>Wir freuen uns auf dich!</p>
     <p>Dein Stüble-Team</p>
