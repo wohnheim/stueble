@@ -43,6 +43,11 @@
 
     settings.set("publicKey", JSON.stringify(key));
     ui_object.publicKey = await importKey(key);
+
+    if (settings.settings["guestListFetched"] === undefined) {
+      database.addGuests(await apiClient("http").getGuestList());
+      settings.set("guestListFetched", JSON.stringify(true));
+    }
   };
 
   const loadHostDataFromDatabase = async () => {
@@ -80,11 +85,6 @@
       const mottoRes = await apiClient("ws").sendMessage({
         event: "requestMotto",
       });
-
-      if (settings.settings["guestListFetched"] === undefined) {
-        database.addGuests(await apiClient("http").getGuestList());
-        settings.set("guestListFetched", JSON.stringify(true));
-      }
 
       // Store in IndexedDB
       await settings.set("user", JSON.stringify(ui_object.user));

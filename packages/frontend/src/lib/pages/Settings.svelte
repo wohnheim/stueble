@@ -68,6 +68,7 @@
     <p id="header" class="bold">Administrative Funktionen</p>
 
     <Button
+      clickable={ui_object.capabilities.some((c) => c == "tutor")}
       onclick={async () => {
         const motto = await ui_object.openEditDialog(
           {
@@ -101,7 +102,7 @@
             description:
               "Was erwartet die Gäste auf eurer Party (Musik, Specials, Besonderes)? Dieses Nachricht wird den Besuchern auf der Anmeldeseite anzeigt.",
             placeholder: "Beschreibung",
-            type: "string",
+            type: "textarea",
           },
           settings.settings["description"],
         );
