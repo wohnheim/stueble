@@ -164,7 +164,8 @@ class UI {
       const onClose = () => {
         this.generalDialog?.removeEventListener("close", onClose);
 
-        resolve(this.dialogProperties?.success || false);
+        const success = this.dialogProperties?.success || false;
+        setTimeout(() => resolve(success), 400);
       };
 
       this.generalDialog?.addEventListener("close", onClose);
@@ -188,9 +189,10 @@ class UI {
       const onClose = () => {
         this.generalDialog?.removeEventListener("close", onClose);
 
-        if (this.dialogProperties?.mode == "edit")
-          resolve(this.dialogProperties.value);
-        else reject("UI: Wrong dialog mode");
+        if (this.dialogProperties?.mode == "edit") {
+          const value = this.dialogProperties.value;
+          setTimeout(() => resolve(value), 400);
+        } else reject("UI: Wrong dialog mode");
       };
 
       this.generalDialog?.addEventListener("close", onClose);

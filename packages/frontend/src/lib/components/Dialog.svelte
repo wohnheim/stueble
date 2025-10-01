@@ -6,7 +6,6 @@
   import Edit from "$lib/dialogs/Edit.svelte";
   import QrCode from "$lib/dialogs/QRCode.svelte";
   import CheckIn from "$lib/dialogs/CheckIn.svelte";
-  import Delete from "$lib/dialogs/Confirm.svelte";
   import Confirm from "$lib/dialogs/Confirm.svelte";
 
   const onClose = () => {
