@@ -254,44 +254,12 @@ def signup_data():
             mimetype="application/json")
         return response
     verification_token = result["data"]
-    wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime_small.png")
-    with open(wohnheime_logo, "rb") as image_file:
-        wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")
-    subject = "Neuer Benutzeraccount für das Stüble"
-    body = f"""<html lang="de">
-<body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
-    <div>
-            <img src="data:image/png;base64,{wohnheime_logo}" alt="Stüble Logo" width="150">
-    </div>
-    <h2>Hallo {user_info["first_name"]} {user_info["last_name"]},</h2>
-    <p>Du hast einen Account für das Stüble erstellt.</p>
-    <p>Um die Registrierung abzuschließen, musst du noch deine Email bestätigen.</p>
-    </br>
-    <div style="text-align:center; margin: 20px 0;">
-  <a href="https://stueble.pages.dev/verify?token={verification_token}"
-     style="
-       background-color: #0b9a79;
-       color: #ffffff;
-       padding: 12px 24px;
-       text-decoration: none;
-       border-radius: 5px;
-       display: inline-block;
-       font-weight: bold;
-       box-shadow: 0 0 10px #da6cff;
-       font-family: Arial, sans-serif;
-     ">
-    Email bestätigen
-  </a>
-</div>
 
-    </br>
-    <p>Wir freuen uns auf dich!</p>
-    <p>Dein Stüble-Team</p>
-</body>
-</html>"""
-    # body = f"""Hallo {user_info["first_name"]} {user_info["last_name"]},\n\nklicke diesen Link, um deinen Account zu bestätigen:\n\nhttps://stueble.pages.dev/verify?token={verification_token}\n\nFalls du keinen neuen Account erstellt hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+    result = templates.confirm_email(first_name=user_info["first_name"],
+                            last_name=user_info["last_name"],
+                            verification_token=verification_token)
 
-    result = mail.send_mail(recipient=user_info["email"], subject=subject, body=body, html=True)
+    result = mail.send_mail(recipient=user_info["email"], subject=result["subject"], body=result["body"], images=result["images"], html=True)
 
     if result["success"] is False:
         response = Response(
@@ -324,7 +292,7 @@ def verify_signup():
     conn, cursor = get_conn_cursor()
 
     # verify token
-    result = users.confirm_verification_code(cursor=cursor, reset_code=token, additional_data=True)
+    result = users.confirm_verification_code(cursor=cursor, reset_code=token, additional_data=True, expiration_minutes=30)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -619,10 +587,9 @@ def reset_password_mail():
         return response
     reset_token = result["data"]
 
-    subject = "Passwort zurücksetzen"
-    body = f"""Hallo {first_name} {last_name},\n\nmit diesem Code kannst du dein Passwort zurücksetzen: {reset_token}\nFalls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.\n\nViele Grüße,\nDein Stüble-Team"""
+    result = templates.reset_password(first_name=first_name, last_name=last_name, reset_token=reset_token)
 
-    result = mail.send_mail(recipient=email, subject=subject, body=body)
+    result = mail.send_mail(recipient=email, subject=result["subject"], body=result["body"], images=result["images"])
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -662,7 +629,7 @@ def confirm_code():
     conn, cursor = get_conn_cursor()
 
     # check whether reset token exists
-    result = users.confirm_verification_code(cursor=cursor, reset_code=reset_token)
+    result = users.confirm_verification_code(cursor=cursor, reset_code=reset_token, expiration_minutes=30)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(

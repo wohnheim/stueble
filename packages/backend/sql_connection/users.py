@@ -384,13 +384,7 @@ def create_verification_code(cursor: cursor, user_id: int | None, additional_dat
         return {"success": False, "error": "error occurred"}
     return clean_single_data(result)
 
-@overload
-def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: Literal[False] = False) -> SingleSuccessCleaned | GenericFailure: ...
-
-@overload
-def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: Literal[True]) -> MultipleSuccess | GenericFailure: ...
-
-def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: bool = False) -> SingleSuccessCleaned | MultipleSuccess | GenericFailure:
+def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: bool = False, expiration_minutes: int | None=None) -> SingleSuccessCleaned | MultipleSuccess | GenericFailure:
     """
     confirms a password reset code for a specific user
 
@@ -398,6 +392,7 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
         cursor: cursor for the connection
         reset_code (str): reset code of the user
         additional_data (bool): whether to return additional data
+        expiration_minutes (int | None): if set, the code is only valid for this many minutes
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
     """
@@ -406,12 +401,18 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
     if additional_data:
         keywords.append("additional_data")
 
+    arguments = {}
+    if expiration_minutes is not None:
+        arguments["conditions"] = {"reset_code": reset_code}
+    else:
+        arguments["specific_where"] = f"reset_code = %s AND created >= NOW() - INTERVAL '{expiration_minutes} minutes'"
+        arguments["variables"] = (reset_code,)
     result = db.read_table(
         cursor=cursor,
         table_name="verification_codes",
         keywords=keywords,
-        conditions={"reset_code": reset_code},
-        expect_single_answer=True
+        expect_single_answer=True,
+        **arguments
     )
 
     if result["success"] is False:
