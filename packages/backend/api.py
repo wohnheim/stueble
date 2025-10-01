@@ -918,8 +918,13 @@ def guest_change():
     result = guest_events.change_guest(cursor=cursor, user_uuid=user_uuid, event_type=event_type)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
+        error = {"code": 500, "message": str(result["error"])}
+        if all(i in error["message"] for i in ["Inviter of user", "is not registered for stueble"]):
+            error = {"code": 400, "message": "Inviter not registered to stueble any more"}
+        elif "is not registered for stueble" in error["message"]:
+            error = {"code": 400, "message": "User not registered to stueble"}
         response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])} if "is not registered for stueble" not in str(result["error"]) else {"code": 400, "message": "User not registered to stueble"}),
+            response=json.dumps(error),
             status=500,
             mimetype="application/json")
         return response
