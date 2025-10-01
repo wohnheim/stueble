@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS stueble_motto (
     id SERIAL PRIMARY KEY,
     motto TEXT NOT NULL,
-    date_of_time DATE NOT NULL UNIQUE CHECK (date_of_time > CURRENT_DATE),
+    date_of_time DATE NOT NULL UNIQUE CHECK (date_of_time >= CURRENT_DATE OR (date_of_time = CURRENT_DATE - 1 AND CURRENT_TIME < '06:00:00')),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     shared_apartment TEXT,
     description TEXT
