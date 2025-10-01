@@ -18,6 +18,7 @@ from packages.backend.sql_connection import (
     sessions,
     users,
 )
+from packages.backend.mail_assets import templates
 from packages.backend.sql_connection.common_functions import check_permissions
 from packages.backend.sql_connection.conn_cursor_functions import *
 from packages.backend.sql_connection.signup_validation import validate_user_data
@@ -1416,31 +1417,15 @@ def invitee():
         return response
 
     if invitee_email is not None:
-        stueble_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/favicon_150.png")
         qr_code = qr.generate(json.dumps(data), size=400, rounded_edges=30)
-        subject = f"Einladung zum Stüble am {stueble_date}"
-        image_data = ({"name": "stueble_logo", "value": stueble_logo}, {"name": "qr_code", "value": qr_code})
-        body = f"""<html lang="de">
-        <head>
-    <meta charset="UTF-8">
- </head>
-<body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
-    <div>
-            <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
-    </div>
-    <h2>Hallo {invitee_first_name} {invitee_last_name},</h2>
-    <p>Du wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen 🥳.</p>
-    <p>Das Motto lautet {motto_name}.</p>
-    </br>
-    <p>Zeige bitte diesen QR-Code beim Einlass vor:</p>
-    <img src="cid:{image_data[1]["name"]}" alt="QR-Code" width="300">
-    </br>
-    <p>Wir freuen uns auf dich!</p>
-    <p>Dein Stüble-Team</p>
-</body>
-</html>"""
-        # body = f"""Hallo {invitee_first_name} {invitee_last_name},\n\ndu wurdest von {first_name} {last_name} zu unserem nächsten Stüble am {stueble_date} eingeladen. \nDas Motto lautet {motto_name}. Wir freuen uns, wenn du kommst.\n\nViele Grüße,\nDein Stüble-Team"""
-        mail.send_mail(Email(invitee_email), subject, body, html=True, images=image_data)
+        result = templates.stueble_guest(invitee_first_name=invitee_first_name,
+                                invitee_last_name=invitee_last_name,
+                                first_name=first_name,
+                                last_name=last_name,
+                                stueble_date=stueble_date,
+                                motto_name=motto_name,
+                                qr_code=qr_code)
+        mail.send_mail(Email(invitee_email), result["subject"], result["body"], html=True, images=result["images"])
 
     response = Response(
         response=json.dumps(data),
