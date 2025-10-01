@@ -191,12 +191,12 @@ BEGIN
             IF (SELECT user_role FROM users WHERE id = NEW.user_id) != 'extern'
             THEN
                 -- if already arrived at stueble forbid removing
-                INSERT INTO events (user_id, stueble_id, event_type, invited_by)
-                (SELECT users_event.user_id, NEW.stueble_id, 'remove', NEW.user_id FROM (SELECT DISTINCT ON (events.user_id) user_id, event_type
+                INSERT INTO events (user_id, stueble_id, event_type)
+                (SELECT users_event.user_id, NEW.stueble_id, 'remove' FROM (SELECT DISTINCT ON (events.user_id) user_id, event_type
                       FROM events
                       WHERE invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
                       ORDER BY events.user_id, submitted DESC) AS users_event
-                WHERE event_type != 'arrive')
+                WHERE event_type NOT IN ('arrive', 'remove'))
                 RETURNING user_id INTO automatically_removed_user;
                 PERFORM pg_notify(
                     'automatically_removed_users',
