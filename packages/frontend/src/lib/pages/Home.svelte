@@ -30,7 +30,7 @@
   <h5>{settings.settings["motto"]}</h5>
 
   {#if !extended}
-    <div id="partial-text" class="margin-left margin-right row center-align">
+    <div id="partial-text" class="margin-left margin-right row wrap center-align">
       <p>{settings.settings["description"]?.split(" ", 7).join(" ")}</p>
       <button class="chip fill round" onclick={() => (extended = true)}>
         ...
@@ -75,7 +75,7 @@
         <button
           class="top-margin-small secondary"
           onclick={() =>
-            ui_object.changePath({ main: "main", sub: "invitation" })}
+            ui_object.changePath({ main: "start", sub: "einladen" })}
         >
           <i>person_add</i>
           <span>Externer Gast</span>

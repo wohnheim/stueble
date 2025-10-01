@@ -17,7 +17,7 @@
       </button>
     {/if}
 
-    {#if ui_object.path.main == "main" && ui_object.path.sub == "invitation"}
+    {#if ui_object.path.main == "start" && ui_object.path.sub == "einladen"}
       <button class="circle transparent" onclick={ui_object.pathBackwards}>
         <i>arrow_back</i>
         <div class="tooltip bottom">Zurück</div>
@@ -26,9 +26,7 @@
 
     {#if ui_object.layout == "mobile"}
       <p style="font-size: large; font-weight: 600;">
-        {capitalizeFirstLetter(
-          ui_object.path.main == "main" ? "home" : ui_object.path.main,
-        )}
+        {capitalizeFirstLetter(ui_object.path.main)}
       </p>
     {/if}
 
