@@ -62,7 +62,6 @@ def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> RemoveGuestSu
     Returns:
         dict: {"success": bool} by default, {"success": True, "data": timestamp} if returning is True, {"success": False, "error": e} if error occurred
     """
-
     if stueble_id == -1:
         # get all stueble ids where the user is currently added
         query = f"""
@@ -97,7 +96,6 @@ def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> RemoveGuestSu
             table_name="events",
             arguments={"user_id": user_id, "stueble_id": stueble_id, "event_type": "remove"},
             returning_column="NOW()")
-
         # maybe shouldn't be possible, but still left in
         if result["success"] is False:
             return error_to_failure(result)
