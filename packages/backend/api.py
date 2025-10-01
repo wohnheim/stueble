@@ -1420,7 +1420,6 @@ def invitee():
         qr_code = qr.generate(json.dumps(data), size=400, rounded_edges=30)
         subject = f"Einladung zum Stüble am {stueble_date}"
         image_data = ({"name": "stueble_logo", "value": stueble_logo}, {"name": "qr_code", "value": qr_code})
-        name = "wohnheime_small"
         body = f"""<html lang="de">
         <head>
     <meta charset="UTF-8">
