@@ -92,7 +92,7 @@ class Database {
   private getAll = async () => {
     const array: (GuestIntern | GuestExtern)[] = (
       await this.database().getAll("guestsIntern")
-    ).map((g) => Object.assign(g, { extern: false }));
+    ).map((g) => Object.assign(g, { extern: false } as { extern: false }));
 
     this.guests = array.concat(
       (await this.database().getAll("guestsExtern")).map((g) =>

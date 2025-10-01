@@ -41,6 +41,7 @@
 <dialog id="dialog-large" bind:this={ui_object.largeDialog} class="right large">
   {#if ui_object.path.main == "settings"}
     <Hosts
+      title={ui_object.path.sub == "hosts" ? "Wirt*innen": "Tutor*innen"}
       bind:page={hostsPage}
       bind:selectedUnfiltered={hostsSelectedUnfiltered}
       bind:selected={hostsSelected}

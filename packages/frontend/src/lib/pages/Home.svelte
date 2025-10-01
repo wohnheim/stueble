@@ -7,12 +7,15 @@
   let hostCapability = $derived(
     ui_object.capabilities.some((c) => c == "host"),
   );
+  let adminCapability = $derived(
+    ui_object.capabilities.some((c) => c == "admin"),
+  );
 </script>
 
 <div id="center-container" class="middle-align center-align">
   <span class="expand"></span>
 
-  {#if ui_object.capabilities.some((c) => c == "admin")}
+  {#if adminCapability}
     <h6 class="no-margin">Angemeldet mit dem Administrator-Konto</h6>
   {:else}
     <h6 class="no-margin">
@@ -68,20 +71,22 @@
           <span>QR-Code anzeigen</span>
         </button>
       {/if}
-      <button
-        class="top-margin-small secondary"
-        onclick={() =>
-          ui_object.changePath({ main: "main", sub: "invitation" })}
-      >
-        <i>person_add</i>
-        <span>Externer Gast</span>
-      </button>
+      {#if !adminCapability}
+        <button
+          class="top-margin-small secondary"
+          onclick={() =>
+            ui_object.changePath({ main: "main", sub: "invitation" })}
+        >
+          <i>person_add</i>
+          <span>Externer Gast</span>
+        </button>
+      {/if}
     </div>
 
     <span class="expand"></span>
 
     {#if ui_object.status !== undefined && ui_object.status.registered && !ui_object.status.present}
-      <p>Doch kein Bock?</p>
+      <p class="no-margin">Doch kein Bock?</p>
 
       <button
         class="large-margin"

@@ -36,6 +36,7 @@ export type GuestIntern = z.infer<typeof guestIntern>;
 
 export const guestExtern = z.object({
   id: uuid,
+  invitedBy: uuid,
   firstName: z.string(),
   lastName: z.string(),
   present: z.boolean(),

@@ -10,7 +10,7 @@
 
   let {
     title,
-    subtitle,
+    subtitle = "",
     page = $bindable(),
     selectedUnfiltered = $bindable(),
     selected = $bindable(),
@@ -18,8 +18,8 @@
     searchResultsUnfiltered = $bindable(),
     searchResults = $bindable(),
   }: {
-    title: string,
-    subtitle: string,
+    title: string;
+    subtitle?: string;
     page: "list" | "add";
     selectedUnfiltered: Host[];
     selected: Host[];
@@ -90,7 +90,7 @@
 </script>
 
 {#if page == "list"}
-  <Fullscreen header="Wirt*innen" backAction={ui_object.pathBackwards}>
+  <Fullscreen header={title} backAction={ui_object.pathBackwards}>
     {#each database.hosts as host, i}
       {#if i != 0}
         <br />
@@ -125,7 +125,7 @@
   </Fullscreen>
 {:else}
   <Fullscreen
-    header="Wirt*innen"
+    header={title}
     subheader="Hinzufügen"
     forceHeaderVisible={false}
     backAction={() => (page = "list")}
