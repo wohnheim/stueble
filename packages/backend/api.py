@@ -253,7 +253,7 @@ def signup_data():
             mimetype="application/json")
         return response
     verification_token = result["data"]
-    wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime.png")
+    wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime_small.png")
     with open(wohnheime_logo, "rb") as image_file:
         wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")
     subject = "Neuer Benutzeraccount für das Stüble"
@@ -1416,7 +1416,7 @@ def invitee():
         return response
 
     if invitee_email is not None:
-        wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime.png")
+        wohnheime_logo = os.path.expanduser("~/stueble/packages/backend/google_functions/images/wohnheime_small.png")
         with open(wohnheime_logo, "rb") as image_file:
             wohnheime_logo = base64.b64encode(image_file.read()).decode("utf-8")
         qr_code = base64.b64encode(qr.generate(json.dumps(data)).read()).decode("utf-8")
