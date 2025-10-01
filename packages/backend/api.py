@@ -903,7 +903,7 @@ def guest_change():
     if event_type == EventType.ARRIVE:
         # verify guest if not verified yet
         if data["data"][4] is False:
-            result = users.update_user(cursor=cursor, 
+            result = users.update_user(cursor=cursor,
                                        user_id=user_id, 
                                        verified=True)
             if result["success"] is False:
@@ -914,13 +914,12 @@ def guest_change():
                     mimetype="application/json")
                 return response
 
-
     # change guest status to arrive / leave
     result = guest_events.change_guest(cursor=cursor, user_uuid=user_uuid, event_type=event_type)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            response=json.dumps({"code": 500, "message": str(result["error"])} if "is not registered for stueble" not in str(result["error"]) else {"code": 400, "message": "User not registered to stueble"}),
             status=500,
             mimetype="application/json")
         return response
