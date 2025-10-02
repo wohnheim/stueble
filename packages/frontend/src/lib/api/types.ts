@@ -45,13 +45,13 @@ export const guestExtern = z.object({
 
 export type GuestExtern = z.infer<typeof guestExtern>;
 
-export const host = z.object({
+export const hostOrTutor = z.object({
   id: uuid,
   firstName: z.string(),
   lastName: z.string(),
 });
 
-export type Host = z.infer<typeof host>;
+export type HostOrTutor = z.infer<typeof hostOrTutor>;
 
 export const config = z.object({
   maximumGuests: z.int32(),
@@ -140,16 +140,30 @@ export const acknowledgment = z.object({
   resId,
 });
 
-/* Operation: receiveHostChanges */
+/* Operation: receiveHostsChanges */
 
 export const hostAdded = z.object({
   event: constant("hostAdded"),
   resId,
-  data: host,
+  data: hostOrTutor,
 });
 
 export const hostRemoved = z.object({
   event: constant("hostRemoved"),
+  resId,
+  data: z.string(),
+});
+
+/* Operation: receiveTutorChanges */
+
+export const tutorAdded = z.object({
+  event: constant("tutorAdded"),
+  resId,
+  data: hostOrTutor,
+});
+
+export const tutorRemoved = z.object({
+  event: constant("tutorRemoved"),
   resId,
   data: z.string(),
 });
@@ -266,6 +280,8 @@ export const messageFromServer = z.union([
   guestModified,
   hostAdded,
   hostRemoved,
+  tutorAdded,
+  tutorRemoved,
   motto,
   qrCode,
   publicKey,

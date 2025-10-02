@@ -48,6 +48,16 @@
       database.addGuests(await apiClient("http").getGuestList());
       settings.set("guestListFetched", JSON.stringify(true));
     }
+
+    if (settings.settings["hostsFetched"] === undefined) {
+      database.addHosts(await apiClient("http").getHosts());
+      settings.set("hostsFetched", JSON.stringify(true));
+    }
+
+    if (settings.settings["tutorsFetched"] === undefined) {
+      database.addTutors(await apiClient("http").getTutors());
+      settings.set("tutorsFetched", JSON.stringify(true));
+    }
   };
 
   const loadHostDataFromDatabase = async () => {
