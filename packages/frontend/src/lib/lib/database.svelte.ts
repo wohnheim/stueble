@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
-import type { GuestExtern, GuestIntern, Host } from "$lib/api/types";
+import type { GuestExtern, GuestIntern, HostOrTutor } from "$lib/api/types";
 
 interface StuebleDB extends DBSchema {
   guestsIntern: {
@@ -18,7 +18,12 @@ interface StuebleDB extends DBSchema {
     indexes: { "by-last-name": number };
   };
   hosts: {
-    value: Host;
+    value: HostOrTutor;
+    key: string;
+    indexes: { "by-last-name": number };
+  };
+  tutors: {
+    value: HostOrTutor;
     key: string;
     indexes: { "by-last-name": number };
   };
@@ -29,7 +34,8 @@ class Database {
   ready = $state(false);
 
   guests = $state<(GuestIntern | GuestExtern)[]>([]);
-  hosts = $state<Host[]>([]);
+  hosts = $state<HostOrTutor[]>([]);
+  tutors = $state<HostOrTutor[]>([]);
 
   constructor() {
     this.database = () => {
@@ -162,10 +168,16 @@ class Database {
 
   /* Hosts */
 
-  addHost = async (host: Host) => {
+  addHost = async (host: HostOrTutor) => {
     await this.database().put("hosts", host);
 
     this.hosts.push(host);
+  };
+
+  addHosts = async (hosts: HostOrTutor[]) => {
+    for (const host of hosts) {
+      this.addHost(host);
+    }
   };
 
   deleteHost = async (id: string) => {
@@ -173,6 +185,27 @@ class Database {
 
     const index = this.hosts.findIndex((h) => h.id == id);
     if (index != -1) this.hosts.splice(index, 1);
+  };
+
+  /* Tutors */
+
+  addTutor = async (tutor: HostOrTutor) => {
+    await this.database().put("tutors", tutor);
+
+    this.tutors.push(tutor);
+  };
+
+  addTutors = async (tutors: HostOrTutor[]) => {
+    for (const tutor of tutors) {
+      this.addTutor(tutor);
+    }
+  };
+
+  deleteTutor = async (id: string) => {
+    await this.database().delete("tutors", id);
+
+    const index = this.tutors.findIndex((t) => t.id == id);
+    if (index != -1) this.tutors.splice(index, 1);
   };
 }
 

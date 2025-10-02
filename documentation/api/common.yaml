@@ -1,0 +1,101 @@
+components:
+  schemas:
+    # Common
+
+    UUID:
+      type: string
+      format: uuid
+      description: UUID conforming to RFC4122
+      example: 1d419481-4fab-4170-acd9-bc20dcbf224a
+
+    Date:
+      type: string
+      format: date
+      description: Date notation as defined by RFC 3339
+      example: 2025-09-21
+
+    NameProperties:
+      type: object
+      properties:
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Smith
+
+    LocationProperties:
+      type: object
+      properties:
+        roomNumber:
+          type: integer
+          format: int32
+          example: 301
+        residence:
+          type: string
+          description: Student residence
+          example: Hirte
+
+    # User
+
+    User:
+      allOf:
+        - $ref: "#/components/schemas/NameProperties"
+        - $ref: "#/components/schemas/LocationProperties"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/UUID"
+            verified:
+              type: boolean
+              description: Identity verified (via identity card or key)
+
+    # Guest
+
+    GuestIntern:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            present:
+              type: boolean
+              description: Guest is present
+            extern:
+              type: boolean
+              const: false
+
+    GuestExtern:
+      allOf:
+        - $ref: "#/components/schemas/NameProperties"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/UUID"
+            present:
+              type: boolean
+              description: Guest is present
+            extern:
+              type: boolean
+              const: true
+
+    Guest:
+      oneOf:
+        - $ref: "#/components/schemas/GuestIntern"
+        - $ref: "#/components/schemas/GuestExtern"
+
+    # Host / Tutor
+
+    Host:
+      allOf:
+        - $ref: "#/components/schemas/NameProperties"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/UUID"
+            residence:
+              type: string
+              description: Student residence
+              example: Hirte
+
+    Tutor:
+      $ref: "#/components/schemas/Host"
