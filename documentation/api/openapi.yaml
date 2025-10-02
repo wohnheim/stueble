@@ -150,201 +150,6 @@ paths:
       security:
         - guest_sid: []
 
-  /guests:
-    get:
-      tags:
-        - guests
-      summary: Returns the guest list.
-      description: Fetches the current guest list.
-      operationId: getGuestList
-      responses:
-        "200":
-          description: Current guest list.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Guest"
-        "403":
-          description: Authorization failure (not a host).
-        "401":
-          description: Authentication failure.
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - host_sid: []
-
-    put:
-      tags:
-        - guests
-      summary: Add to guest list.
-      description: |
-        Adds a specified user to the guest list.\
-        To register yourself don't send a request body.
-      operationId: addToGuestList
-      requestBody:
-        required: false
-        description: |
-          A JSON object specifying the user and date.\
-          A request body is only allowed if host capability exists.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/requestBodies/GuestAdditionRequest"
-      responses:
-        "201":
-          description: Success.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Guest"
-        "403":
-          description: Authorization failure (not a host).
-        "401":
-          description: Authentication failure.
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - guest_sid: []
-
-    post:
-      tags:
-        - guests
-      summary: Modify a guest.
-      description: Modifies properties of a specified guest.
-      operationId: modifyGuest
-      requestBody:
-        required: true
-        description: A JSON object containing values to be modified.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/requestBodies/GuestModificationRequest"
-      responses:
-        "200":
-          description: Success.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Guest"
-        "403":
-          description: Authorization failure (not a host).
-        "401":
-          description: Authentication failure.
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - host_sid: []
-
-    delete:
-      tags:
-        - guests
-      summary: Remove from guest list.
-      description: Remove a specified user from the guest list.
-      operationId: removeFromGuestList
-      requestBody:
-        required: true
-        description: A JSON string specifying the user.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UUID"
-      responses:
-        "204":
-          description: Success.
-        "401":
-          description: Authentication failure.
-        "403":
-          description: Authorization failure (not a host).
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - guest_sid: []
-
-  /guests/invitee:
-    put:
-      tags:
-        - guests
-      summary: Invite friend
-      description: |-
-        Invite a friend and optionally send an email with a qr code.
-        The inviting person needs to be registered for the stueble.
-      operationId: inviteExtern
-      requestBody:
-        required: true
-        description: A JSON object specifying the guest.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/requestBodies/InviteExternRequest"
-      responses:
-        "201":
-          description: Success.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GuestExtern"
-        "401":
-          description: Authentication failure.
-        "403":
-          description: Authorization failure (not registered).
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - guest_sid: []
-
-    delete:
-      tags:
-        - guests
-      summary: Disinvite friend
-      description: |-
-        Removes a previously invited friend from the guest list.
-        The disinviting person needs to be registered for the stueble.
-      operationId: inviteExtern
-      requestBody:
-        required: true
-        description: A JSON string specifying the guest.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UUID"
-      responses:
-        "204":
-          description: Success.
-        "401":
-          description: Authentication failure.
-        "403":
-          description: Authorization failure (not registered).
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - guest_sid: []
-
   /websocket:
     get:
       tags:
@@ -399,7 +204,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GuestIntern"
+                $ref: "common.yaml#/components/schemas/GuestIntern"
         "422":
           description: User doesn't live in this student residence.
         "403":
@@ -428,8 +233,8 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: "#/components/schemas/GuestIntern"
-                - $ref: "#/components/schemas/GuestExtern"
+                - $ref: "common.yaml#/components/schemas/GuestIntern"
+                - $ref: "common.yaml#/components/schemas/GuestExtern"
               discriminator: id
               required:
                 - id
@@ -439,7 +244,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Guest"
+                $ref: "common.yaml#/components/schemas/Guest"
         "422":
           description: |-
             User doesn't live in this student residence. \
@@ -469,7 +274,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "common.yaml#/components/schemas/User"
         "401":
           description: Authentication failure.
         "5xx":
@@ -516,7 +321,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/User"
+                  $ref: "common.yaml#/components/schemas/User"
         "403":
           description: Authorization failure (not a host).
         "401":
@@ -529,6 +334,387 @@ paths:
                 $ref: "#/components/responses/Error"
       security:
         - host_sid: []
+
+  /guests:
+    get:
+      tags:
+        - guests
+      summary: Returns the guest list.
+      description: Fetches the current guest list.
+      operationId: getGuestList
+      responses:
+        "200":
+          description: Current guest list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "common.yaml#/components/schemas/Guest"
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - host_sid: []
+
+    put:
+      tags:
+        - guests
+      summary: Add to guest list.
+      description: |
+        Adds a specified user to the guest list.\
+        To register yourself don't send a request body.
+      operationId: addToGuestList
+      requestBody:
+        required: false
+        description: |
+          A JSON object specifying the user and date.\
+          A request body is only allowed if host capability exists.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/GuestAdditionRequest"
+      responses:
+        "201":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Guest"
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - guest_sid: []
+
+    post:
+      tags:
+        - guests
+      summary: Modify a guest.
+      description: Modifies properties of a specified guest.
+      operationId: modifyGuest
+      requestBody:
+        required: true
+        description: A JSON object containing values to be modified.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/GuestModificationRequest"
+      responses:
+        "200":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Guest"
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - host_sid: []
+
+    delete:
+      tags:
+        - guests
+      summary: Remove from guest list.
+      description: Remove a specified user from the guest list.
+      operationId: removeFromGuestList
+      requestBody:
+        required: true
+        description: A JSON string specifying the user.
+        content:
+          application/json:
+            schema:
+              $ref: "common.yaml#/components/schemas/UUID"
+      responses:
+        "204":
+          description: Success.
+        "401":
+          description: Authentication failure.
+        "403":
+          description: Authorization failure (not a host).
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - guest_sid: []
+
+  /guests/invitee:
+    put:
+      tags:
+        - guests
+      summary: Invite friend
+      description: |-
+        Invite a friend and optionally send an email with a qr code.
+        The inviting person needs to be registered for the stueble.
+      operationId: inviteExtern
+      requestBody:
+        required: true
+        description: A JSON object specifying the guest.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/InviteExternRequest"
+      responses:
+        "201":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/GuestExtern"
+        "401":
+          description: Authentication failure.
+        "403":
+          description: Authorization failure (not registered).
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - guest_sid: []
+
+    delete:
+      tags:
+        - guests
+      summary: Disinvite friend
+      description: |-
+        Removes a previously invited friend from the guest list.
+        The disinviting person needs to be registered for the stueble.
+      operationId: inviteExtern
+      requestBody:
+        required: true
+        description: A JSON string specifying the guest.
+        content:
+          application/json:
+            schema:
+              $ref: "common.yaml#/components/schemas/UUID"
+      responses:
+        "204":
+          description: Success.
+        "401":
+          description: Authentication failure.
+        "403":
+          description: Authorization failure (not registered).
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - guest_sid: []
+
+  /hosts:
+    get:
+      tags:
+        - hosts
+      summary: Returns the hosts.
+      description: |
+        Fetches the current hosts.
+        Only the tutors are allowed to fetch the hosts.
+      operationId: getHosts
+      responses:
+        "200":
+          description: Current hosts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "common.yaml#/components/schemas/Host"
+        "403":
+          description: Authorization failure (not a tutor).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - tutor_sid: []
+
+    put:
+      tags:
+        - hosts
+      summary: Add hosts.
+      description: |
+        Add the host capability to the specified users.\
+        Only the tutors are allowed to change the hosts.
+      operationId: addHosts
+      requestBody:
+        required: true
+        description: A JSON object containing the new hosts and a date.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/HostsOrTutorsModificationRequest"
+      responses:
+        "204":
+          description: Hosts successfully updated.
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - tutor_sid: []
+
+    delete:
+      tags:
+        - hosts
+      summary: Remove hosts.
+      description: |
+        Remove the host capability from the specified users.\
+        Only the tutors are allowed to change the hosts.
+      operationId: removeHosts
+      requestBody:
+        required: true
+        description: A JSON object containing the hosts to be removed and a date.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/HostsOrTutorsModificationRequest"
+      responses:
+        "204":
+          description: Hosts successfully updated.
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - tutor_sid: []
+
+  /tutors:
+    get:
+      tags:
+        - tutors
+      summary: Returns the tutors.
+      description: |
+        Fetches the current tutors.
+        Only the admin is allowed to fetch the tutors.
+      operationId: getTutors
+      responses:
+        "200":
+          description: Current tutors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "common.yaml#/components/schemas/Tutor"
+        "403":
+          description: Authorization failure (not an admin).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - admin_sid: []
+
+    put:
+      tags:
+        - tutors
+      summary: Add tutors.
+      description: |
+        Add the tutor capability to the specified users.\
+        Only the admin is allowed to change the tutors.
+      operationId: addTutors
+      requestBody:
+        required: true
+        description: A JSON object containing the new tutors and a date.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/HostsOrTutorsModificationRequest"
+      responses:
+        "204":
+          description: Tutors successfully updated.
+        "403":
+          description: Authorization failure (not an admin).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - admin_sid: []
+
+    delete:
+      tags:
+        - tutors
+      summary: Remove tutors.
+      description: |
+        Remove the tutor capability from the specified users.\
+        Only the admin is allowed to change the tutors.
+      operationId: removeTutors
+      requestBody:
+        required: true
+        description: A JSON object containing the tutors to be removed and a date.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/HostsOrTutorsModificationRequest"
+      responses:
+        "204":
+          description: Tutors successfully updated.
+        "403":
+          description: Authorization failure (not an admin).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - admin_sid: []
 
   /motto:
     post:
@@ -561,69 +747,6 @@ paths:
                 $ref: "#/components/responses/Error"
       security:
         - host_sid: []
-
-  /hosts:
-    put:
-      tags:
-        - hosts
-      summary: Add hosts.
-      description: |
-        Add the host capability to the specified users.\
-        Only the tutors are allowed to change the hosts.
-      operationId: addHosts
-      requestBody:
-        required: true
-        description: A JSON object containing the new hosts and a date.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/requestBodies/HostsModificationRequest"
-      responses:
-        "204":
-          description: Hosts successfully updated.
-        "403":
-          description: Authorization failure (not a host).
-        "401":
-          description: Authentication failure.
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - tutor_sid: []
-
-    delete:
-      tags:
-        - hosts
-      summary: Remove hosts.
-      description: |
-        Remove the host capability from the specified users.\
-        Only the tutors are allowed to change the hosts.
-      operationId: removeHosts
-      requestBody:
-        required: true
-        description: A JSON object containing the hosts to be removed and a date.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/requestBodies/HostsModificationRequest"
-      responses:
-        "204":
-          description: Hosts successfully updated.
-        "403":
-          description: Authorization failure (not a host).
-        "401":
-          description: Authentication failure.
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - tutor_sid: []
 
   /config:
     get:
@@ -691,82 +814,6 @@ paths:
 
 components:
   schemas:
-    UUID:
-      type: string
-      format: uuid
-      description: UUID conforming to RFC4122
-      example: 1d419481-4fab-4170-acd9-bc20dcbf224a
-
-    Date:
-      type: string
-      format: date
-      description: Date notation as defined by RFC 3339
-      example: 2025-09-21
-
-    UserProperties:
-      type: object
-      properties:
-        firstName:
-          type: string
-          example: John
-        lastName:
-          type: string
-          example: Smith
-        roomNumber:
-          type: integer
-          format: int32
-          example: 301
-        residence:
-          type: string
-          description: Student residence
-          example: Hirte
-
-    User:
-      allOf:
-        - $ref: "#/components/schemas/UserProperties"
-        - type: object
-          properties:
-            id:
-              $ref: "#/components/schemas/UUID"
-            verified:
-              type: boolean
-              description: Identity verified (via identity card or key)
-
-    GuestIntern:
-      allOf:
-        - $ref: "#/components/schemas/User"
-        - type: object
-          properties:
-            present:
-              type: boolean
-              description: Guest is present
-            extern:
-              type: boolean
-              const: false
-
-    GuestExtern:
-      type: object
-      properties:
-        id:
-          $ref: "#/components/schemas/UUID"
-        firstName:
-          type: string
-          example: John
-        lastName:
-          type: string
-          example: Smith
-        present:
-          type: boolean
-          description: Guest is present
-        extern:
-          type: boolean
-          const: true
-
-    Guest:
-      oneOf:
-        - $ref: "#/components/schemas/GuestIntern"
-        - $ref: "#/components/schemas/GuestExtern"
-
     Config:
       type: object
       properties:
@@ -799,7 +846,7 @@ components:
 
     SignUpRequest:
       allOf:
-        - $ref: "#/components/schemas/User"
+        - $ref: "common.yaml#/components/schemas/User"
         - type: object
           properties:
             username:
@@ -825,7 +872,8 @@ components:
 
     UserCreationRequest:
       allOf:
-        - $ref: "#/components/schemas/UserProperties"
+        - $ref: "common.yaml#/components/schemas/NameProperties"
+        - $ref: "common.yaml#/components/schemas/LocationProperties"
         - type: object
           properties:
             verified:
@@ -840,7 +888,7 @@ components:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "common.yaml#/components/schemas/UUID"
         present:
           type: boolean
           description: Guest is present
@@ -851,9 +899,9 @@ components:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "common.yaml#/components/schemas/UUID"
         date:
-          $ref: "#/components/schemas/Date"
+          $ref: "common.yaml#/components/schemas/Date"
       required:
         - id
 
@@ -870,7 +918,7 @@ components:
           type: string
           example: john.smith@example.com
         date:
-          $ref: "#/components/schemas/Date"
+          $ref: "common.yaml#/components/schemas/Date"
       required:
         - firstName
         - lastName
@@ -884,7 +932,7 @@ components:
             description:
               type: string
             date:
-              $ref: "#/components/schemas/Date"
+              $ref: "common.yaml#/components/schemas/Date"
           required:
             - motto
         - type: object
@@ -894,19 +942,19 @@ components:
             description:
               type: string
             date:
-              $ref: "#/components/schemas/Date"
+              $ref: "common.yaml#/components/schemas/Date"
           required:
             - description
 
-    HostsModificationRequest:
+    HostsOrTutorsModificationRequest:
       type: object
       properties:
         hosts:
           type: array
           items:
-            $ref: "#/components/schemas/UUID"
+            $ref: "common.yaml#/components/schemas/UUID"
         date:
-          $ref: "#/components/schemas/Date"
+          $ref: "common.yaml#/components/schemas/Date"
       required:
         - hosts
 

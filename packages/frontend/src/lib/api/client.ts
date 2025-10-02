@@ -6,6 +6,7 @@ import type {
   Config,
   GuestExtern,
   GuestIntern,
+  HostOrTutor,
   MessageFromClient,
   MessageFromServer,
   ResponseMap,
@@ -106,6 +107,81 @@ class HTTPClient {
     }
   }
 
+  /* Users */
+
+  async createUser(user: UserProperties) {
+    const res = await fetch("/api/user", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...user,
+        verified: true,
+        privacyPolicy: true,
+      }),
+    });
+
+    if (res.ok) return await res.json<GuestIntern>();
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    throw new Error(res.status.toString());
+  }
+
+  async modifyUser(
+    user: (Partial<GuestIntern> | Partial<GuestExtern>) & { id: string },
+  ) {
+    const res = await fetch("/api/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(user),
+    });
+
+    if (res.ok) return await res.json<GuestIntern | GuestExtern>();
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    throw new Error(res.status.toString());
+  }
+
+  async getUser() {
+    const res = await fetch("/api/user");
+
+    if (res.ok) return await res.json<User>();
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    throw new Error(res.status.toString());
+  }
+
+  async searchUsers(props: Partial<UserProperties & { email: string }>) {
+    console.assert(
+      props.firstName !== undefined ||
+        props.lastName !== undefined ||
+        props.roomNumber !== undefined ||
+        props.residence !== undefined ||
+        props.email !== undefined,
+    );
+
+    const params = new URLSearchParams();
+    if (props.firstName !== undefined)
+      params.append("first_name", props.firstName);
+    if (props.lastName !== undefined)
+      params.append("last_name", props.lastName);
+    if (props.roomNumber !== undefined)
+      params.append("room_number", props.roomNumber.toString());
+    if (props.residence !== undefined)
+      params.append("residence", props.residence);
+    if (props.email !== undefined) params.append("email", props.email);
+
+    const res = await fetch("/api/user/search?" + params.toString());
+
+    if (res.ok) return await res.json<User[]>();
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    throw new Error(res.status.toString());
+  }
+
   /* Guests */
 
   async getGuestList() {
@@ -196,104 +272,17 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  /* Users */
-
-  async createUser(user: UserProperties) {
-    const res = await fetch("/api/user", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...user,
-        verified: true,
-        privacyPolicy: true,
-      }),
-    });
-
-    if (res.ok) return await res.json<GuestIntern>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
-
-    throw new Error(res.status.toString());
-  }
-
-  async modifyUser(
-    user: (Partial<GuestIntern> | Partial<GuestExtern>) & { id: string },
-  ) {
-    const res = await fetch("/api/user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(user),
-    });
-
-    if (res.ok) return await res.json<GuestIntern | GuestExtern>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
-
-    throw new Error(res.status.toString());
-  }
-
-  async getUser() {
-    const res = await fetch("/api/user");
-
-    if (res.ok) return await res.json<User>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
-
-    throw new Error(res.status.toString());
-  }
-
-  async searchUsers(props: Partial<UserProperties & { email: string }>) {
-    console.assert(
-      props.firstName !== undefined ||
-        props.lastName !== undefined ||
-        props.roomNumber !== undefined ||
-        props.residence !== undefined ||
-        props.email !== undefined,
-    );
-
-    const params = new URLSearchParams();
-    if (props.firstName !== undefined)
-      params.append("first_name", props.firstName);
-    if (props.lastName !== undefined)
-      params.append("last_name", props.lastName);
-    if (props.roomNumber !== undefined)
-      params.append("room_number", props.roomNumber.toString());
-    if (props.residence !== undefined)
-      params.append("residence", props.residence);
-    if (props.email !== undefined) params.append("email", props.email);
-
-    const res = await fetch("/api/user/search?" + params.toString());
-
-    if (res.ok) return await res.json<User[]>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
-
-    throw new Error(res.status.toString());
-  }
-
-  /* Motto */
-
-  async modifyMotto(motto?: string, description?: string, date?: Date) {
-    if (motto === undefined && description == undefined) return false;
-
-    const res = await fetch("/api/motto", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        motto,
-        description,
-        date: date?.toISOString(),
-      }),
-    });
-
-    if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
-
-    return false;
-  }
-
   /* Hosts */
+
+  async getHosts() {
+    const res = await fetch("/api/hosts");
+
+    if (res.ok) return await res.json<HostOrTutor[]>();
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    throw new Error(res.status.toString());
+  }
 
   async addHosts(hosts: string[], date?: Date) {
     const res = await fetch("/api/hosts", {
@@ -331,6 +320,16 @@ class HTTPClient {
 
   /* Tutors */
 
+  async getTutors() {
+    const res = await fetch("/api/tutors");
+
+    if (res.ok) return await res.json<HostOrTutor[]>();
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    throw new Error(res.status.toString());
+  }
+
   async addTutors(tutors: string[]) {
     const res = await fetch("/api/tutors", {
       method: "PUT",
@@ -353,6 +352,28 @@ class HTTPClient {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tutors,
+      }),
+    });
+
+    if (res.ok) return true;
+    else if (Math.floor(res.status / 100) == 5)
+      console.warn("Failure: " + res.json());
+
+    return false;
+  }
+
+  /* Motto */
+
+  async modifyMotto(motto?: string, description?: string, date?: Date) {
+    if (motto === undefined && description == undefined) return false;
+
+    const res = await fetch("/api/motto", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        motto,
+        description,
+        date: date?.toISOString(),
       }),
     });
 
@@ -565,6 +586,10 @@ class WebSocketClient {
       database.addHost(message.data);
     } else if (message.event == "hostRemoved") {
       database.deleteHost(message.data);
+    } else if (message.event == "tutorAdded") {
+      database.addTutor(message.data);
+    } else if (message.event == "tutorRemoved") {
+      database.deleteTutor(message.data);
     } else if (message.event == "error") {
       if (message.reqId !== undefined) {
         const promise = this.promises[message.reqId];

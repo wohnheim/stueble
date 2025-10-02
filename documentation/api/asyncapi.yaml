@@ -41,6 +41,10 @@ channels:
         $ref: "#/components/messages/hostAdded"
       hostRemoved:
         $ref: "#/components/messages/hostRemoved"
+      tutorAdded:
+        $ref: "#/components/messages/tutorAdded"
+      tutorRemoved:
+        $ref: "#/components/messages/tutorRemoved"
       requestInvitees:
         $ref: "#/components/messages/requestInvitees"
       invitees:
@@ -111,7 +115,7 @@ operations:
         - $ref: "#/channels/primary/messages/acknowledgement"
 
   receiveHostsChanges:
-    summary: Notify host clients about changes to the hosts.
+    summary: Notify tutor clients about changes to the hosts.
     description: "Important: Changes are not sent to the client that caused the change."
     action: receive
     channel:
@@ -119,6 +123,19 @@ operations:
     messages:
       - $ref: "#/channels/primary/messages/hostAdded"
       - $ref: "#/channels/primary/messages/hostRemoved"
+    reply:
+      messages:
+        - $ref: "#/channels/primary/messages/acknowledgement"
+
+  receiveTutorsChanges:
+    summary: Notify admin clients about changes to the tutors.
+    description: "Important: Changes are not sent to the client that caused the change."
+    action: receive
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/tutorAdded"
+      - $ref: "#/channels/primary/messages/tutorRemoved"
     reply:
       messages:
         - $ref: "#/channels/primary/messages/acknowledgement"
@@ -290,7 +307,7 @@ components:
           resId:
             $ref: "#/components/schemas/resId"
           data:
-            $ref: "#/components/schemas/Guest"
+            $ref: "common.yaml#/components/schemas/Guest"
       correlationId:
         location: "$message.payload#/resId"
 
@@ -308,7 +325,7 @@ components:
           resId:
             $ref: "#/components/schemas/resId"
           data:
-            $ref: "#/components/schemas/UUID"
+            $ref: "common.yaml#/components/schemas/UUID"
       correlationId:
         location: "$message.payload#/resId"
 
@@ -326,7 +343,7 @@ components:
           resId:
             $ref: "#/components/schemas/resId"
           data:
-            $ref: "#/components/schemas/Guest"
+            $ref: "common.yaml#/components/schemas/Guest"
       correlationId:
         location: "$message.payload#/resId"
 
@@ -362,7 +379,7 @@ components:
           resId:
             $ref: "#/components/schemas/resId"
           data:
-            $ref: "#/components/schemas/Host"
+            $ref: "common.yaml#/components/schemas/Host"
       correlationId:
         location: "$message.payload#/resId"
 
@@ -380,7 +397,43 @@ components:
           resId:
             $ref: "#/components/schemas/resId"
           data:
-            $ref: "#/components/schemas/UUID"
+            $ref: "common.yaml#/components/schemas/UUID"
+      correlationId:
+        location: "$message.payload#/resId"
+
+    tutorAdded:
+      name: tutorAdded
+      title: Tutor added
+      summary: |-
+        A tutor was added.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: tutorAdded
+          resId:
+            $ref: "#/components/schemas/resId"
+          data:
+            $ref: "common.yaml#/components/schemas/Tutor"
+      correlationId:
+        location: "$message.payload#/resId"
+
+    tutorRemoved:
+      name: tutorRemoved
+      title: Tutor removed
+      summary: |-
+        A tutor was removed.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: tutorRemoved
+          resId:
+            $ref: "#/components/schemas/resId"
+          data:
+            $ref: "common.yaml#/components/schemas/UUID"
       correlationId:
         location: "$message.payload#/resId"
 
@@ -416,7 +469,7 @@ components:
           data:
             type: array
             items:
-              $ref: "#/components/schemas/GuestExtern"
+              $ref: "common.yaml#/components/schemas/GuestExtern"
       correlationId:
         location: "$message.payload#/reqId"
 
@@ -499,7 +552,7 @@ components:
                 type: object
                 properties:
                   id:
-                    $ref: "#/components/schemas/UUID"
+                    $ref: "common.yaml#/components/schemas/UUID"
                   timestamp:
                     type: integer
                     format: uint32
@@ -583,86 +636,16 @@ components:
         location: "$message.payload#/reqId"
 
   schemas:
-    GuestIntern:
-      type: object
-      properties:
-        id:
-          $ref: "#/components/schemas/UUID"
-        firstName:
-          type: string
-          example: John
-        lastName:
-          type: string
-          example: Smith
-        roomNumber:
-          type: integer
-          format: int32
-          example: 301
-        residence:
-          type: string
-          description: Student residence
-          example: HES
-        present:
-          type: boolean
-          description: Guest is present
-        verified:
-          type: boolean
-          description: Identity verified (via identity card or key)
-        extern:
-          type: boolean
-          const: false
-
-    GuestExtern:
-      type: object
-      properties:
-        id:
-          $ref: "#/components/schemas/UUID"
-        firstName:
-          type: string
-          example: John
-        lastName:
-          type: string
-          example: Smith
-        present:
-          type: boolean
-          description: Guest is present
-        extern:
-          type: boolean
-          const: true
-
-    Guest:
-      oneOf:
-        - $ref: "#/components/schemas/GuestIntern"
-        - $ref: "#/components/schemas/GuestExtern"
-
     GuestVerification:
       type: object
       properties:
         id:
-          $ref: "#/components/schemas/UUID"
+          $ref: "common.yaml#/components/schemas/UUID"
         method:
           type: string
           enum:
             - idCard
             - roomKey
-
-    Host:
-      type: object
-      properties:
-        id:
-          $ref: "#/components/schemas/UUID"
-        firstName:
-          type: string
-          example: John
-        lastName:
-          type: string
-          example: Smith
-
-    UUID:
-      type: string
-      format: uuid
-      description: UUID conforming to RFC4122
-      example: 1d419481-4fab-4170-acd9-bc20dcbf224a
 
     reqId:
       type: integer
