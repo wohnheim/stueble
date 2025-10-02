@@ -24,13 +24,18 @@
   {/if}
 
   <p>
-    Das Motto am {ui_object.status?.date.toLocaleDateString("de-DE")} lautet:
+    Das Motto{ui_object.status?.date !== undefined
+      ? "am " + ui_object.status.date.toLocaleDateString("de-DE")
+      : ""} lautet:
   </p>
 
   <h5>{settings.settings["motto"]}</h5>
 
   {#if !extended}
-    <div id="partial-text" class="margin-left margin-right row wrap center-align">
+    <div
+      id="partial-text"
+      class="margin-left margin-right row wrap center-align"
+    >
       <p>{settings.settings["description"]?.split(" ", 7).join(" ")}</p>
       <button class="chip fill round" onclick={() => (extended = true)}>
         ...
