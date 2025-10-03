@@ -1051,7 +1051,7 @@ def attend_stueble():
             mimetype="application/json")
         return response
 
-    stueble_id = result["data"][0]
+    stueble_id = result["data"]["stueble_id"]
 
     if request.method == "PUT":
         result = events.add_guest(
@@ -1210,9 +1210,9 @@ def invitee():
             mimetype="application/json")
         return response
 
-    stueble_id = result["data"][0]
-    motto_name = result["data"][1]
-    stueble_date = result["data"][2]
+    stueble_id = result["data"]["stueble_id"]
+    motto_name = result["data"]["motto"]
+    stueble_date = result["data"]["date_of_time"]
     stueble_date = stueble_date.strftime("%d.%m.%Y")
 
     if request.method == "PUT":
@@ -1448,6 +1448,95 @@ def user():
         mimetype="application/json")
     return response
 
+@app.route("/user", methods=["POST"])
+def verify_user():
+    """
+    verify a user (only hosts and above can verify users)
+    """
+    # load data
+    data = request.get_json()
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 401, "message": "The session id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
+    # check permissions, since only tutors or above can change user role
+    result = check_permissions(cursor=cursor, session_id=session_id,
+                               required_role=UserRole.USER)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+    user_id = result["data"]["user_id"]
+
+    result = users.update_user(cursor=cursor,
+                               user_id=user_id,
+                               verified=True)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    keywords = ["user_uuid", "first_name", "last_name", "user_role"]
+    result = users.get_user(cursor=cursor, user_id=user_id, keywords=keywords)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    user_info = {key: value for key, value in zip(keywords, result["data"])}
+
+    result = users.check_user_present(cursor=cursor, user_id=user_id)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    present = result["data"]
+
+    user_data = {
+        "id": user_info["user_uuid"],
+        "present": present,
+        "firstName": user_info["first_name"],
+        "lastName": user_info["last_name"],
+        "extern": user_info["user_role"] == FrontendUserRole.EXTERN.value}
+
+    if user_info["user_role"] == FrontendUserRole.INTERN.value:
+        user_data["roomNumber"] = user_info["room"]
+        user_data["residence"] = user_info["residence"]
+        user_data["verified"] = True
+
+    asyncio.run(ws.broadcast(event="guestModified", data=user_data, skip_sid=session_id))
+
+    response = Response(
+        response=json.dumps(user_data),
+        status=200,
+        mimetype="application/json")
+    return response
+
 # TODO websocket change update user
 @app.route("/user/change_role", methods=["POST"])
 def change_user_role():
@@ -1560,9 +1649,9 @@ def change_user_role():
             "present": present,
             "firstName": user_info["first_name"],
             "lastName": user_info["last_name"],
-            "extern": user_info["user_role"] == FrontendUserRole.EXTERN}
+            "extern": user_info["user_role"] == FrontendUserRole.EXTERN.value}
 
-        if user_info["user_role"] == FrontendUserRole.INTERN:
+        if user_info["user_role"] == FrontendUserRole.INTERN.value:
             user_data["roomNumber"] = user_info["room"]
             user_data["residence"] = user_info["residence"]
             user_data["verified"] = True
@@ -2000,6 +2089,9 @@ def get_hosts():
             status=500,
             mimetype="application/json")
         return response
+    # TODO: test whether frontend still works with that
+    result["data"] = [{"id" if key == "user_uuid" else "username" if key == "user_name" else snake_to_camel_case(key): value for key, value in host.items()}
+                      for host in result["data"]]
     response = Response(
         response=json.dumps(result["data"]),
         status=200,
@@ -2184,7 +2276,7 @@ def config():
         return response
 
     response = Response(
-        response=json.dumps({snake_to_camel_case(key): value for key, value in result.get("data")}),
+        response=json.dumps({snake_to_camel_case(key): value for key, value in result.get("data").items()}),
         status=200,
         mimetype="application/json")
     return response
