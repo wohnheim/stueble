@@ -1,15 +1,37 @@
 <script lang="ts">
   import { apiClient } from "$lib/api/client";
+  import { database } from "$lib/lib/database.svelte";
   import { ui_object, type DialogCheckIn } from "$lib/lib/UI.svelte";
 
   let guest = $derived((ui_object.dialogProperties as DialogCheckIn).guest);
 
-  const checkIn = () =>
-    apiClient("http").modifyGuest({ id: guest.id, present: true });
+  const checkIn = async () => {
+    const data = { id: guest.id, present: true };
 
-  const verify = async () =>
-    !guest.extern &&
-    apiClient("http").modifyUser({ id: guest.id, verified: true });
+    try {
+      await apiClient("http").modifyGuest(data);
+    } catch (e) {
+      database.addToBuffer({
+        action: "modifyGuest",
+        data,
+      });
+    }
+  };
+
+  const verify = async () => {
+    if (!guest.extern) {
+      const data = { id: guest.id, verified: true };
+
+      try {
+        await apiClient("http").modifyUser(data);
+      } catch (e) {
+        database.addToBuffer({
+          action: "modifyUser",
+          data,
+        });
+      }
+    }
+  };
 </script>
 
 <div class="row">
