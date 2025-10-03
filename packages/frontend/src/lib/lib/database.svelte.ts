@@ -1,6 +1,44 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
-import type { GuestExtern, GuestIntern, HostOrTutor } from "$lib/api/types";
+import type {
+  GuestExtern,
+  GuestIntern,
+  HostOrTutor,
+  UserProperties,
+} from "$lib/api/types";
+
+/* Buffered actions */
+
+interface ActionCommon {
+  timestamp: number;
+}
+
+export interface CreateUserAction {
+  action: "createUser";
+  data: UserProperties;
+}
+
+export interface ModifyUserAction {
+  action: "modifyUser";
+  data: (Partial<GuestIntern> | Partial<GuestExtern>) & { id: string };
+}
+
+export interface AddToGuestListAction {
+  action: "addToGuestList";
+  data?: { id?: string; date: Date } | { id: string; date?: Date };
+}
+
+export interface ModifyGuestAction {
+  action: "modifyGuest";
+  data: { id: string; present: boolean };
+}
+
+export interface RemoveFromGuestListAction {
+  action: "removeFromGuestList";
+  data?: { id?: string; date: Date } | { id: string; date?: Date };
+}
+
+/* Database */
 
 interface StuebleDB extends DBSchema {
   guestsIntern: {
@@ -8,24 +46,36 @@ interface StuebleDB extends DBSchema {
     key: string;
     indexes: {
       "by-room-number": number;
-      "by-last-name": number;
-      "by-id": number;
+      "by-last-name": string;
+      "by-id": string;
     };
   };
   guestsExtern: {
     value: Omit<GuestExtern, "extern">;
     key: string;
-    indexes: { "by-last-name": number };
+    indexes: { "by-last-name": string };
   };
   hosts: {
     value: HostOrTutor;
     key: string;
-    indexes: { "by-last-name": number };
+    indexes: { "by-last-name": string };
   };
   tutors: {
     value: HostOrTutor;
     key: string;
-    indexes: { "by-last-name": number };
+    indexes: { "by-last-name": string };
+  };
+  buffer: {
+    value: ActionCommon &
+      (
+        | CreateUserAction
+        | ModifyUserAction
+        | AddToGuestListAction
+        | ModifyGuestAction
+        | RemoveFromGuestListAction
+      );
+    key: number;
+    indexes: { "by-action": string };
   };
 }
 
@@ -34,8 +84,12 @@ class Database {
   ready = $state(false);
 
   guests = $state<(GuestIntern | GuestExtern)[]>([]);
-  hosts = $state<HostOrTutor[]>([]);
-  tutors = $state<HostOrTutor[]>([]);
+  hosts = $state<StuebleDB["hosts"]["value"][]>([]);
+  tutors = $state<StuebleDB["tutors"]["value"][]>([]);
+
+  buffer = $state<{
+    [index: number]: StuebleDB["buffer"]["value"] | undefined;
+  }>({});
 
   constructor() {
     this.database = () => {
@@ -92,6 +146,25 @@ class Database {
         hostsStore.createIndex("by-last-name", "lastName", {
           unique: false,
         });
+
+        /* Tutors */
+        const tutorsStore = db.createObjectStore("tutors", {
+          keyPath: "id",
+        });
+
+        tutorsStore.createIndex("by-last-name", "lastName", {
+          unique: false,
+        });
+
+        /* Buffer */
+        const bufferStore = db.createObjectStore("buffer", {
+          keyPath: "id",
+          autoIncrement: true,
+        });
+
+        bufferStore.createIndex("by-action", "action", {
+          unique: false,
+        });
       },
     });
 
@@ -107,6 +180,9 @@ class Database {
     );
 
     this.hosts = await this.database().getAll("hosts");
+    this.tutors = await this.database().getAll("tutors");
+
+    this.buffer = await this.database().getAll("buffer");
   };
 
   /* Guests */
@@ -206,6 +282,42 @@ class Database {
 
     const index = this.tutors.findIndex((t) => t.id == id);
     if (index != -1) this.tutors.splice(index, 1);
+  };
+
+  /* Buffered actions */
+
+  addToBuffer = async (
+    item: Omit<StuebleDB["buffer"]["value"], "timestamp" | "id">,
+  ) => {
+    const timestamped = Object.assign(item, {
+      timestamp: Date.now() / 1000,
+    }) as StuebleDB["buffer"]["value"];
+
+    const key = await this.database().put("buffer", timestamped);
+    this.buffer[key] = timestamped;
+  };
+
+  private deleteFromBuffer = async (id: number) => {
+    await this.database().delete("buffer", id);
+    delete this.buffer[id];
+  };
+
+  bufferIteration = async (
+    remove: (item: StuebleDB["buffer"]["value"]) => Promise<boolean>,
+  ) => {
+    for (const [key, value] of Object.entries(this.buffer)) {
+      if (value === undefined) continue;
+
+      try {
+        await remove(value);
+
+        this.deleteFromBuffer(Number(key));
+      } catch (e: any) {
+        return false;
+      }
+    }
+
+    return true;
   };
 }
 

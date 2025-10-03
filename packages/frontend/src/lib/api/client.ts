@@ -13,12 +13,46 @@ import type {
   User,
   UserProperties,
 } from "$lib/api/types";
-import { database } from "$lib/lib/database.svelte";
+import {
+  database,
+  type AddToGuestListAction,
+  type CreateUserAction,
+  type ModifyGuestAction,
+  type ModifyUserAction,
+  type RemoveFromGuestListAction,
+} from "$lib/lib/database.svelte";
 import { error } from "$lib/lib/error";
 import { ui_object } from "$lib/lib/UI.svelte";
 import { timeoutPromise } from "$lib/lib/utils";
 
 class HTTPClient {
+  /* General */
+
+  retrySending() {
+    return database.bufferIteration(async (item) => {
+      try {
+        if (item.action == "createUser") {
+          await this.createUser(item.data);
+        } else if (item.action == "modifyUser") {
+          await this.modifyUser(item.data);
+        } else if (item.action == "addToGuestList") {
+          await this.addToGuestList(item.data);
+        } else if (item.action == "modifyGuest") {
+          await this.modifyGuest(item.data);
+        } else if (item.action == "removeFromGuestList") {
+          await this.removeFromGuestList(item.data);
+        } else {
+          console.warn("Unknown action:", item);
+          return false;
+        }
+
+        return true;
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+
   /* Auth */
 
   async login(user: string, password: string) {
@@ -109,7 +143,7 @@ class HTTPClient {
 
   /* Users */
 
-  async createUser(user: UserProperties) {
+  async createUser(user: CreateUserAction["data"]) {
     const res = await fetch("/api/user", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -127,9 +161,7 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  async modifyUser(
-    user: (Partial<GuestIntern> | Partial<GuestExtern>) & { id: string },
-  ) {
+  async modifyUser(user: ModifyUserAction["data"]) {
     const res = await fetch("/api/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -194,15 +226,15 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  async addToGuestList(id?: string, date?: Date) {
+  async addToGuestList(props?: AddToGuestListAction["data"]) {
     const res = await fetch("/api/guests", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body:
-        id !== undefined || date !== undefined
+        props !== undefined
           ? JSON.stringify({
-              id,
-              date: date?.toISOString(),
+              ...props,
+              date: props.date?.toISOString(),
             })
           : undefined,
     });
@@ -214,7 +246,7 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  async modifyGuest(props: { id: string; present: boolean }) {
+  async modifyGuest(props: ModifyGuestAction["data"]) {
     const res = await fetch("/api/guest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -228,15 +260,15 @@ class HTTPClient {
     throw new Error(res.status.toString());
   }
 
-  async removeFromGuestList(id?: string, date?: Date) {
+  async removeFromGuestList(props?: RemoveFromGuestListAction["data"]) {
     const res = await fetch("/api/guests", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body:
-        id !== undefined || date !== undefined
+        props !== undefined
           ? JSON.stringify({
-              id,
-              date: date?.toISOString(),
+              ...props,
+              date: props.date?.toISOString(),
             })
           : undefined,
     });
@@ -447,6 +479,8 @@ class WebSocketClient {
 
   private onOpen = () => {
     this.sendBuffered();
+
+    apiClient("http").retrySending();
   };
 
   private connect() {
@@ -571,7 +605,10 @@ class WebSocketClient {
       ui_object.status = {
         ...message.data,
         date: new Date(message.data.date),
-        registrationStartsAt: new Date(message.data.date),
+        registrationStartsAt:
+          message.data.registrationStartsAt !== undefined
+            ? new Date(message.data.registrationStartsAt)
+            : undefined,
       };
     } else if (
       message.event == "guestAdded" ||
