@@ -67,7 +67,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     return false;
   }
@@ -92,7 +92,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (res.status == 400 || Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     return false;
   }
@@ -108,7 +108,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (res.status == 400 || Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     return false;
   }
@@ -119,7 +119,7 @@ class HTTPClient {
     });
 
     if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     if (browser && res.ok && forward) {
       localStorage.removeItem("loggedIn");
@@ -133,7 +133,7 @@ class HTTPClient {
     });
 
     if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     if (browser && res.ok && forward) {
       localStorage.removeItem("loggedIn");
@@ -156,7 +156,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -170,7 +170,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -180,7 +180,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<User>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -209,7 +209,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<User[]>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -221,7 +221,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<(GuestIntern | GuestExtern)[]>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -241,7 +241,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -255,7 +255,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -275,7 +275,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -299,7 +299,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -311,7 +311,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<HostOrTutor[]>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -328,7 +328,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     return false;
   }
@@ -345,7 +345,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     return false;
   }
@@ -357,7 +357,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<HostOrTutor[]>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -373,7 +373,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     return false;
   }
@@ -389,7 +389,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     return false;
   }
@@ -411,7 +411,7 @@ class HTTPClient {
 
     if (res.ok) return true;
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     return false;
   }
@@ -423,7 +423,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<Config>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }
@@ -437,7 +437,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<Config>();
     else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure: " + res.json());
+      console.warn("Failure:", await res.json());
 
     throw new Error(res.status.toString());
   }

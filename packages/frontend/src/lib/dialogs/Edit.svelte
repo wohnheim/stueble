@@ -14,22 +14,6 @@
     properties: DialogEdit;
   } = $props();
 
-  const decode = async (
-    codeReader: BrowserQRCodeReader,
-    selectedDeviceId: string,
-  ) => {
-    codeReader.decodeFromVideoDevice(
-      selectedDeviceId,
-      videoElement ?? null,
-      (result: Result, error?: Exception) => {
-        if (!result) return;
-
-        properties.value = result.getText();
-        ui_object.closeDialog(true);
-      },
-    );
-  };
-
   let videoElement = $state<HTMLVideoElement>();
   let codeReader: BrowserQRCodeReader | undefined = undefined;
 
@@ -37,16 +21,24 @@
     if (properties.type == "qrcode") {
       try {
         // Ask for permission
-        await navigator.mediaDevices.getUserMedia({ video: true });
+        const constraints: MediaStreamConstraints = {
+          video: { facingMode: "environment" },
+        };
+        await navigator.mediaDevices.getUserMedia(constraints);
 
         // Start QRCode reader
         codeReader = new BrowserQRCodeReader();
 
-        const devices = await codeReader.listVideoInputDevices();
-        const selectedDeviceId = devices[0]?.deviceId;
+        await codeReader.decodeFromConstraints(
+          constraints,
+          videoElement ?? "",
+          (result: Result, error?: Exception) => {
+            if (!result) return;
 
-        if (selectedDeviceId !== undefined)
-          decode(codeReader, selectedDeviceId);
+            properties.value = result.getText();
+            ui_object.closeDialog(true);
+          },
+        );
       } catch (e) {
         ui_object.closeDialog(false);
       }
@@ -54,8 +46,9 @@
   });
 
   onDestroy(() => {
-    if (properties.type == "qrcode") {
-      codeReader?.reset();
+    if (properties.type == "qrcode" && codeReader !== undefined) {
+      codeReader.stopContinuousDecode();
+      codeReader.reset();
     }
   });
 </script>
