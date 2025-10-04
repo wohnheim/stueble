@@ -23,26 +23,27 @@
     </h6>
   {/if}
 
-  <p>
-    Das Motto{ui_object.status?.date !== undefined
-      ? "am " + ui_object.status.date.toLocaleDateString("de-DE")
-      : ""} lautet:
-  </p>
+  {#if ui_object.status?.date !== undefined}
+    <p>
+      Das Motto am <span class="primary-text"
+        >{ui_object.status.date.toLocaleDateString("de-DE")}
+      </span>lautet:
+    </p>
+  {:else}
+    <p>Das Motto lautet:</p>
+  {/if}
 
-  <h5>{settings.settings["motto"]}</h5>
+  <h5 class="primary-text bold medium-margin">{settings.settings["motto"]}</h5>
 
   {#if !extended}
-    <div
-      id="partial-text"
-      class="margin-left margin-right row wrap center-align"
-    >
+    <div id="partial-text" class="no-margin row wrap center-align">
       <p>{settings.settings["description"]?.split(" ", 7).join(" ")}</p>
       <button class="chip fill round" onclick={() => (extended = true)}>
         ...
       </button>
     </div>
   {:else if settings.settings["description"] !== undefined}
-    <p class="margin-left margin-right">
+    <p class="no-margin">
       {#each settings.settings["description"]?.split("\n") as line}
         {line}<br />
       {/each}

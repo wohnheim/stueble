@@ -159,6 +159,15 @@
   </header>
 
   <div id="guests">
+    <div id="table-description" class="row max no-space bold">
+      <p>Nachname</p>
+      <p>Vorname</p>
+      <p>Zimmer-Nr.</p>
+      <p>Wohnheim</p>
+    </div>
+
+    <hr />
+
     {#each filterGuests(searchInput, database.guests) as guest, i}
       {#if i != 0}
         <hr />
@@ -202,5 +211,15 @@
   #guests {
     height: calc(100vh - 72px);
     overflow-y: auto;
+  }
+
+  #table-description {
+    margin-left: 20px;
+    margin-right: calc(25px + 1rem);
+    padding: 5px 0;
+  }
+
+  #table-description > * {
+    width: 25%;
   }
 </style>
