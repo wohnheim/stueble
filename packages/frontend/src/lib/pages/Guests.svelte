@@ -113,11 +113,11 @@
       onclick={async () => {
         const description = await ui_object.openEditDialog(
           {
-            title: "Motto-Beschreibung dieser Woche",
+            title: "Motto-Beschreibung",
             description:
               "Was erwartet die Gäste auf eurer Party (Musik, Specials, Besonderes)? Dieses Nachricht wird den Besuchern auf der Anmeldeseite anzeigt.",
             placeholder: "Beschreibung",
-            type: "string",
+            type: "textarea",
           },
           settings.settings["description"],
         );
@@ -185,6 +185,9 @@
   #center-container {
     height: 100%;
     width: 100%;
+
+    padding-left: 16px;
+    padding-right: 16px;
 
     flex-flow: column;
   }
