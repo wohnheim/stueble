@@ -12,7 +12,7 @@
   );
 </script>
 
-<div id="center-container" class="middle-align center-align">
+<div id="center-container" class="medium-padding middle-align center-align">
   <span class="expand"></span>
 
   {#if adminCapability}
@@ -25,9 +25,9 @@
 
   {#if ui_object.status?.date !== undefined}
     <p>
-      Das Motto am <span class="primary-text"
+      Das Motto am <span class="primary-text bold"
         >{ui_object.status.date.toLocaleDateString("de-DE")}
-      </span>lautet:
+      </span> lautet:
     </p>
   {:else}
     <p>Das Motto lautet:</p>
@@ -114,6 +114,9 @@
   #center-container {
     height: 100%;
     width: 100%;
+
+    padding-left: 16px;
+    padding-right: 16px;
 
     flex-flow: column;
   }
