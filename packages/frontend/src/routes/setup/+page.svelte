@@ -19,6 +19,7 @@
 
   let firstNameValid = $state(true);
   let lastNameValid = $state(true);
+  let residenceValid = $state(true);
   let roomNumberValid = $state(true);
   let passwordValid = $state(true);
   let usernameValid = $state(true);
@@ -35,6 +36,7 @@
       ui_object.userParams.lastName == "" ||
       ui_object.userParams.email == "" ||
       !emailInput?.validity.valid ||
+      (ui_object.userParams.residence as string) == "" || // TODO: Improve
       ui_object.userParams.roomNumber == 0 ||
       ui_object.userParams.roomNumber % 1 != 0 ||
       ui_object.userParams.password == "" ||
@@ -242,17 +244,27 @@
           {/if}
         </div>
 
-        <div class="field border label">
+        <div
+          class="field border label {residenceValid ? '' : 'invalid suffix'}"
+        >
           <select
             bind:value={ui_object.userParams.residence}
             style="min-width: 200px;"
+            oninput={() => (residenceValid = !!ui_object.userParams.residence)}
+            onfocusout={() =>
+              (residenceValid = !!ui_object.userParams.residence)}
           >
+            <option value={""}></option>
             {#each Object.entries(WohnheimType) as [label, value]}
               <option {value}>{label}</option>
             {/each}
           </select>
           <!-- svelte-ignore a11y_label_has_associated_control -->
           <label>Wohnheim</label>
+          {#if !residenceValid}
+            <i>error</i>
+            <span class="error">Fehlerhafte Eingabe</span>
+          {/if}
         </div>
 
         <p>Anmeldedaten</p>

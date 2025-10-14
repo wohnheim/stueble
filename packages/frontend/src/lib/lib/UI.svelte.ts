@@ -92,7 +92,7 @@ class UI {
     firstName: "",
     lastName: "",
     roomNumber: 0,
-    residence: "hirte",
+    residence: "" as "hirte", // TODO: Improve
     email: "",
     password: "",
     username: "",

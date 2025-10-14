@@ -84,7 +84,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to login");
+    await this.parseError(res, "Fehler beim Login");
     return false;
   }
 
@@ -108,7 +108,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to create account");
+    await this.parseError(res, "Fehler bei Kontoerstellung");
     return false;
   }
 
@@ -123,7 +123,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to verify account");
+    await this.parseError(res, "Fehler bei Verifikation des Kontos");
     return false;
   }
 
@@ -146,7 +146,7 @@ class HTTPClient {
       method: "DELETE",
     });
 
-    if (!res.ok) await this.parseError(res, "Failed to delete account");
+    if (!res.ok) await this.parseError(res, "Fehler bei Löschung des Kontos");
 
     if (browser && res.ok && forward) {
       localStorage.removeItem("loggedIn");
@@ -169,7 +169,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern>();
 
-    await this.parseError(res, "Failed to create user");
+    await this.parseError(res, "Fehler bei Nutzererstellung");
     throw new Error(res.status.toString());
   }
 
@@ -182,7 +182,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
 
-    await this.parseError(res, "Failed to modify user");
+    await this.parseError(res, "Fehler bei Änderung des Nutzers");
     throw new Error(res.status.toString());
   }
 
@@ -191,7 +191,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<User>();
 
-    await this.parseError(res, "Failed to fetch user information");
+    await this.parseError(res, "Fehler beim Anfragen der Nutzerdaten");
     throw new Error(res.status.toString());
   }
 
@@ -219,7 +219,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<User[]>();
 
-    await this.parseError(res, "Failed to search for users");
+    await this.parseError(res, "Fehler bei der Suche nach Nutzern");
     throw new Error(res.status.toString());
   }
 
@@ -230,7 +230,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<(GuestIntern | GuestExtern)[]>();
 
-    await this.parseError(res, "Failed to fetch guest list");
+    await this.parseError(res, "Fehler beim Abfragen der Gästeliste");
     throw new Error(res.status.toString());
   }
 
@@ -249,7 +249,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
 
-    await this.parseError(res, "Failed to add to guest list");
+    await this.parseError(res, "Fehler beim Hinzufügen zur Gästeliste");
     throw new Error(res.status.toString());
   }
 
@@ -262,7 +262,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
 
-    await this.parseError(res, "Failed to modify guest");
+    await this.parseError(res, "Fehler bei der Änderung eines Gasts");
     throw new Error(res.status.toString());
   }
 
@@ -281,7 +281,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to remove from guest list");
+    await this.parseError(res, "Fehler beim Entfernen eines Gasts");
     throw new Error(res.status.toString());
   }
 
@@ -304,7 +304,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to invite user");
+    await this.parseError(res, "Fehler beim Einladen eines Gasts");
     throw new Error(res.status.toString());
   }
 
@@ -315,7 +315,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<HostOrTutor[]>();
 
-    await this.parseError(res, "Failed to fetch hosts");
+    await this.parseError(res, "Fehler beim Abfragen der Wirte");
     throw new Error(res.status.toString());
   }
 
@@ -331,7 +331,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed add host permissions");
+    await this.parseError(res, "Fehler beim Hinzufügen von Berechtigungen");
     return false;
   }
 
@@ -347,7 +347,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to remove host permissions");
+    await this.parseError(res, "Fehler beim Entfernen von Berechtigungen");
     return false;
   }
 
@@ -358,7 +358,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<HostOrTutor[]>();
 
-    await this.parseError(res, "Failed to fetch tutors");
+    await this.parseError(res, "Fehler beim Abfragen der Tutoren");
     throw new Error(res.status.toString());
   }
 
@@ -373,7 +373,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to add tutor permissions");
+    await this.parseError(res, "Fehler beim Hinzufügen von Berechtigungen");
     return false;
   }
 
@@ -388,7 +388,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to remove tutor permissions");
+    await this.parseError(res, "Fehler beim Entfernen von Berechtigungen");
     return false;
   }
 
@@ -409,7 +409,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Failed to modify motto");
+    await this.parseError(res, "Fehler bei der Änderung des Mottos");
     return false;
   }
 
@@ -420,7 +420,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<Config>();
 
-    await this.parseError(res, "Failed to fetch config");
+    await this.parseError(res, "Fehler beim Abfragen der Server-Konfiguration");
     throw new Error(res.status.toString());
   }
 
@@ -433,7 +433,10 @@ class HTTPClient {
 
     if (res.ok) return await res.json<Config>();
 
-    await this.parseError(res, "Failed to modify config");
+    await this.parseError(
+      res,
+      "Fehler bei der Änderung der Server-Konfiguration",
+    );
     throw new Error(res.status.toString());
   }
 }
@@ -641,7 +644,7 @@ class WebSocketClient {
 
         delete this.promises[message.reqId];
         error.snackbar(
-          `Fehler be: ${message.data.code} ${message.data.message}`,
+          `Fehler bei der asynchronen Kommunikation: ${message.data.code} ${message.data.message}`,
         );
       } else {
         console.warn("Error from Server:", message.data);
