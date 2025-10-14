@@ -46,7 +46,7 @@ class VisibleError {
     return timeoutPromise(seconds * 1000);
   };
 
-  snackbar = (text: string, icon?: string, seconds = 3) => {
+  snackbar = (text: string, icon?: string, seconds = 10) => {
     this.snackbarError.set({ icon, text });
     ui(ui_object.snackbarElement, seconds * 1000);
   };
