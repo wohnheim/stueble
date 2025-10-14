@@ -28,6 +28,23 @@ import { timeoutPromise } from "$lib/lib/utils";
 class HTTPClient {
   /* General */
 
+  private async parseError(res: Response, message?: string) {
+    try {
+      const body = await res.json();
+
+      if (typeof body === "object" && body !== null && "message" in body) {
+        error.snackbar(
+          (message === undefined ? "Error" : message) + ": " + body.message,
+        );
+        return;
+      }
+    } catch (e) {}
+
+    error.snackbar(
+      (message === undefined ? "Error" : message) + ": " + res.statusText,
+    );
+  }
+
   retrySending() {
     return database.bufferIteration(async (item) => {
       try {
@@ -66,9 +83,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to login");
     return false;
   }
 
@@ -91,9 +107,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (res.status == 400 || Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to create account");
     return false;
   }
 
@@ -107,9 +122,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (res.status == 400 || Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to verify account");
     return false;
   }
 
@@ -132,8 +146,7 @@ class HTTPClient {
       method: "DELETE",
     });
 
-    if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
+    if (!res.ok) await this.parseError(res, "Failed to delete account");
 
     if (browser && res.ok && forward) {
       localStorage.removeItem("loggedIn");
@@ -155,9 +168,8 @@ class HTTPClient {
     });
 
     if (res.ok) return await res.json<GuestIntern>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to create user");
     throw new Error(res.status.toString());
   }
 
@@ -169,9 +181,8 @@ class HTTPClient {
     });
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to modify user");
     throw new Error(res.status.toString());
   }
 
@@ -179,9 +190,8 @@ class HTTPClient {
     const res = await fetch("/api/user");
 
     if (res.ok) return await res.json<User>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to fetch user information");
     throw new Error(res.status.toString());
   }
 
@@ -208,9 +218,8 @@ class HTTPClient {
     const res = await fetch("/api/user/search?" + params.toString());
 
     if (res.ok) return await res.json<User[]>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to search for users");
     throw new Error(res.status.toString());
   }
 
@@ -220,9 +229,8 @@ class HTTPClient {
     const res = await fetch("/api/guests");
 
     if (res.ok) return await res.json<(GuestIntern | GuestExtern)[]>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to fetch guest list");
     throw new Error(res.status.toString());
   }
 
@@ -240,9 +248,8 @@ class HTTPClient {
     });
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to add to guest list");
     throw new Error(res.status.toString());
   }
 
@@ -254,9 +261,8 @@ class HTTPClient {
     });
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to modify guest");
     throw new Error(res.status.toString());
   }
 
@@ -274,9 +280,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to remove from guest list");
     throw new Error(res.status.toString());
   }
 
@@ -298,9 +303,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to invite user");
     throw new Error(res.status.toString());
   }
 
@@ -310,9 +314,8 @@ class HTTPClient {
     const res = await fetch("/api/hosts");
 
     if (res.ok) return await res.json<HostOrTutor[]>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to fetch hosts");
     throw new Error(res.status.toString());
   }
 
@@ -327,9 +330,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed add host permissions");
     return false;
   }
 
@@ -344,9 +346,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to remove host permissions");
     return false;
   }
 
@@ -356,9 +357,8 @@ class HTTPClient {
     const res = await fetch("/api/tutors");
 
     if (res.ok) return await res.json<HostOrTutor[]>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to fetch tutors");
     throw new Error(res.status.toString());
   }
 
@@ -372,9 +372,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to add tutor permissions");
     return false;
   }
 
@@ -388,9 +387,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to remove tutor permissions");
     return false;
   }
 
@@ -410,9 +408,8 @@ class HTTPClient {
     });
 
     if (res.ok) return true;
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to modify motto");
     return false;
   }
 
@@ -422,9 +419,8 @@ class HTTPClient {
     const res = await fetch("/api/config");
 
     if (res.ok) return await res.json<Config>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to fetch config");
     throw new Error(res.status.toString());
   }
 
@@ -436,9 +432,8 @@ class HTTPClient {
     });
 
     if (res.ok) return await res.json<Config>();
-    else if (Math.floor(res.status / 100) == 5)
-      console.warn("Failure:", await res.json());
 
+    await this.parseError(res, "Failed to modify config");
     throw new Error(res.status.toString());
   }
 }
@@ -616,23 +611,38 @@ class WebSocketClient {
     ) {
       if (message.data.extern) database.addGuestExtern(message.data);
       else database.addGuestIntern(message.data);
+
+      this.sendMessage({ event: "acknowledgment", resId: message.resId });
     } else if (message.event == "guestRemoved") {
       database.deleteGuestExtern(message.data);
       database.deleteGuestInternById(message.data);
+
+      this.sendMessage({ event: "acknowledgment", resId: message.resId });
     } else if (message.event == "hostAdded") {
       database.addHost(message.data);
+
+      this.sendMessage({ event: "acknowledgment", resId: message.resId });
     } else if (message.event == "hostRemoved") {
       database.deleteHost(message.data);
+
+      this.sendMessage({ event: "acknowledgment", resId: message.resId });
     } else if (message.event == "tutorAdded") {
       database.addTutor(message.data);
+
+      this.sendMessage({ event: "acknowledgment", resId: message.resId });
     } else if (message.event == "tutorRemoved") {
       database.deleteTutor(message.data);
+
+      this.sendMessage({ event: "acknowledgment", resId: message.resId });
     } else if (message.event == "error") {
       if (message.reqId !== undefined) {
         const promise = this.promises[message.reqId];
         if (promise !== undefined) promise.reject(message.data.message);
 
         delete this.promises[message.reqId];
+        error.snackbar(
+          `Fehler be: ${message.data.code} ${message.data.message}`,
+        );
       } else {
         console.warn("Error from Server:", message.data);
       }

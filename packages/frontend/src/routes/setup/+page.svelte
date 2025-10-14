@@ -8,6 +8,7 @@
   import { ui_object, WohnheimType } from "$lib/lib/UI.svelte";
 
   import Logo from "$lib/assets/Stueble.svelte";
+  import Snackbar from "$lib/components/Snackbar.svelte";
 
   /* Navigation */
 
@@ -103,6 +104,8 @@
 
 <svelte:window on:dragover|preventDefault on:keydown={handleKeyDown} />
 
+<Snackbar />
+
 {#if progress == 1}
   <div id="logo" in:fade={{ duration: 200 }}>
     <Logo />
@@ -131,7 +134,10 @@
     </nav>
   </div>
 {:else if progress == 2}
-  <article id="main-article" class="center absolute middle-align center-align border">
+  <article
+    id="main-article"
+    class="center absolute middle-align center-align border"
+  >
     <div>
       {#if progress2Mode == "login"}
         <h5>Anmelden</h5>

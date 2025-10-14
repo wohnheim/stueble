@@ -4,6 +4,8 @@
 
   import { apiClient } from "$lib/api/client";
 
+  import Snackbar from "$lib/components/Snackbar.svelte";
+
   let loading = $state(true);
   let result = $state<boolean>();
 
@@ -18,6 +20,8 @@
     }
   });
 </script>
+
+<Snackbar />
 
 <article class="center middle absolute middle-align center-align border">
   <div>

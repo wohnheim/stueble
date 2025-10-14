@@ -120,6 +120,9 @@ class UI {
       }
   >({ mode: "create" });
 
+  // Snackbar
+  snackbarElement = $state<HTMLDivElement>();
+
   // String utils
   returnSubstring = (name: string, length: number) => {
     const position = name.lastIndexOf(".");
