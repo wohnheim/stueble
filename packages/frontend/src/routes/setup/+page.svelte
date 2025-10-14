@@ -36,7 +36,8 @@
       ui_object.userParams.lastName == "" ||
       ui_object.userParams.email == "" ||
       !emailInput?.validity.valid ||
-      (ui_object.userParams.residence as string) == "" || // TODO: Improve
+      ui_object.userParams.residence == "" ||
+      ui_object.userParams.roomNumber == "" ||
       ui_object.userParams.roomNumber == 0 ||
       ui_object.userParams.roomNumber % 1 != 0 ||
       ui_object.userParams.password == "" ||
@@ -76,6 +77,12 @@
   };
 
   const register = async () => {
+    if (
+      ui_object.userParams.roomNumber == "" ||
+      ui_object.userParams.residence == ""
+    )
+      return;
+
     const res = await apiClient("http").createAccount(
       {
         firstName: ui_object.userParams.firstName,
