@@ -83,16 +83,22 @@ class UI {
 
   // Personal infos (mutable)
   userParams = $state<
-    Omit<Omit<User, "id">, "verified"> & {
-      email: string;
-      password: string;
-      username: string;
-    }
+    Overwrite<
+      Omit<Omit<User, "id">, "verified"> & {
+        email: string;
+        password: string;
+        username: string;
+      },
+      {
+        roomNumber: number | "";
+        residence: User["residence"] | "";
+      }
+    >
   >({
     firstName: "",
     lastName: "",
-    roomNumber: 0,
-    residence: "" as "hirte", // TODO: Improve
+    roomNumber: "",
+    residence: "",
     email: "",
     password: "",
     username: "",
