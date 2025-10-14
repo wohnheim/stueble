@@ -37,13 +37,13 @@ class Room(str, Enum):
     HOST_UPWARDS = "host_upwards"
     ADMINS = "admins"
 
-def update_hosts(hosts: list[str], method: Literal["add", "remove"]):
+def update_hosts_tutors(hosts: list[str], method: Literal["add", "remove"]):
     """
     Update the list of hosts
 
     Parameters:
         hosts (list): list of host session ids
-        method (str): "add" to add hosts, "remove" to remove hosts
+        method (str): "add" to add hosts and tutors, "remove" to remove hosts and tutors
     """
 
     if method not in ["add", "remove"]:

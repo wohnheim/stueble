@@ -6,13 +6,14 @@ DECLARE inviter_users INTEGER;
 DECLARE automatically_removed_user INTEGER;
 DECLARE present BOOLEAN;
 DECLARE all_invitees_absent BOOLEAN;
+DECLARE maximum_invitees INTEGER;
 BEGIN
     -- skip for force insert
     IF current_setting('additional.skip_triggers', true) = 'on' THEN
         RETURN NEW;
     END IF;
     -- check, whether admins are trying to arrive / leave
-    IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
+    IF COALESCE((SELECT user_role FROM users WHERE id = NEW.user_id), 'extern') = 'admin'
     THEN
         RAISE EXCEPTION 'Admins are not allowed to arrive / leave stueble; code: 400';
     END IF;
@@ -130,6 +131,12 @@ BEGIN
                 RAISE EXCEPTION 'Maximum capacity of guests for stueble % already reached; code: 400', NEW.stueble_id;
             END IF;
 
+            IF COALESCE((SELECT user_role FROM users WHERE id = NEW.invited_by), 'extern') != 'tutor'
+            THEN
+                maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_user'), 0);
+            ELSE
+                maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_tutor'), 0);
+            END IF;
 
             -- check, whether max_number of guests for inviter is already exceeded
             IF NEW.invited_by IS NOT NULL
@@ -144,7 +151,7 @@ BEGIN
                 FROM last_events
                 WHERE event_type = 'add';
                 IF inviter_users >=
-                   (SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_user')
+                   maximum_invitees
                 THEN
                     RAISE EXCEPTION 'Inviter % has already reached the maximum number of guests; code: 400', NEW.invited_by;
                 END IF;

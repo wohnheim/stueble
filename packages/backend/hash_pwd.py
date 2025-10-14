@@ -34,7 +34,7 @@ def create_signature(message: str | dict[str, Any]) -> CreateSignatureSuccess | 
     """
 
     if isinstance(message, dict):
-        message = json.dumps(message, separators=(',', ':'))
+        message = json.dumps(message, separators=(',', ':'), sort_keys=True)
 
     private_key = os.getenv("PRIVATE_KEY")
     if not private_key:
