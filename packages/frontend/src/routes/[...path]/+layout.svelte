@@ -17,6 +17,7 @@
   import Layout from "$lib/components/Layout.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import LargeDialog from "$lib/components/LargeDialog.svelte";
+  import Snackbar from "$lib/components/Snackbar.svelte";
 
   let {
     children,
@@ -115,6 +116,7 @@
     <LargeDialog />
   {/if}
   <Dialog />
+  <Snackbar />
 
   <Layout>
     {#if children}

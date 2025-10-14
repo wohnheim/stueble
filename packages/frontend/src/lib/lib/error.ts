@@ -1,6 +1,7 @@
 import { derived, writable } from "svelte/store";
 
 import { timeoutPromise } from "./utils";
+import { ui_object } from "./UI.svelte";
 
 class VisibleError {
   readonly error = writable<false | { icon: string; text: string }>({
@@ -12,13 +13,15 @@ class VisibleError {
     error === false ? "hidden" : "",
   );
 
+  readonly snackbarError = writable<false | { icon?: string; text: string }>({
+    text: "",
+  });
+
   solved = () => {
-    console.log("Error solved");
     this.error.set(false);
   };
 
   offline = () => {
-    console.log("Offline");
     this.error.set({
       icon: "cloud_off",
       text: "Offline, bitte verbinde Dich mit dem Internet.",
@@ -26,7 +29,6 @@ class VisibleError {
   };
 
   unauthorized = () => {
-    console.log("Unauthorized");
     this.error.set({
       icon: "warning",
       text: "Unerlaubter Zugriff, Weiterleitung zur Einrichtung.",
@@ -36,13 +38,17 @@ class VisibleError {
   };
 
   disconnected = (seconds: number) => {
-    console.log("Disconnected");
     this.error.set({
       icon: "sync_problem",
       text: `Getrennt, erneuter Versuch${seconds == 0 ? "" : ` in ${seconds} Sekunden`}.`,
     });
 
     return timeoutPromise(seconds * 1000);
+  };
+
+  snackbar = (text: string, icon?: string, seconds = 3) => {
+    this.snackbarError.set({ icon, text });
+    ui(ui_object.snackbarElement, seconds * 1000);
   };
 }
 

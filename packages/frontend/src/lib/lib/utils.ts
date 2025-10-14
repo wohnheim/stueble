@@ -22,8 +22,18 @@ export const isEmpty = (obj: Object) => {
   return true;
 };
 
+export function sortAlphabetically<T extends Object>(obj: T) {
+  return Object.fromEntries(
+    Object.entries(obj).sort(([keyA], [keyB]) => keyA.localeCompare(keyB)),
+  ) as T;
+}
+
 export const stringToArrayBuffer = (str: string) => {
   return new TextEncoder().encode(str).buffer;
+};
+
+export const base64ToArrayBuffer = (signature: string) => {
+  return Uint8Array.from(atob(signature), (c) => c.charCodeAt(0)).buffer;
 };
 
 export const hexToArrayBuffer = (hex: string) => {

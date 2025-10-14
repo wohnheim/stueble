@@ -2,7 +2,11 @@
   import type { GuestExtern, GuestIntern, QRCodeData } from "$lib/api/types";
   import { database } from "$lib/lib/database.svelte";
   import { ui_object, type RouteHost } from "$lib/lib/UI.svelte";
-  import { stringToArrayBuffer } from "$lib/lib/utils";
+  import {
+    base64ToArrayBuffer,
+    sortAlphabetically,
+    stringToArrayBuffer,
+  } from "$lib/lib/utils";
 
   import Guest from "$lib/components/buttons/Guest.svelte";
   import { apiClient } from "$lib/api/client";
@@ -64,8 +68,10 @@
     const verified = await window.crypto.subtle.verify(
       { name: "Ed25519" },
       ui_object.publicKey,
-      stringToArrayBuffer(atob(data.signature)) as ArrayBuffer,
-      stringToArrayBuffer(JSON.stringify(data.data, null, 0)) as ArrayBuffer,
+      base64ToArrayBuffer(data.signature),
+      stringToArrayBuffer(
+        JSON.stringify(sortAlphabetically(data.data), null, 0),
+      ) as ArrayBuffer,
     );
 
     if (!verified) {
