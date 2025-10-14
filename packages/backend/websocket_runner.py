@@ -63,3 +63,6 @@ def listen_to_db(connection: connection):
                     warnings.warn(f"Could not send data to websocket server: {response.text}")
                     continue
                 # TODO handle error
+
+def run_listener():
+    listen_to_db(conn)

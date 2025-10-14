@@ -56,7 +56,7 @@ def get_all_configurations(cursor: cursor) -> MultipleSuccess | GenericFailure:
 
     if result["success"] is False:
         return error_to_failure(result)
-    return result
+    return {"success": True, "data": {i[0]: i[1] for i in result["data"]}}
 
 def change_configuration(cursor: cursor, key: str, value: Any) -> SingleSuccess | GenericFailure:
     """

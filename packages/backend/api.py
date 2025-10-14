@@ -1051,7 +1051,7 @@ def attend_stueble():
             mimetype="application/json")
         return response
 
-    stueble_id = result["data"]["stueble_id"]
+    stueble_id = result["data"][0]
 
     if request.method == "PUT":
         result = events.add_guest(
@@ -1210,9 +1210,9 @@ def invitee():
             mimetype="application/json")
         return response
 
-    stueble_id = result["data"]["stueble_id"]
-    motto_name = result["data"]["motto"]
-    stueble_date = result["data"]["date_of_time"]
+    stueble_id = result["data"][0]
+    motto_name = result["data"][1]
+    stueble_date = result["data"][2]
     stueble_date = stueble_date.strftime("%d.%m.%Y")
 
     if request.method == "PUT":
@@ -1239,6 +1239,8 @@ def invitee():
             status=500,
             mimetype="application/json")
         return response
+    if request.method == "PUT":
+        created_invitee_id = result["data"][0]
 
     if request.method == "DELETE":
         possible_users = result["data"]
@@ -1323,13 +1325,22 @@ def invitee():
             stueble_id=stueble_id)
 
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         status_code = 500
         error = str(result["error"])
         if "; code: " in str(result["error"]):
             error, status_code = str(result["error"]).split("; code: ")
             status_code = status_code.split("\n")[0]
             status_code = int(status_code)
+        if request.method == "PUT":
+            result = db.remove_table(cursor=cursor, table_name="users", conditions={"id": created_invitee_id})
+            close_conn_cursor(conn, cursor)
+            if result["success"] is False:
+                response = Response(
+                    response=json.dumps({"code": 500, "message": str(result["error"])}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": status_code, "message": error}),
             status=status_code,
@@ -1725,20 +1736,9 @@ def search_intern():
 
     keywords = ["first_name", "last_name", "user_uuid"]
     negated_conditions = {"user_role": "extern"}
+    # search user_name
     if "username" in data:
         conditions = {"user_name": data["username"]}
-        result = db.read_table(
-            cursor=cursor,
-            table_name="users",
-            keywords=keywords,
-            conditions=conditions,
-            negated_conditions=negated_conditions,
-            expect_single_answer=True)
-
-    # search room and / or residence
-    elif "room" in data or "residence" in data:
-        conditions = [[key, value] for key, value in data.items() if key in ["room", "residence"]]
-        conditions = dict(conditions)
         result = db.read_table(
             cursor=cursor,
             table_name="users",
@@ -1769,17 +1769,35 @@ def search_intern():
             conditions=conditions,
             negated_conditions=negated_conditions,
             expect_single_answer=True)
-        
-    # search first_name and/or last_name
-    else:
-        conditions = {key: value for key, value in data.items() if value is not None}
+
+    # search room AND residence
+    elif "room" in data and "residence" in data:
+        conditions = {key: value for key, value in data.items() if key in ["room", "residence"]}
         result = db.read_table(
             cursor=cursor,
             table_name="users",
-            conditions=conditions,
             keywords=keywords,
+            conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=False)
+            expect_single_answer=True)
+        
+    # search first_name and / or last_name as well as room or residence
+    else:
+        search_dict = {
+            "first_name": "first_name ILIKE %s", 
+            "last_name": "last_name ILIKE %s", 
+            "room": "room = %s", 
+            "residence": "residence = %s"}
+        query = f"""
+        SELECT {', '.join(keywords)} FROM users
+        WHERE {" AND ".join([search_dict[key] for key in data.keys()])}
+        AND user_role != 'extern'
+        """
+        variables = [f"{value}%" if key in ["first_name", "last_name"] else value for key, value in data.items()]
+        result = db.custom_call(cursor=cursor,
+                                query=query,
+                                type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+                                variables=variables)
 
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
@@ -1835,7 +1853,7 @@ def create_stueble():
 
     user_role = UserRole.TUTOR
     # date can't be changed but rather acts as an identifier
-    if shared_apartment is not None:
+    if date is None and shared_apartment is None and stueble_motto is None:
         user_role = UserRole.HOST
 
     session_id = request.cookies.get("SID", None)
@@ -1918,6 +1936,150 @@ def create_stueble():
 Hosts management (Changes via WebSocket)
 """
 
+@app.route("/tutors", methods=["PUT", "DELETE"])
+def update_tutors():
+    """
+    Update tutors.
+    """
+
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 401, "message": "The session id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+    
+    data = request.get_json()
+    user_uuids = data.get("hosts", None)
+
+    if not user_uuids:
+        response = Response(
+            response=json.dumps({"code": 403, "message": "tutors must be specified"}),
+            status=403,
+            mimetype="application/json")
+        return response
+        
+    # get conn, cursor
+    conn, cursor = get_conn_cursor()
+    
+    # check permissions, since only admins can change user role
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result["error"])}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result["data"]["allowed"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role admin"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    # get information about users
+    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "user_role"])
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+    # clean result data
+    tutors_data = result["data"]
+    tutors_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "user_role": UserRole(i[3])} for i in tutors_data]
+    
+    # check, whether all users were found
+    if len(tutors_data) != len(user_uuids):
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 404, "message": "Not all users found"}),
+            status=404,
+            mimetype="application/json")
+    
+    # changing tutors back to users
+    if request.method == "DELETE":
+        # if any user is tutor or above, raise error
+        if any(i["user_role"] >= UserRole.TUTOR for i in tutors_data):
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 403, "message": "Can only remove tutors"}),
+                status=403,
+                mimetype="application/json")
+            return response
+        # set new role
+        new_role = UserRole.USER
+
+        # remove wrong users from tutor list
+        tutors_data = [i for i in tutors_data if i["user_role"] == UserRole.TUTOR]
+    else:
+        if any(i["user_role"] == UserRole.EXTERN for i in tutors_data):
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 403, "message": "Can't promote extern users to tutors"}),
+                status=403,
+                mimetype="application/json")
+            return response
+        # set new role
+        new_role = UserRole.TUTOR
+        # remove wrong users from tutor list
+        tutors_data = [i for i in tutors_data if i["user_role"] == UserRole.USER or i["user_role"] == UserRole.HOST]
+
+    query = """
+        UPDATE users
+        SET user_role = %s
+        WHERE user_uuid IN %s
+        RETURNING id
+    """
+    result = db.custom_call(cursor=cursor,
+                            query=query,
+                            type_of_answer=db.ANSWER_TYPE.MULTIPLE_ANSWERS,
+                            variables=[new_role.value, tuple(i["id"] for i in tutors_data)])
+    
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    user_ids = result["data"]
+
+    query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
+    result = db.custom_call(
+        cursor=cursor,
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+        variables=tuple(user_ids)
+    )
+
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    session_ids = [i[0] for i in result["data"]]
+
+    result = ws.update_hosts_tutors(session_ids, "add" if request.method == "PUT" else "remove")
+
+    for user in tutors_data:
+        asyncio.run(ws.broadcast(event="hostAdded" if request.method == "PUT" else "hostRemoved", data=user, skip_sid=session_id))
+
+    response = Response(
+        status=204)
+    return response
+
+
+
 @app.route("/hosts", methods=["PUT", "DELETE"])
 def update_hosts():
     """
@@ -1989,6 +2151,12 @@ def update_hosts():
         return response
     hosts_data = result["data"]
     hosts_data = [{"id": i[0], "firstName": i[1], "lastName": i[2]} for i in hosts_data]
+    if len(hosts_data) != len(user_uuids):
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 404, "message": "Not all users found"}),
+            status=404,
+            mimetype="application/json")
 
     result = motto.update_hosts(cursor=cursor, stueble_id=stueble_id, method="add" if request.method == "PUT" else "remove", user_uuids=user_uuids)
 
@@ -2020,17 +2188,18 @@ def update_hosts():
 
     session_ids = [i[0] for i in result["data"]]
 
-    result = ws.update_hosts(session_ids, "add" if request.method == "PUT" else "remove")
+    result = ws.update_hosts_tutors(session_ids, "add" if request.method == "PUT" else "remove")
 
-    for host in hosts_data:
-        asyncio.run(ws.broadcast(event="hostAdded" if request.method == "PUT" else "hostRemoved", data=host, skip_sid=session_id))
+    for user in hosts_data:
+        asyncio.run(ws.broadcast(event="hostAdded" if request.method == "PUT" else "hostRemoved", data=user, skip_sid=session_id))
 
     response = Response(
         status=204)
     return response
 
 @app.route("/hosts", methods=["GET"])
-def get_hosts():
+@app.route("/tutors", methods=["GET"])
+def get_hosts_tutors():
     """
     Get hosts for a stueble.
     """
@@ -2042,9 +2211,12 @@ def get_hosts():
             mimetype="application/json")
         return response
     
-    data = request.get_json()
-    date = data.get("date", None)
-    
+    try:
+        data = request.get_json()
+        date = data.get("date", None)
+    except:
+        date = None
+
     # get conn, cursor
     conn, cursor = get_conn_cursor()
 
@@ -2062,6 +2234,25 @@ def get_hosts():
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
             status=403,
+            mimetype="application/json")
+        return response
+    
+    if request.path == "/tutors":
+        query = """SELECT user_uuid, first_name, last_name, user_name FROM users WHERE user_role = 'tutor'"""
+        result = db.custom_call(cursor=cursor,
+                                query=query,
+                                type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        tutors = [{"id": i[0], "firstName": i[1], "lastName": i[2], "username": i[3]} for i in result["data"]]
+        response = Response(
+            response=json.dumps(tutors),
+            status=200,
             mimetype="application/json")
         return response
 
@@ -2089,9 +2280,7 @@ def get_hosts():
             status=500,
             mimetype="application/json")
         return response
-    # TODO: test whether frontend still works with that
-    result["data"] = [{"id" if key == "user_uuid" else "username" if key == "user_name" else snake_to_camel_case(key): value for key, value in host.items()}
-                      for host in result["data"]]
+    
     response = Response(
         response=json.dumps(result["data"]),
         status=200,
@@ -2199,7 +2388,7 @@ def camel_to_snake_case(camel_case: str):
     snake_case = re.sub(r'(?<!^)(?=[A-Z])', '_', camel_case).lower()
     if "_q_r_" in snake_case:
         snake_case = snake_case.replace("_q_r_", "_qr_")
-        return snake_case
+    return snake_case
 
 @app.route("/config", methods=["GET", "POST"])
 def config():
@@ -2238,12 +2427,12 @@ def config():
     if request.method == "POST":
         data = request.get_json()
 
-        case_statements = '\n'.join(["WHEN %s THEN %s" for i in range (len(data))])
+        case_statements = '\n'.join(["WHEN %s THEN %s" for _ in range (len(data))])
         keys = tuple(camel_to_snake_case(key) for key in data.keys())
         values = tuple(value for value in data.values())
 
-        params = [i for i in zip(keys, values)] + [tuple(keys)]
-
+        params = [elem for i in zip(keys, values) for elem in i] + [tuple(keys)]
+        
         query = f"""UPDATE configurations
         SET value = CASE key
         {case_statements}
@@ -2262,8 +2451,7 @@ def config():
             return response
 
         # send websocket message to all admins
-        asyncio.run(ws.broadcast(event="config_update", data=data, room=ws.Room.ADMINS))
-
+        asyncio.run(ws.broadcast(event="config_update", data=data, room=ws.Room.ADMINS, skip_sid=session_id))
     # Method GET & POST
     result = configs.get_all_configurations(cursor=cursor)
     close_conn_cursor(conn, cursor)
@@ -2276,7 +2464,7 @@ def config():
         return response
 
     response = Response(
-        response=json.dumps({snake_to_camel_case(key): value for key, value in result.get("data").items()}),
+        response=json.dumps({snake_to_camel_case(key): value for key, value in result["data"].items()}),
         status=200,
         mimetype="application/json")
     return response

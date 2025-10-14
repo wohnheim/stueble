@@ -14,6 +14,7 @@ from waitress import serve
 from packages.backend import api
 from packages.backend import websocket
 from packages.backend.sql_connection.conn_cursor_functions import *
+import packages.backend.websocket_runner as ws_runner  # to ensure DB listener is set up
 
 def run_flask():
     """Run the Flask API server in separate thread"""
@@ -41,6 +42,7 @@ def main():
     # Create threads (daemon=True means they'll exit when main program exits)
     flask_thread = threading.Thread(target=run_flask, name="Flask-Server", daemon=True)
     websocket_thread = threading.Thread(target=run_websocket, name="WebSocket-Server", daemon=True)
+    db_listener_thread = threading.Thread(target=ws_runner.run_listener, name="DB-Listener", daemon=True)
 
     # Start both threads
     flask_thread.start()
