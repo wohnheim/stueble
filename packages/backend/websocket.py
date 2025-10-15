@@ -320,6 +320,11 @@ async def handle_ws(websocket):
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "reqId must be specified"})
                 await request_public_key(websocket=websocket, req_id=req_id)
+            elif event == "acknowledgement":
+                if req_id is None:
+                    await send(websocket=websocket, event="error", data={"code": "400",
+                         "message": "reqId must be specified"})
+                await acknowledgement(websocket=websocket, req_id=req_id)
     finally:
         host_upwards_room.discard(websocket)
         admins_room.discard(session_id)

@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_name TEXT CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL)),
-    verified BOOLEAN DEFAULT NULL
+    verified BOOLEAN DEFAULT FALSE
 );
 
 -- table for stueble mottos

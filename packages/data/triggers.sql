@@ -85,6 +85,12 @@ BEGIN
         -- check whether add is valid
         IF NEW.event_type = 'add'
         THEN
+
+            IF COALESCE((SELECT user_role FROM users WHERE id = NEW.user_id), 'extern') = 'host'
+            THEN
+                RAISE EXCEPTION 'Hosts are not allowed to be added to stueble; code: 400';
+            END IF;
+
             -- check, whether user is extern and needs to be invited
             IF NEW.invited_by IS NULL AND (SELECT user_role FROM users WHERE id = NEW.user_id) = 'extern'
             THEN
@@ -133,7 +139,7 @@ BEGIN
 
             IF COALESCE((SELECT user_role FROM users WHERE id = NEW.invited_by), 'extern') != 'tutor'
             THEN
-                maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_user'), 0);
+                maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_invites_per_user'), 0);
             ELSE
                 maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_guests_per_tutor'), 0);
             END IF;

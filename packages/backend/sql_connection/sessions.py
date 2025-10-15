@@ -208,3 +208,28 @@ def check_session_id(cursor: cursor, session_id: int) -> CheckSessionIdSuccess |
         return {"success": True, "data": False}
 
     return {"success": True, "data": True}
+
+def get_session_ids(cursor: cursor, user_id: int) -> SingleSuccess | GenericFailure:
+    """
+    gets all session ids of a user from the table sessions
+    Parameters:
+        cursor: cursor for the connection
+        user_id (int): id of the user
+    Returns:
+        dict: {"success": bool, "data": session_ids}, {"success": False, "error": e} if error occurred
+    """
+
+    result = db.read_table(
+        cursor=cursor,
+        keywords=["id"],
+        table_name="sessions",
+        conditions={"user_id": user_id}, 
+        expect_single_answer=False
+    )
+
+    if result["success"] is False:
+        return error_to_failure(result)
+    if result["data"] is None:
+        return {"success": False, "error": "no sessions found"}
+
+    return {"success": True, "data": [row[0] for row in result["data"]]}

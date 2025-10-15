@@ -144,7 +144,8 @@ def update_user(
         dict: {"success": False, "error": e} if unsuccessful, {"success": True, "data": id} otherwise
     """
 
-    allowed_fields = ["user_role", "first_name", "last_name", "email", "password_hash", "user_name"]
+    # TODO: disallow unallowed fields in db
+    allowed_fields = ["user_role", "first_name", "last_name", "email", "password_hash", "user_name", "verified"]
     for k in kwargs.keys():
         if k not in allowed_fields:
             return {"success": False, "error": f"Field {k} is not allowed to be updated."}
@@ -241,8 +242,8 @@ def get_user(
         return {"success": False, "error": "Either expect_single_answer=True or order_by can be set."}
 
     # check, whether a where statement is set for sql query
-    if user_id is None and user_email is None and user_name is None and conditions == {} and specific_where == "":
-        return {"success": False, "error": "Either user_id, user_email, user_name, conditions or specific_where must be set."}
+    if user_id is None and user_email is None and user_name is None and user_uuid is None and conditions == {} and specific_where == "":
+        return {"success": False, "error": "Either user_id, user_email, user_name, user_uuid, conditions or specific_where must be set."}
     conditions_counter = 0
     if user_id is not None: conditions_counter += 1
     if user_email is not None: conditions_counter += 1
@@ -280,7 +281,7 @@ def get_user(
         **value)
 
     if result["success"] is False:
-        return error_to_failure(result)
+        return result
 
     if result["data"] is None or (isinstance(result["data"], list) and len(result["data"]) == 0):
         return {"success": False, "error": "No matching user found"}
