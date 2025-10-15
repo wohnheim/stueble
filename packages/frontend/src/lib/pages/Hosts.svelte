@@ -13,6 +13,8 @@
     subtitle = "",
     addFunction,
     removeFunction,
+    addToDatabase,
+    removeFromDatabase,
     page = $bindable(),
     selectedUnfiltered = $bindable(),
     selected = $bindable(),
@@ -22,8 +24,10 @@
   }: {
     title: string;
     subtitle?: string;
-    addFunction: (ids: string[], date?: Date) => Promise<boolean>;
+    addFunction: (ids: string[], date?: Date) => Promise<HostOrTutor[] | null>;
     removeFunction: (ids: string[], date?: Date) => Promise<boolean>;
+    addToDatabase: (hosts: HostOrTutor[]) => Promise<void>;
+    removeFromDatabase: (ids: string[]) => Promise<void>;
     elements: HostOrTutor[];
     page: "list" | "add";
     selectedUnfiltered: HostOrTutor[];
@@ -102,12 +106,18 @@
       {/if}
 
       <Button
-        onclick={async () =>
-          (await ui_object.openDialog({
-            mode: "confirm",
-            title: "Confirm deletion",
-            confirm: "Delete",
-          })) && removeFunction([host.id])}
+        onclick={async () => {
+          if (
+            await ui_object.openDialog({
+              mode: "confirm",
+              title: "Confirm deletion",
+              confirm: "Delete",
+            })
+          ) {
+            const res = await removeFunction([host.id]);
+            if (res) await removeFromDatabase([host.id]);
+          }
+        }}
       >
         <div>
           <p id="title">
@@ -176,7 +186,9 @@
         class="square round extra"
         disabled={selected.length < 1}
         onclick={async () => {
-          await addFunction(selected.map((s) => s.id));
+          const res = await addFunction(selected.map((s) => s.id));
+          if (res != null) await addToDatabase(res);
+
           page = "list";
         }}
       >

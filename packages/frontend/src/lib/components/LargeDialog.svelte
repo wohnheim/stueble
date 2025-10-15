@@ -52,6 +52,12 @@
       removeFunction={ui_object.path.sub == "wirte"
         ? apiClient("http").removeHosts
         : apiClient("http").removeTutors}
+      addToDatabase={ui_object.path.sub == "wirte"
+        ? database.addHosts
+        : database.addTutors}
+      removeFromDatabase={ui_object.path.sub == "wirte"
+        ? database.deleteHosts
+        : database.deleteTutors}
       elements={ui_object.path.sub == "wirte"
         ? database.hosts
         : database.tutors}

@@ -329,10 +329,10 @@ class HTTPClient {
       }),
     });
 
-    if (res.ok) return true;
+    if (res.ok) return await res.json<HostOrTutor[]>();
 
     await this.parseError(res, "Fehler beim Hinzufügen von Berechtigungen");
-    return false;
+    return null;
   }
 
   async removeHosts(hosts: string[], date?: Date) {
@@ -371,10 +371,10 @@ class HTTPClient {
       }),
     });
 
-    if (res.ok) return true;
+    if (res.ok) return await res.json<HostOrTutor[]>();
 
     await this.parseError(res, "Fehler beim Hinzufügen von Berechtigungen");
-    return false;
+    return null;
   }
 
   async removeTutors(tutors: string[]) {

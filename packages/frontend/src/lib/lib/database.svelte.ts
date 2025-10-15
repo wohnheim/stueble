@@ -252,7 +252,7 @@ class Database {
 
   addHosts = async (hosts: HostOrTutor[]) => {
     for (const host of hosts) {
-      this.addHost(host);
+      await this.addHost(host);
     }
   };
 
@@ -261,6 +261,12 @@ class Database {
 
     const index = this.hosts.findIndex((h) => h.id == id);
     if (index != -1) this.hosts.splice(index, 1);
+  };
+
+  deleteHosts = async (ids: string[]) => {
+    for (const id of ids) {
+      await this.deleteHost(id);
+    }
   };
 
   /* Tutors */
@@ -273,7 +279,7 @@ class Database {
 
   addTutors = async (tutors: HostOrTutor[]) => {
     for (const tutor of tutors) {
-      this.addTutor(tutor);
+      await this.addTutor(tutor);
     }
   };
 
@@ -282,6 +288,12 @@ class Database {
 
     const index = this.tutors.findIndex((t) => t.id == id);
     if (index != -1) this.tutors.splice(index, 1);
+  };
+
+  deleteTutors = async (ids: string[]) => {
+    for (const id of ids) {
+      await this.deleteTutor(id);
+    }
   };
 
   /* Buffered actions */

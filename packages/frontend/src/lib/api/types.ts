@@ -9,11 +9,13 @@ function constant<T extends string>(...t: [T, ...T[]]) {
 // UUID conforming to RFC4122
 export const uuid = z.uuidv4();
 
+const residence = constant("hirte", "altbau", "anbau", "neubau");
+
 export const userProperties = z.object({
   firstName: z.string(),
   lastName: z.string(),
   roomNumber: z.uint32(),
-  residence: constant("hirte", "altbau", "anbau", "neubau"),
+  residence,
 });
 
 export type UserProperties = z.infer<typeof userProperties>;
@@ -49,6 +51,7 @@ export const hostOrTutor = z.object({
   id: uuid,
   firstName: z.string(),
   lastName: z.string(),
+  residence,
 });
 
 export type HostOrTutor = z.infer<typeof hostOrTutor>;
