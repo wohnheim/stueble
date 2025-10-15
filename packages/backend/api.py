@@ -2068,14 +2068,22 @@ def update_tutors():
         return response
 
     user_ids = result["data"]
+    query = """DELETE FROM hosts WHERE user_id IN %s"""
+    result = db.custom_call(cursor=cursor, query=query, type_of_answer=db.ANSWER_TYPE.NONE, variables=(tuple(user_ids),))
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
 
     query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
     result = db.custom_call(
         cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-        variables=tuple(user_ids)
-    )
+        variables=tuple(user_ids))
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
