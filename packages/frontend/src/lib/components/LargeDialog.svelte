@@ -44,30 +44,37 @@
 
 <dialog id="dialog-large" bind:this={ui_object.largeDialog} class="right large">
   {#if ui_object.path.main == "einstellungen"}
-    <Hosts
-      title={ui_object.path.sub == "wirte" ? "Wirt*innen" : "Tutor*innen"}
-      addFunction={ui_object.path.sub == "wirte"
-        ? apiClient("http").addHosts
-        : apiClient("http").addTutors}
-      removeFunction={ui_object.path.sub == "wirte"
-        ? apiClient("http").removeHosts
-        : apiClient("http").removeTutors}
-      addToDatabase={ui_object.path.sub == "wirte"
-        ? database.addHosts
-        : database.addTutors}
-      removeFromDatabase={ui_object.path.sub == "wirte"
-        ? database.deleteHosts
-        : database.deleteTutors}
-      elements={ui_object.path.sub == "wirte"
-        ? database.hosts
-        : database.tutors}
-      bind:page={hostsPage}
-      bind:selectedUnfiltered={hostsSelectedUnfiltered}
-      bind:selected={hostsSelected}
-      bind:searchInput={hostsSearchInput}
-      bind:searchResultsUnfiltered={hostsSearchResultsUnfiltered}
-      bind:searchResults={hostsSearchResults}
-    />
+    {#if ui_object.path.sub == "wirte"}
+      <Hosts
+        title={"Wirt*innen"}
+        addFunction={apiClient("http").addHosts}
+        removeFunction={apiClient("http").removeHosts}
+        addToDatabase={database.addHosts}
+        removeFromDatabase={database.deleteHosts}
+        elements={database.hosts}
+        bind:page={hostsPage}
+        bind:selectedUnfiltered={hostsSelectedUnfiltered}
+        selected={hostsSelected}
+        bind:searchInput={hostsSearchInput}
+        bind:searchResultsUnfiltered={hostsSearchResultsUnfiltered}
+        searchResults={hostsSearchResults}
+      />
+    {:else}
+      <Hosts
+        title={"Tutor*innen"}
+        addFunction={apiClient("http").addTutors}
+        removeFunction={apiClient("http").removeTutors}
+        addToDatabase={database.addTutors}
+        removeFromDatabase={database.deleteTutors}
+        elements={database.tutors}
+        bind:page={hostsPage}
+        bind:selectedUnfiltered={hostsSelectedUnfiltered}
+        selected={hostsSelected}
+        bind:searchInput={hostsSearchInput}
+        bind:searchResultsUnfiltered={hostsSearchResultsUnfiltered}
+        searchResults={hostsSearchResults}
+      />
+    {/if}
   {/if}
 </dialog>
 

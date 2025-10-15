@@ -11,24 +11,25 @@
   let {
     title,
     subtitle = "",
+    elements,
     addFunction,
     removeFunction,
     addToDatabase,
     removeFromDatabase,
     page = $bindable(),
     selectedUnfiltered = $bindable(),
-    selected = $bindable(),
+    selected,
     searchInput = $bindable(),
     searchResultsUnfiltered = $bindable(),
-    searchResults = $bindable(),
+    searchResults,
   }: {
     title: string;
     subtitle?: string;
+    elements: HostOrTutor[];
     addFunction: (ids: string[], date?: Date) => Promise<HostOrTutor[] | null>;
     removeFunction: (ids: string[], date?: Date) => Promise<boolean>;
     addToDatabase: (hosts: HostOrTutor[]) => Promise<void>;
     removeFromDatabase: (ids: string[]) => Promise<void>;
-    elements: HostOrTutor[];
     page: "list" | "add";
     selectedUnfiltered: HostOrTutor[];
     selected: HostOrTutor[];
@@ -41,8 +42,6 @@
     const index = selectedUnfiltered.findIndex((s) => s.id == host.id);
     if (index === -1) selectedUnfiltered.push(host);
     else selectedUnfiltered.splice(index, 1);
-
-    selectedUnfiltered = selectedUnfiltered;
   };
 
   const search = async (input: string) => {
@@ -76,7 +75,7 @@
           lastName,
         }),
       )
-    ).filter((u) => !database.hosts.some((h) => u.id == h.id));
+    ).filter((u) => !elements.some((h) => u.id == h.id));
 
     if (firstName !== undefined && lastName === undefined) {
       array.push(
@@ -89,7 +88,7 @@
         ).filter(
           (u) =>
             !array.some((u1) => u.id == u1.id) &&
-            !database.hosts.some((h) => u.id == h.id),
+            !elements.some((h) => u.id == h.id),
         ),
       );
     }
@@ -100,7 +99,7 @@
 
 {#if page == "list"}
   <Fullscreen header={title} backAction={ui_object.pathBackwards}>
-    {#each database.hosts as host, i}
+    {#each elements as element, i}
       {#if i != 0}
         <br />
       {/if}
@@ -114,15 +113,15 @@
               confirm: "Delete",
             })
           ) {
-            const res = await removeFunction([host.id]);
-            if (res) await removeFromDatabase([host.id]);
+            const res = await removeFunction([element.id]);
+            if (res) await removeFromDatabase([element.id]);
           }
         }}
       >
         <div>
           <p id="title">
-            {host.firstName}
-            {host.lastName}
+            {element.firstName}
+            {element.lastName}
           </p>
         </div>
       </Button>
@@ -189,6 +188,7 @@
           const res = await addFunction(selected.map((s) => s.id));
           if (res != null) await addToDatabase(res);
 
+          selectedUnfiltered = [];
           page = "list";
         }}
       >
