@@ -162,10 +162,11 @@ SELECT
     verified, 
     room, 
     residence, 
-    COALESCE((SELECT event_type FROM events WHERE user_id = id AND event_type IN ('arrive', 'leave', 'remove')), 'leave') = 'arrive' AS present
+    COALESCE((SELECT event_type FROM events WHERE user_id = users_user_id AND event_type IN ('arrive', 'leave', 'remove') ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive' AS present, 
+    (SELECT user_uuid FROM users WHERE users_user_id = invited_by) AS invited_by
 FROM (
     SELECT
-        u.id,
+        u.id AS users_user_id,
         u.first_name,
         u.last_name,
         u.user_role,
@@ -175,6 +176,7 @@ FROM (
         u.residence,
         e.event_type,
         e.submitted,
+        e.invited_by,
         ROW_NUMBER() OVER (PARTITION BY e.user_id ORDER BY e.submitted DESC) as rn
     FROM events e
     LEFT JOIN users u ON e.user_id = u.id
@@ -202,10 +204,12 @@ WHERE rn = 1
                      "extern": guest[2],
                      "id": guest[3],
                      "present": guest[7]}
-        if data_pack["present"] is True:
+        if data_pack["extern"] is False:
             data_pack["roomNumber"] = guest[5]
             data_pack["residence"] = guest[6]
             data_pack["verified"] = guest[4]
+        else:
+            data_pack["invitedBy"] = guest[8]
         infos.append(data_pack)
 
     return {"success": True, "data": infos}

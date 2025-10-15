@@ -195,11 +195,12 @@ def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove
             return {"success": False, "error": "one or more user_uuids are invalid"}
         user_ids = [i[0] for i in result["data"]]
 
-    rows = tuple([((user_id, stueble_id) for user_id in user_ids)])
-
     if method == "add":
+        rows = [(user_id, stueble_id) for user_id in user_ids]
+
         query = """INSERT INTO hosts (user_id, stueble_id) VALUES %s"""
     else:
+        rows = [tuple((user_id, stueble_id) for user_id in user_ids)]
         query = """DELETE FROM hosts WHERE (user_id, stueble_id) IN %s"""
     try:
         execute_values(cursor, query, rows)

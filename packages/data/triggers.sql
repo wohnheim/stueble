@@ -347,10 +347,11 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION check_user_constants()
 RETURNS trigger AS $$
 BEGIN
-    IF NEW.user_uuid != OLD.user_uuid OR OLD.user_uuid IS NOT NULL
+    IF NEW.user_uuid != OLD.user_uuid AND OLD.user_uuid IS NOT NULL
     THEN
         RAISE EXCEPTION 'user_uuid is constant and cannot be changed after being initialized';
     END IF;
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -374,7 +375,7 @@ CREATE OR REPLACE TRIGGER set_uuid_hash_trigger
     FOR EACH ROW EXECUTE FUNCTION set_uuid_hash();
 
 CREATE OR REPLACE TRIGGER check_user_constants
-    BEFORE UPDATE ON stueble_codes -- only on updates
+    BEFORE UPDATE ON users -- only on updates
     FOR EACH ROW EXECUTE FUNCTION check_user_constants();
 
 CREATE OR REPLACE TRIGGER set_session_id_trigger
