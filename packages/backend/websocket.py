@@ -63,7 +63,7 @@ def is_valid_room(room: str) -> bool:
 
 # handle websocket_info and sid_to_websocket garbage collection
 
-allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey", "acknowledgement"]
+allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey", "acknowledgment"]
 
 # add achievements
 def get_websocket_by_sid(sid: str):
@@ -320,11 +320,11 @@ async def handle_ws(websocket):
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "reqId must be specified"})
                 await request_public_key(websocket=websocket, req_id=req_id)
-            elif event == "acknowledgement":
+            elif event == "acknowledgment":
                 if req_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "reqId must be specified"})
-                await acknowledgement(websocket=websocket, req_id=req_id)
+                await acknowledgment(websocket=websocket, req_id=req_id)
     finally:
         host_upwards_room.discard(websocket)
         admins_room.discard(session_id)
@@ -351,9 +351,9 @@ async def handle_ws(websocket):
                     if message_log[key]["session_ids"] == []:
                         del message_log[key]
 
-async def acknowledgement(websocket, res_id: str | int):
+async def acknowledgment(websocket, res_id: str | int):
     """
-    handle acknowledgement
+    handle acknowledgment
 
     Parameters:
         websocket (websocket): websocket connection

@@ -922,9 +922,13 @@ def guest_change():
             error = {"code": 400, "message": "Inviter not registered to stueble any more"}
         elif "is not registered for stueble" in error["message"]:
             error = {"code": 400, "message": "User not registered to stueble"}
+        elif "; code: " in error["message"]:
+            error_message, status_code = error["message"].split("; code: ")
+            status_code = int(status_code.split("\n")[0])
+            error = {"code": status_code, "message": error_message}
         response = Response(
-            response=json.dumps(error),
-            status=500,
+            response=json.dumps(error["message"]),
+            status=error["code"],
             mimetype="application/json")
         return response
 
@@ -2015,8 +2019,8 @@ def update_tutors():
 
     # changing tutors back to users
     if request.method == "DELETE":
-        # if any user is tutor or above, raise error
-        if any(i["user_role"] >= UserRole.TUTOR for i in tutors_data):
+        # if any user is admin, raise error
+        if any(i["user_role"] >= UserRole.ADMIN for i in tutors_data):
             close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 403, "message": "Can only remove tutors"}),
@@ -2104,7 +2108,7 @@ def update_tutors():
         for user in user_uuids:
             asyncio.run(ws.broadcast(event="tutorRemoved", data=user, skip_sid=session_id))
 
-    if request.method == "DELETE" and len(tutors_data) == 0:
+    if request.method == "DELETE":
         response = Response(
             status=204)
         return response
@@ -2176,7 +2180,9 @@ def update_hosts():
         return response
     stueble_id = result["data"][2]
 
-    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name"])
+    # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
+
+    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2185,7 +2191,7 @@ def update_hosts():
             mimetype="application/json")
         return response
     hosts_data = result["data"]
-    hosts_data = [{"id": i[0], "firstName": i[1], "lastName": i[2]} for i in hosts_data]
+    hosts_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3]} for i in hosts_data]
     if len(hosts_data) != len(user_uuids):
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2204,6 +2210,9 @@ def update_hosts():
         return response
 
     user_ids = result["data"]
+
+    # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
+    result = db.custom_call(cursor=cursor, query="UPDATE users SET user_role = 'user' WHERE id IN %s AND user_role = 'host'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
 
     query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
     result = db.custom_call(
@@ -2225,11 +2234,22 @@ def update_hosts():
 
     result = ws.update_hosts_tutors(session_ids, "add" if request.method == "PUT" else "remove")
 
-    for user in hosts_data:
-        asyncio.run(ws.broadcast(event="hostAdded" if request.method == "PUT" else "hostRemoved", data=user, skip_sid=session_id))
+    if request.method == "PUT":
+        for user in hosts_data:
+            asyncio.run(ws.broadcast(event="hostAdded", data=user, skip_sid=session_id))
+    else:
+        for user in user_uuids:
+            asyncio.run(ws.broadcast(event="hostRemoved", data=user, skip_sid=session_id))
+
+    if request.method == "DELETE":
+        response = Response(
+            status=204)
+        return response
 
     response = Response(
-        status=204)
+        response=json.dumps(hosts_data),
+        status=201,
+        mimetype="application/json")
     return response
 
 @app.route("/hosts", methods=["GET"])
