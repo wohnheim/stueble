@@ -1961,7 +1961,7 @@ def update_tutors():
         return response
     
     data = request.get_json()
-    user_uuids = data.get("hosts", None)
+    user_uuids = data.get("tutors", None)
 
     if not user_uuids:
         response = Response(
@@ -1991,7 +1991,7 @@ def update_tutors():
         return response
 
     # get information about users
-    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "user_role"])
+    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2002,7 +2002,7 @@ def update_tutors():
     
     # clean result data
     tutors_data = result["data"]
-    tutors_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "user_role": UserRole(i[3])} for i in tutors_data]
+    tutors_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3], "user_role": UserRole(i[4])} for i in tutors_data]
     
     # check, whether all users were found
     if len(tutors_data) != len(user_uuids):
@@ -2011,7 +2011,8 @@ def update_tutors():
             response=json.dumps({"code": 404, "message": "Not all users found"}),
             status=404,
             mimetype="application/json")
-    
+        return response
+
     # changing tutors back to users
     if request.method == "DELETE":
         # if any user is tutor or above, raise error
@@ -2026,7 +2027,7 @@ def update_tutors():
         new_role = UserRole.USER
 
         # remove wrong users from tutor list
-        tutors_data = [i for i in tutors_data if i["user_role"] == UserRole.TUTOR]
+        tutors_data = [{key: value for key, value in i.items() if key != "user_role"} for i in tutors_data if i["user_role"] == UserRole.TUTOR]
     else:
         if any(i["user_role"] == UserRole.EXTERN for i in tutors_data):
             close_conn_cursor(conn, cursor)
@@ -2038,7 +2039,14 @@ def update_tutors():
         # set new role
         new_role = UserRole.TUTOR
         # remove wrong users from tutor list
-        tutors_data = [i for i in tutors_data if i["user_role"] == UserRole.USER or i["user_role"] == UserRole.HOST]
+        tutors_data = [{key: value for key, value in i.items() if key != "user_role"} for i in tutors_data if i["user_role"] == UserRole.USER or i["user_role"] == UserRole.HOST]
+    if len(tutors_data) != len(user_uuids):
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 400, "message": "Some users can't be promoted to tutors"}),
+            status=403,
+            mimetype="application/json")
+        return response
 
     query = """
         UPDATE users
@@ -2048,7 +2056,7 @@ def update_tutors():
     """
     result = db.custom_call(cursor=cursor,
                             query=query,
-                            type_of_answer=db.ANSWER_TYPE.MULTIPLE_ANSWERS,
+                            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
                             variables=[new_role.value, tuple(i["id"] for i in tutors_data)])
     
     if result["success"] is False:
@@ -2081,14 +2089,23 @@ def update_tutors():
 
     result = ws.update_hosts_tutors(session_ids, "add" if request.method == "PUT" else "remove")
 
-    for user in tutors_data:
-        asyncio.run(ws.broadcast(event="hostAdded" if request.method == "PUT" else "hostRemoved", data=user, skip_sid=session_id))
+    if request.method == "PUT":
+        for user in tutors_data:
+            asyncio.run(ws.broadcast(event="tutorAdded", data=user, skip_sid=session_id))
+    else:
+        for user in user_uuids:
+            asyncio.run(ws.broadcast(event="tutorRemoved", data=user, skip_sid=session_id))
 
+    if request.method == "DELETE" and len(tutors_data) == 0:
+        response = Response(
+            status=204)
+        return response
+    
     response = Response(
-        status=204)
+        response=json.dumps(tutors_data),
+        status=201,
+        mimetype="application/json")
     return response
-
-
 
 @app.route("/hosts", methods=["PUT", "DELETE"])
 def update_hosts():
