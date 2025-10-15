@@ -194,8 +194,8 @@ def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove
         if len(result["data"]) != len(user_uuids):
             return {"success": False, "error": "one or more user_uuids are invalid"}
         user_ids = [i[0] for i in result["data"]]
-    
-    rows = [(user_id, stueble_id) for user_id in user_ids]
+
+    rows = tuple([((user_id, stueble_id) for user_id in user_ids)])
 
     if method == "add":
         query = """INSERT INTO hosts (user_id, stueble_id) VALUES %s"""
@@ -218,7 +218,7 @@ def get_hosts(cursor: cursor, stueble_id: int) -> GetHostsSuccess | GenericFailu
         stueble_id (int): id of the stueble
     """
 
-    params = ["user_uuid", "first_name", "last_name", "user_name"]
+    params = ["user_uuid", "first_name", "last_name", "residence"]
 
     query = f"""SELECT {', '.join(['u.' + i for i in params])} FROM hosts h JOIN users u ON u.id = h.user_id WHERE h.stueble_id = %s"""
     result = db.custom_call(cursor=cursor, 
