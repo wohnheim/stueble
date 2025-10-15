@@ -14,14 +14,15 @@
         onclick={() => ui(ui_object.menuDialog)}
       >
         <i>menu</i>
-        <div class="tooltip bottom">Menü</div>
       </button>
     {/if}
 
     {#if ui_object.path.main == "start" && ui_object.path.sub == "einladen"}
       <button class="circle transparent" onclick={ui_object.pathBackwards}>
         <i>arrow_back</i>
-        <div class="tooltip bottom">Zurück</div>
+        {#if ui_object.layout == "desktop"}
+          <div class="tooltip bottom">Zurück</div>
+        {/if}
       </button>
     {/if}
 
@@ -36,17 +37,18 @@
         <p>✨</p>
 
         <p class="bold">
-          Motto: <span class="secondary-text">{settings.settings["motto"]}</span
-          >
+          Motto:
+          <span class="secondary-text">{settings.settings["motto"]}</span>
         </p>
 
         {#if ui_object.status?.date !== undefined}
           <p>✨</p>
 
           <p class="bold">
-            Datum: <span class="secondary-text"
-              >{ui_object.status.date.toLocaleDateString("de-DE")}</span
-            >
+            Datum:
+            <span class="secondary-text">
+              {ui_object.status.date.toLocaleDateString("de-DE")}
+            </span>
           </p>
         {/if}
 
