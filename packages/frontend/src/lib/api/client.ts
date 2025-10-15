@@ -41,7 +41,7 @@ class HTTPClient {
     } catch (e) {}
 
     error.snackbar(
-      (message === undefined ? "Error" : message) + ": " + res.statusText,
+      (message === undefined ? "Error" : message) + ": " + res.status,
     );
   }
 

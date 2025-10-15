@@ -1,6 +1,6 @@
 <script lang="ts">
   import { apiClient } from "$lib/api/client";
-  import type { Host } from "$lib/api/types";
+  import type { HostOrTutor } from "$lib/api/types";
   import { database } from "$lib/lib/database.svelte";
   import { ui_object } from "$lib/lib/UI.svelte";
 
@@ -11,6 +11,8 @@
   let {
     title,
     subtitle = "",
+    addFunction,
+    removeFunction,
     page = $bindable(),
     selectedUnfiltered = $bindable(),
     selected = $bindable(),
@@ -20,15 +22,18 @@
   }: {
     title: string;
     subtitle?: string;
+    addFunction: (ids: string[], date?: Date) => Promise<boolean>;
+    removeFunction: (ids: string[], date?: Date) => Promise<boolean>;
+    elements: HostOrTutor[];
     page: "list" | "add";
-    selectedUnfiltered: Host[];
-    selected: Host[];
+    selectedUnfiltered: HostOrTutor[];
+    selected: HostOrTutor[];
     searchInput: string;
-    searchResultsUnfiltered: Host[];
-    searchResults: Host[];
+    searchResultsUnfiltered: HostOrTutor[];
+    searchResults: HostOrTutor[];
   } = $props();
 
-  const select = (host: Host) => {
+  const select = (host: HostOrTutor) => {
     const index = selectedUnfiltered.findIndex((s) => s.id == host.id);
     if (index === -1) selectedUnfiltered.push(host);
     else selectedUnfiltered.splice(index, 1);
@@ -102,7 +107,7 @@
             mode: "confirm",
             title: "Confirm deletion",
             confirm: "Delete",
-          })) && apiClient("http").removeHosts([host.id])}
+          })) && removeFunction([host.id])}
       >
         <div>
           <p id="title">
@@ -171,7 +176,7 @@
         class="square round extra"
         disabled={selected.length < 1}
         onclick={async () => {
-          await apiClient("http").addHosts(selected.map((s) => s.id));
+          await addFunction(selected.map((s) => s.id));
           page = "list";
         }}
       >
