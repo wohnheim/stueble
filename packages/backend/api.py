@@ -2069,7 +2069,7 @@ def update_tutors():
 
     user_ids = result["data"]
     query = """DELETE FROM hosts WHERE user_id IN %s"""
-    result = db.custom_call(cursor=cursor, query=query, type_of_answer=db.ANSWER_TYPE.NONE, variables=(tuple(user_ids),))
+    result = db.custom_call(cursor=cursor, query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
