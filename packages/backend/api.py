@@ -1,4 +1,3 @@
-# TODO: use close_conn_cursor wrapper
 import asyncio
 import base64
 import datetime
@@ -1013,7 +1012,6 @@ def attend_stueble():
             status=401,
             mimetype="application/json")
         return to_return(response, conn, cursor)
-
 
     # check permissions, since only hosts can add guests
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=required_role)
