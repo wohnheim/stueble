@@ -50,12 +50,11 @@
   #common {
     & :global(#title) {
       font-size: large;
-      margin-bottom: 0;
     }
 
     & :global(#subtitle) {
       font-size: small;
-      margin-top: 0;
+      margin-top: -0.5rem;
     }
   }
 </style>

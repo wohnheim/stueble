@@ -181,7 +181,8 @@
 
       <Guest
         {guest}
-        onclick={() => ui_object.openDialog({ mode: "check-in", guest })}
+        onclick={() =>
+          !guest.present && ui_object.openDialog({ mode: "check-in", guest })}
       />
     {/each}
   </div>

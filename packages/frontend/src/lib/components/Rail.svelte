@@ -49,4 +49,15 @@
     <i>admin_panel_settings</i>
     <span>Einstellungen</span>
   </a>
+
+  <a
+    class={ui_object.path.main == "credits" ? "active" : ""}
+    onclick={() =>
+      ui_object.changePath({
+        main: "credits",
+      })}
+  >
+    <i>star_shine</i>
+    <span>Credits</span>
+  </a>
 </nav>

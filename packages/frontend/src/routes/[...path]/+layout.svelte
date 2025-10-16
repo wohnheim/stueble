@@ -27,6 +27,8 @@
 
   const { error: errorStore, overlay } = error;
 
+  let offlineInterval: ReturnType<typeof setInterval> | undefined = undefined;
+
   onMount(async () => {
     if (browser) {
       if (!navigator.onLine) error.offline();
@@ -42,6 +44,19 @@
         window.addEventListener("offline", () => {
           ui_object.closeDialog();
           if (ui_object.largeDialog?.open) ui(ui_object.largeDialog);
+
+          if (offlineInterval === undefined) {
+            offlineInterval = setInterval(async () => {
+              if (
+                navigator.onLine &&
+                (await apiClient("ws").checkConnection())
+              ) {
+                clearInterval(offlineInterval);
+                offlineInterval = undefined;
+                error.solved();
+              }
+            }, 1000);
+          }
 
           error.offline();
         });

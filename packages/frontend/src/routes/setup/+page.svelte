@@ -143,10 +143,7 @@
     </nav>
   </div>
 {:else if progress == 2}
-  <article
-    id="main-article"
-    class="center absolute middle-align center-align border"
-  >
+  {#snippet progress2Snippet()}
     <div>
       {#if progress2Mode == "login"}
         <h5>Anmelden</h5>
@@ -360,7 +357,18 @@
         >
       {/if}
     </div>
-  </article>
+  {/snippet}
+
+  {#if ui_object.layout == "desktop"}
+    <article
+      id="main-article"
+      class="center absolute middle-align center-align border"
+    >
+      {@render progress2Snippet()}
+    </article>
+  {:else}
+    {@render progress2Snippet()}
+  {/if}
 {/if}
 
 <style>

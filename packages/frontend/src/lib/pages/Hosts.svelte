@@ -1,7 +1,6 @@
 <script lang="ts">
   import { apiClient } from "$lib/api/client";
   import type { HostOrTutor } from "$lib/api/types";
-  import { database } from "$lib/lib/database.svelte";
   import { ui_object } from "$lib/lib/UI.svelte";
 
   import Button from "$lib/components/Button.svelte";
