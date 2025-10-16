@@ -9,7 +9,7 @@ function constant<T extends string>(...t: [T, ...T[]]) {
 // UUID conforming to RFC4122
 export const uuid = z.uuidv4();
 
-const residence = constant("hirte", "altbau", "anbau", "neubau");
+const residence = constant("altbau", "anbau", "neubau", "hirte");
 
 export const userProperties = z.object({
   firstName: z.string(),

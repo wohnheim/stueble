@@ -65,7 +65,7 @@
     </li>
 
     <li
-      class="wave round"
+      class="wave round {ui_object.path.main == 'credits' ? 'fill' : ''}"
       onclick={() => {
         ui_object.changePath({
           main: "credits",
@@ -73,7 +73,7 @@
         ui(ui_object.menuDialog);
       }}
     >
-      <i>star_shine</i>
+      <i>diamond</i>
       <span>Credits</span>
     </li>
   </ul>

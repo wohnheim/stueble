@@ -48,7 +48,7 @@
 
     const roomNumber = splitted.find((s) => Number.isInteger(s));
     const residence = splitted.find(
-      (s) => s == "hirte" || s == "altbau" || s == "anbau" || s == "neubau",
+      (s) => s == "altbau" || s == "anbau" || s == "neubau" || s == "hirte",
     );
     const email = splitted.find((s) => s.includes("@"));
 

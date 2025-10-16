@@ -46,10 +46,10 @@ export type Routes = z.infer<typeof routes>;
 
 /* Student residence mapping */
 export enum WohnheimType {
-  Hirte = "hirte",
   Altbau = "altbau",
   Anbau = "anbau",
   Neubau = "neubau",
+  Hirte = "hirte",
 }
 
 /* Parsed API types */
