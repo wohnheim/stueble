@@ -965,7 +965,6 @@ def guest_change():
         status=204)
     return to_return(response, conn, cursor)
 
-# TODO broadcast add remove user
 @app.route("/guests", methods=["PUT", "DELETE"])
 @close_db_conn_cursor
 def attend_stueble():
@@ -1530,7 +1529,6 @@ def verify_user():
         mimetype="application/json")
     return to_return(response, conn, cursor)
 
-# TODO websocket change update user
 @app.route("/user/change_role", methods=["POST"])
 @close_db_conn_cursor
 def change_user_role():
