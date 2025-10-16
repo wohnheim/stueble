@@ -41,6 +41,8 @@ def close_db_conn_cursor(func):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
+        conn = None
+        cursor = None
         try:
             response = func(*args, **kwargs)
             result = response["result"]
@@ -2353,7 +2355,6 @@ RESET additional.skip_triggers;"""
 Config management
 """
 
-@close_db_conn_cursor
 def snake_to_camel_case(snake_case: str):
     """
     turns snake_case into camelCase
@@ -2367,9 +2368,6 @@ def snake_to_camel_case(snake_case: str):
         camel_case = camel_case.replace("Qr", "QR")
     return camel_case
 
-
-
-@close_db_conn_cursor
 def camel_to_snake_case(camel_case: str):
     """
     turns camelCase into snake_case
