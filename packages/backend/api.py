@@ -67,7 +67,7 @@ def to_return(response, conn=None, cursor=None) -> dict:
 
 @app.route("/auth/login", methods=["POST"])
 @close_db_conn_cursor
-def login(cursor):
+def login():
     """
     checks, whether a user exists and whether user is logged in (if exists and not logged in, session is created)
     """
@@ -181,7 +181,7 @@ def login(cursor):
     return to_return(response, conn, cursor)
 
 @app.route("/auth/signup", methods=["POST"])
-@close_conn_cursor
+@close_db_conn_cursor
 def signup_data():
     """
     create a new user
@@ -299,7 +299,7 @@ def signup_data():
     return to_return(response, conn, cursor)
 
 @app.route("/auth/verify_signup", methods=["POST"])
-
+@close_db_conn_cursor
 def verify_signup():
     """
     verifies the signup
@@ -386,6 +386,7 @@ def verify_signup():
     return to_return(response, conn, cursor)
 
 @app.route("/auth/logout", methods=["POST"])
+@close_db_conn_cursor
 def logout():
     """
     removes the session id
@@ -418,6 +419,7 @@ def logout():
     return to_return(response, conn, cursor)
 
 @app.route("/auth/delete", methods=["DELETE"])
+@close_db_conn_cursor
 def TEST_DELETE_PLEASE_REMOVE():
     """
     TEST FUNCTION - PLEASE REMOVE
@@ -459,6 +461,7 @@ def TEST_DELETE_PLEASE_REMOVE():
 # TODO: test automatic deletion from all stueble parties
 # TODO: uncomment route
 # app.route("/auth/delete", methods=["DELETE"])
+@close_db_conn_cursor
 def delete():
     """
     delete a user (set password to NULL)
@@ -528,6 +531,7 @@ def delete():
     return to_return(response, conn, cursor)
 
 @app.route("/auth/reset_password", methods=["POST"])
+@close_db_conn_cursor
 def reset_password_mail():
     """
     reset password of a user
@@ -614,6 +618,7 @@ def reset_password_mail():
     return to_return(response, conn, cursor)
 
 @app.route("/auth/reset_password_confirm", methods=["POST"])
+@close_db_conn_cursor
 def confirm_code():
     """
     confirm the reset code and set a new password
@@ -699,6 +704,7 @@ def confirm_code():
 # NOTE: no websocket update, since neither password nor username are needed
 @app.route("/auth/change_password", methods=["POST"])
 @app.route("/auth/change_username", methods=["POST"])
+@close_db_conn_cursor
 def change_user_data():
     """
     changes user data when logged in \n
@@ -794,6 +800,7 @@ Guest list management
 
 # NOTE: if no stueble is happening today or yesterday, an empty list is returned
 @app.route("/guests", methods=["GET"])
+@close_db_conn_cursor
 def guests():
     """
     returns list of all guests
@@ -842,6 +849,7 @@ def guests():
     return to_return(response, conn, cursor)
 
 @app.route("/guest", methods=["POST"])
+@close_db_conn_cursor
 def guest_change():
     """
     add / remove a guest to the guest_list of present people
@@ -958,6 +966,7 @@ def guest_change():
 
 # TODO broadcast add remove user
 @app.route("/guests", methods=["PUT", "DELETE"])
+@close_db_conn_cursor
 def attend_stueble():
     """
     sign up for a stueble party
@@ -1125,6 +1134,7 @@ def attend_stueble():
 
 # NOTE: extern guest can be multiple times in table users since only first_name, last_name are specified, which are not unique
 @app.route("/guests/invitee", methods=["PUT", "DELETE"])
+@close_db_conn_cursor
 def invitee():
     """
     invite a friend and share a qr-code
@@ -1393,6 +1403,7 @@ User management
 """
 
 @app.route("/user", methods=["GET"])
+@close_db_conn_cursor
 def user():
     """
     return data to user
@@ -1435,6 +1446,7 @@ def user():
     return to_return(response, conn, cursor)
 
 @app.route("/user", methods=["POST"])
+@close_db_conn_cursor
 def verify_user():
     """
     verify a user (only hosts and above can verify users)
@@ -1520,6 +1532,7 @@ def verify_user():
 
 # TODO websocket change update user
 @app.route("/user/change_role", methods=["POST"])
+@close_db_conn_cursor
 def change_user_role():
     """
     change the user role of a user (only admin can change user to tutor)
@@ -1642,6 +1655,7 @@ def change_user_role():
     return to_return(response, conn, cursor)
 
 @app.route("/user/search", methods=["GET"])
+@close_db_conn_cursor
 def search_intern():
     """
     search for a guest \n
@@ -1795,6 +1809,7 @@ Motto management (GET via WebSocket)
 
 # TODO allow date changes
 @app.route("/motto", methods=["POST"])
+@close_db_conn_cursor
 def create_stueble():
     """
     creates a new stueble event
@@ -1894,6 +1909,7 @@ Hosts management (Changes via WebSocket)
 """
 
 @app.route("/tutors", methods=["PUT", "DELETE"])
+@close_db_conn_cursor
 def update_tutors():
     """
     Update tutors.
@@ -2053,6 +2069,7 @@ def update_tutors():
     return to_return(response, conn, cursor)
 
 @app.route("/hosts", methods=["PUT", "DELETE"])
+@close_db_conn_cursor
 def update_hosts():
     """
     Update hosts for a stueble.
@@ -2179,6 +2196,7 @@ def update_hosts():
 
 @app.route("/hosts", methods=["GET"])
 @app.route("/tutors", methods=["GET"])
+@close_db_conn_cursor
 def get_hosts_tutors():
     """
     Get hosts for a stueble.
@@ -2264,6 +2282,7 @@ def get_hosts_tutors():
     return to_return(response, conn, cursor)
 
 @app.route("/hosts/force_add_guest", methods=["POST"])
+@close_db_conn_cursor
 def force_add_guest():
     """
     force add guest to current stueble
@@ -2334,6 +2353,7 @@ RESET additional.skip_triggers;"""
 Config management
 """
 
+@close_db_conn_cursor
 def snake_to_camel_case(snake_case: str):
     """
     turns snake_case into camelCase
@@ -2349,6 +2369,7 @@ def snake_to_camel_case(snake_case: str):
 
 
 
+@close_db_conn_cursor
 def camel_to_snake_case(camel_case: str):
     """
     turns camelCase into snake_case
@@ -2363,6 +2384,7 @@ def camel_to_snake_case(camel_case: str):
     return snake_case
 
 @app.route("/config", methods=["GET", "POST"])
+@close_db_conn_cursor
 def config():
     """
     get or update config values
@@ -2443,6 +2465,7 @@ Internal
 """
 
 @app.route("/websocket_local", methods=["POST"])
+@close_db_conn_cursor
 def websocket_change():
     """
     receive data from websocket_runner and send it to all connected clients
