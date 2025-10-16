@@ -63,7 +63,7 @@ def to_return(response, conn=None, cursor=None) -> dict:
     Returns:
         dict: dict with response, connection and cursor
     """
-    return {"response": response, "conn": conn, "cursor": cursor}
+    return {"result": response, "conn": conn, "cursor": cursor}
 
 @app.route("/auth/login", methods=["POST"])
 @close_db_conn_cursor
