@@ -6,14 +6,16 @@
   import { apiClient } from "$lib/api/client";
   import { settings } from "$lib/lib/settings.svelte";
 
-  onMount(async () => {
-    settings.set(
-      "qrCodeData",
-      JSON.stringify(
-        await apiClient("ws").sendMessage({ event: "requestQRCode" }),
+  onMount(
+    async () =>
+      !settings.settings["qrCodeData"] &&
+      settings.set(
+        "qrCodeData",
+        JSON.stringify(
+          await apiClient("ws").sendMessage({ event: "requestQRCode" }),
+        ),
       ),
-    );
-  });
+  );
 </script>
 
 <p style="font-size: large; margin-bottom: 12px;">Einlass QR-Code</p>

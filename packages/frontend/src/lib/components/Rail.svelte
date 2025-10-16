@@ -57,7 +57,7 @@
         main: "credits",
       })}
   >
-    <i>star_shine</i>
+    <i>diamond</i>
     <span>Credits</span>
   </a>
 </nav>

@@ -111,7 +111,12 @@
   });
 </script>
 
-<svelte:window on:dragover|preventDefault on:keydown={handleKeyDown} />
+<svelte:window
+  bind:innerHeight={ui_object.height}
+  bind:innerWidth={ui_object.width}
+  on:dragover|preventDefault
+  on:keydown={handleKeyDown}
+/>
 
 <Snackbar />
 
@@ -143,8 +148,8 @@
     </nav>
   </div>
 {:else if progress == 2}
-  {#snippet progress2Snippet()}
-    <div>
+  {#snippet progress2Snippet(classes: string)}
+    <div class={classes}>
       {#if progress2Mode == "login"}
         <h5>Anmelden</h5>
         <div class="space"></div>
@@ -254,7 +259,6 @@
           <select
             bind:value={ui_object.userParams.residence}
             style="min-width: 200px;"
-            oninput={() => (residenceValid = !!ui_object.userParams.residence)}
             onfocusout={() =>
               (residenceValid = !!ui_object.userParams.residence)}
           >
@@ -267,7 +271,7 @@
           <label>Wohnheim</label>
           {#if !residenceValid}
             <i>error</i>
-            <span class="error">Fehlerhafte Eingabe</span>
+            <span class="error">Diese Angabe ist erforderlich</span>
           {/if}
         </div>
 
@@ -342,7 +346,7 @@
           {/if}
         </div>
 
-        <label class="checkbox bottom-margin">
+        <label class="checkbox left-margin bottom-margin">
           <input bind:checked={privacyPolicy} type="checkbox" />
           <span class="wrap"
             >Ich stimme der Nutzung meiner Daten zur Verifikation der
@@ -364,10 +368,10 @@
       id="main-article"
       class="center absolute middle-align center-align border"
     >
-      {@render progress2Snippet()}
+      {@render progress2Snippet("")}
     </article>
   {:else}
-    {@render progress2Snippet()}
+    {@render progress2Snippet("large-padding center-align")}
   {/if}
 {/if}
 
