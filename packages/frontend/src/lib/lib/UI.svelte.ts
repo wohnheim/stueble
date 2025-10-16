@@ -16,7 +16,7 @@ import type { Overwrite } from "$lib/lib/utils";
 /* Site navigation */
 
 const routesTop = z.object({
-  main: z.enum([]),
+  main: z.enum(["credits"]),
 });
 
 const routeMain = z.object({
@@ -67,7 +67,9 @@ class UI {
   // Window
   height = $state(0);
   width = $state(0);
-  layout = $derived(this.width < 840 ? "mobile" : "desktop");
+  layout = $derived<"mobile" | "desktop">(
+    this.width < 840 ? "mobile" : "desktop",
+  );
 
   // API Capabilities
   capabilities = $state<Capabilities>([]);

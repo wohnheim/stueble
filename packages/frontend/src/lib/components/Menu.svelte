@@ -63,9 +63,18 @@
       <i>admin_panel_settings</i>
       <span>Einstellungen</span>
     </li>
-    <li class="wave round">
-      <i>help</i>
-      <span>Informationen</span>
+
+    <li
+      class="wave round"
+      onclick={() => {
+        ui_object.changePath({
+          main: "credits",
+        });
+        ui(ui_object.menuDialog);
+      }}
+    >
+      <i>star_shine</i>
+      <span>Credits</span>
     </li>
   </ul>
 </dialog>

@@ -9,7 +9,8 @@
     const data = { id: guest.id, present: true };
 
     try {
-      await apiClient("http").modifyGuest(data);
+      const modifiedGuest = await apiClient("http").modifyGuest(data);
+      database.addGuests([modifiedGuest]);
     } catch (e) {
       database.addToBuffer({
         action: "modifyGuest",
@@ -24,6 +25,12 @@
 
       try {
         await apiClient("http").modifyUser(data);
+
+        let g = database.guests.find((g) => g.id == guest.id);
+        if (g === undefined) g = guest;
+
+        const modifiedGuest = { ...g, verified: true };
+        database.addGuests([modifiedGuest]);
       } catch (e) {
         database.addToBuffer({
           action: "modifyUser",
