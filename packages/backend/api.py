@@ -42,7 +42,6 @@ def close_db_conn_cursor(func):
     def wrapper(*args, **kwargs):
         conn = None
         cursor = None
-        result = None
         try:
             response = func(*args, **kwargs)
             result = response["result"]
