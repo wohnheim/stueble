@@ -119,8 +119,15 @@ def parse_cookies(headers):
     
     return cookies
 
-# gives each message a unique id and therefore allows tracking, which websocket has already received the message
 def add_to_message_log(func):
+    """
+    gives each message a unique id and therefore allows tracking, which websocket has already received the message
+
+    Parameters:
+        func: the function to wrap
+    Returns:
+        wrapper: the wrapped function
+    """
     @wraps(func)
     def wrapper(*args, **kwargs):
         # get name of the function, that called this function
@@ -252,7 +259,7 @@ async def handle_ws(websocket):
     connections.add(websocket)
 
     # for each unsuccessfully past sent message, send it again
-    unsent_messages = [value["params"] for key, value in message_log.items() if session_id in value["session_ids"]]
+    unsent_messages = [value["params"] for value in message_log.values() if session_id in value["session_ids"]]
     for message in unsent_messages:
         await send(websocket=websocket, **message)
 
@@ -343,6 +350,7 @@ async def handle_ws(websocket):
         if result["success"] is False:
             # remove after debugging
             print("ERROR OCCURRED")
+        # TODO: only remove invalid session_ids from message_log, when acknowledgment received
         if result["success"] is True:
             allowed_session_ids = result["data"]
             for key, value in message_log.items():

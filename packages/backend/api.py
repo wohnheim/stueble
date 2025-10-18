@@ -1748,7 +1748,7 @@ def search_intern():
             mimetype="application/json")
         return response
 
-    keywords = ["first_name", "last_name", "user_uuid"]
+    keywords = ["first_name", "last_name", "user_uuid", "residence"]
     negated_conditions = {"user_role": "extern"}
     # search user_name
     if "username" in data:
@@ -1759,7 +1759,7 @@ def search_intern():
             keywords=keywords,
             conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=True)
+            expect_single_answer=False) # originally True but since it is handled as list, False is specified
     
     # search user_uuid
     elif "id" in data:
@@ -1770,7 +1770,7 @@ def search_intern():
             keywords=keywords,
             conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=True)
+            expect_single_answer=False) # originally True but since it is handled as list, False is specified
 
     # search email
     elif "email" in data:
@@ -1782,7 +1782,7 @@ def search_intern():
             keywords=keywords,
             conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=True)
+            expect_single_answer=False) # originally True but since it is handled as list, False is specified
 
     # search room AND residence
     elif "room" in data and "residence" in data:
@@ -1793,7 +1793,7 @@ def search_intern():
             keywords=keywords,
             conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=True)
+            expect_single_answer=False) # originally True but since it is handled as list, False is specified
         
     # search first_name and / or last_name as well as room or residence
     else:
@@ -1830,7 +1830,8 @@ def search_intern():
 
         users.append({"first_name": entry[0], 
                       "last_name": entry[1], 
-                      "id": entry[2]})
+                      "id": entry[2], 
+                      "residence": entry[3]})
     users = [{snake_to_camel_case(key): value for key, value in i.items()} for i in users]
 
     response = Response(
