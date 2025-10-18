@@ -58,6 +58,11 @@
   };
 
   const search = async (input: string) => {
+    if (input == "") {
+      searchResultsUnfiltered = [];
+      return;
+    }
+
     const splitted = input.toLocaleLowerCase().split(" ");
 
     const roomNumber = findAndRemove(splitted, (s) => Number.isInteger(s));
@@ -102,7 +107,7 @@
       );
     }
 
-    return array;
+    searchResultsUnfiltered = array;
   };
 
   const add = async () => {
@@ -167,22 +172,12 @@
       <div id="search" class="field large round fill">
         <input
           bind:this={searchInputElement}
-          placeholder="Search for guests"
+          placeholder="Suche nach Name, Zimmer oder E-Mail"
           bind:value={searchInput}
         />
 
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-        <a
-          id="right-button"
-          class="wave"
-          onclick={() => {
-            if (searchInput == "") searchResultsUnfiltered = [];
-            else
-              search(searchInput).then(
-                (res) => (searchResultsUnfiltered = res),
-              );
-          }}
-        >
+        <a id="right-button" class="wave" onclick={() => search(searchInput)}>
           <i>search</i>
         </a>
       </div>
@@ -198,7 +193,7 @@
 
     {#if selected.length === 0 && searchResults.length === 0}
       <div class="center-align">
-        <p class="large-text">No users found</p>
+        <p class="large-text">Keine Nutzer gefunden</p>
       </div>
     {/if}
 
