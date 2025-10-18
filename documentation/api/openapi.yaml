@@ -305,7 +305,7 @@ paths:
           schema:
             type: string
         - in: query
-          name: room_number
+          name: room
           schema:
             type: integer
             format: int32

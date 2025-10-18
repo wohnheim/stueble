@@ -65,7 +65,7 @@
 
     const splitted = input.toLocaleLowerCase().split(" ");
 
-    const roomNumber = findAndRemove(splitted, (s) => Number.isInteger(s));
+    const roomNumber = findAndRemove(splitted, (s) => /^\d+$/.test(s));
     const residence = findAndRemove(
       splitted,
       (s) => s == "altbau" || s == "anbau" || s == "neubau" || s == "hirte",
@@ -83,22 +83,20 @@
     const lastName = splitted.length > 0 ? splitted[0] : undefined;
 
     const array = (
-      await apiClient("http").searchUsers(
-        Object.assign(query, {
-          firstName,
-          lastName,
-        }),
-      )
+      await apiClient("http").searchUsers({
+        ...query,
+        firstName,
+        lastName,
+      })
     ).filter((u) => !elements.some((h) => u.id == h.id));
 
     if (firstName !== undefined && lastName === undefined) {
       array.push(
         ...(
-          await apiClient("http").searchUsers(
-            Object.assign(query, {
-              lastName: firstName,
-            }),
-          )
+          await apiClient("http").searchUsers({
+            ...query,
+            lastName: firstName,
+          })
         ).filter(
           (u) =>
             !array.some((u1) => u.id == u1.id) &&
