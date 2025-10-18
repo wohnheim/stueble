@@ -71,6 +71,9 @@ class UI {
     this.width < 840 ? "mobile" : "desktop",
   );
 
+  // Service worker
+  registration = $state<ServiceWorkerRegistration>();
+
   // API Capabilities
   capabilities = $state<Capabilities>([]);
 
@@ -252,6 +255,10 @@ class UI {
 }
 
 /* Dialog types */
+export interface DialogWelcome {
+  mode: "welcome";
+}
+
 export interface DialogConfirm {
   mode: "confirm";
 
@@ -284,7 +291,7 @@ export type DialogProperties = (
   | DialogEdit
   | DialogCheckIn
   | {
-      mode: "qrcode" | "unselected";
+      mode: "welcome" | "qrcode" | "unselected";
     }
 ) & { success?: boolean };
 
