@@ -211,7 +211,7 @@ class HTTPClient {
     if (props.lastName !== undefined)
       params.append("last_name", props.lastName);
     if (props.roomNumber !== undefined)
-      params.append("room_number", props.roomNumber.toString());
+      params.append("room", props.roomNumber.toString());
     if (props.residence !== undefined)
       params.append("residence", props.residence);
     if (props.email !== undefined) params.append("email", props.email);
