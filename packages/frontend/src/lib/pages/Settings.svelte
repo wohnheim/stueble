@@ -181,8 +181,8 @@
 
   <Button onclick={async () => apiClient("http").logout(true)}>
     <div>
-      <p id="title">Logout</p>
-      <p id="subtitle">Terminates current session</p>
+      <p id="title">Abmelden</p>
+      <p id="subtitle">Terminiert die aktuelle Session</p>
     </div>
   </Button>
 
@@ -197,8 +197,8 @@
         })) && apiClient("http").deleteAccount(true)}
     >
       <div style="color: red;">
-        <p id="title">Delete account</p>
-        <p id="subtitle">Removes user from database</p>
+        <p id="title">Account löschen</p>
+        <p id="subtitle">Entfernt den Nutzer aus der Datenbank</p>
       </div>
     </Button>
   {/if}

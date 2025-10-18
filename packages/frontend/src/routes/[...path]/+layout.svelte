@@ -7,7 +7,6 @@
   import { fade } from "svelte/transition";
 
   import { pwaInfo } from "virtual:pwa-info";
-  import { useRegisterSW } from "virtual:pwa-register/svelte";
 
   import ui from "beercss";
   import * as materialSymbols from "beercss/dist/cdn/material-symbols-outlined.woff2";
@@ -87,18 +86,19 @@
       }
     }
 
-    if (pwaInfo) {
-      useRegisterSW({
-        immediate: true,
-        onRegistered(r) {
-          if (r !== undefined) {
-            ui_object.registration = r;
+    if (pwaInfo && "serviceWorker" in navigator) {
+      window.addEventListener("load", async () => {
+        try {
+          const registration =
+            await navigator.serviceWorker.register("/service-worker.js");
+
+          if (registration !== undefined) {
+            ui_object.registration = registration;
             open();
           }
-        },
-        onRegisterError(error) {
+        } catch (error) {
           console.log("SW registration error", error);
-        },
+        }
       });
     }
   });
