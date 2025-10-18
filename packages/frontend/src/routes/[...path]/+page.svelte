@@ -87,7 +87,6 @@
   const loadFromServer = async () => {
     if (localStorage.getItem("loggedIn")) {
       // Initialize IndexedDB mapping
-      await settings.init();
       await database.init();
 
       // Load via WebSocket
@@ -109,9 +108,6 @@
     if (settings.settings["user"])
       ui_object.user = JSON.parse(settings.settings["user"]);
 
-    if (settings.settings["status"])
-      ui_object.status = JSON.parse(settings.settings["status"]);
-
     if (settings.settings["qrCodeData"])
       ui_object.qrCodeData = JSON.parse(settings.settings["qrCodeData"]);
   };
@@ -131,6 +127,20 @@
   onMount(() => {
     if (!loaded && !loading) {
       loading = true;
+
+      // Needs to be compared to the current stueble (clear database)
+      if (settings.settings["status"]) {
+        const unparsed = JSON.parse(settings.settings["status"]);
+
+        ui_object.status = {
+          ...unparsed,
+          date: new Date(unparsed.date),
+          registrationStartsAt:
+            unparsed.registrationStartsAt !== undefined
+              ? new Date(unparsed.registrationStartsAt)
+              : undefined,
+        };
+      }
 
       loadFromServer()
         .catch(() => {
@@ -175,6 +185,20 @@
 
   $effect(() => {
     if (browser && loaded && ui_object.status !== undefined) {
+      // Received via WebSocket
+      untrack(() => settings.set("status", JSON.stringify(ui_object.status)));
+    }
+  });
+
+  // Poor performance: Other mechanism needed
+  $effect(() => {
+    if (
+      browser &&
+      loaded &&
+      (settings.settings["guestListFetched"] === undefined ||
+        JSON.parse(settings.settings["guestListFetched"]) === false)
+    ) {
+      // Received via WebSocket
       untrack(() => settings.set("status", JSON.stringify(ui_object.status)));
     }
   });

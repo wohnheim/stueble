@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { MouseEventHandler } from "svelte/elements";
 
-  import type { Host } from "$lib/api/types";
+  import type { HostOrTutor } from "$lib/api/types";
 
   import Badge from "../Badge.svelte";
   import Button from "../Button.svelte";
@@ -12,7 +12,7 @@
     selected = false,
     onclick,
   }: {
-    host: Host;
+    host: HostOrTutor;
     subtitle?: string;
     selected?: boolean;
     onclick?: MouseEventHandler<HTMLAnchorElement>;

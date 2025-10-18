@@ -1,11 +1,12 @@
 <script lang="ts">
   import { apiClient } from "$lib/api/client";
   import type { HostOrTutor } from "$lib/api/types";
-  import { ui_object } from "$lib/lib/UI.svelte";
+  import { ui_object, WohnheimType } from "$lib/lib/UI.svelte";
 
   import Button from "$lib/components/Button.svelte";
   import Fullscreen from "$lib/components/Fullscreen.svelte";
   import HostComponent from "$lib/components/buttons/Host.svelte";
+  import { findAndRemove } from "$lib/lib/utils";
 
   let {
     title,
@@ -37,6 +38,19 @@
     searchResults: HostOrTutor[];
   } = $props();
 
+  let searchInputElement = $state<HTMLInputElement>();
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (!ui_object.largeDialog?.open) return;
+
+    if (event.key === "Enter" && page == "add") {
+      if (document.activeElement === searchInputElement) search(searchInput);
+      else if (selected.length > 0) add();
+    } else if (event.key === "+" && page == "list") {
+      page = "add";
+    }
+  };
+
   const select = (host: HostOrTutor) => {
     const index = selectedUnfiltered.findIndex((s) => s.id == host.id);
     if (index === -1) selectedUnfiltered.push(host);
@@ -44,13 +58,14 @@
   };
 
   const search = async (input: string) => {
-    const splitted = input.split(" ");
+    const splitted = input.toLocaleLowerCase().split(" ");
 
-    const roomNumber = splitted.find((s) => Number.isInteger(s));
-    const residence = splitted.find(
+    const roomNumber = findAndRemove(splitted, (s) => Number.isInteger(s));
+    const residence = findAndRemove(
+      splitted,
       (s) => s == "altbau" || s == "anbau" || s == "neubau" || s == "hirte",
-    );
-    const email = splitted.find((s) => s.includes("@"));
+    ) as `${WohnheimType}` | undefined;
+    const email = findAndRemove(splitted, (s) => s.includes("@"));
 
     const query = {
       roomNumber:
@@ -59,13 +74,8 @@
       email,
     };
 
-    const firstName = splitted.find(
-      (s) => s != roomNumber && s != residence && s != email,
-    );
-
-    const lastName = splitted.find(
-      (s) => s != roomNumber && s != residence && s != email && s != firstName,
-    );
+    const firstName = findAndRemove(splitted, () => true);
+    const lastName = splitted.length > 0 ? splitted[0] : undefined;
 
     const array = (
       await apiClient("http").searchUsers(
@@ -94,7 +104,17 @@
 
     return array;
   };
+
+  const add = async () => {
+    const res = await addFunction(selected.map((s) => s.id));
+    if (res != null) await addToDatabase(res);
+
+    selectedUnfiltered = [];
+    page = "list";
+  };
 </script>
+
+<svelte:window on:keydown={handleKeyDown} />
 
 {#if page == "list"}
   <Fullscreen header={title} backAction={ui_object.pathBackwards}>
@@ -145,7 +165,11 @@
   >
     <header>
       <div id="search" class="field large round fill">
-        <input placeholder="Search for guests" bind:value={searchInput} />
+        <input
+          bind:this={searchInputElement}
+          placeholder="Search for guests"
+          bind:value={searchInput}
+        />
 
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <a
@@ -183,13 +207,7 @@
         id="next-button"
         class="square round extra"
         disabled={selected.length < 1}
-        onclick={async () => {
-          const res = await addFunction(selected.map((s) => s.id));
-          if (res != null) await addToDatabase(res);
-
-          selectedUnfiltered = [];
-          page = "list";
-        }}
+        onclick={add}
       >
         <i>check</i>
       </button>

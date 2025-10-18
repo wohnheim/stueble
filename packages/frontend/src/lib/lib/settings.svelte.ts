@@ -3,13 +3,26 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 interface SettingsDB extends DBSchema {
   settings: {
     value: string;
-    key: string;
+    key:
+      | "motto"
+      | "description"
+      | "config"
+      | "user"
+      | "status"
+      | "publicKey"
+      | "qrCodeData"
+      | "welcomeClosed"
+      | "guestListFetched"
+      | "hostsFetched"
+      | "tutorsFetched";
   };
 }
 
 class Settings {
   private database: () => IDBPDatabase<SettingsDB>;
-  settings = $state<{ [index: string]: string | undefined }>({});
+  settings = $state<
+    Partial<Record<SettingsDB["settings"]["key"], string | undefined>>
+  >({});
   ready = $state(false);
 
   constructor() {
@@ -33,9 +46,13 @@ class Settings {
       },
     });
 
-  private get = async (key: string) => this.database().get("settings", key);
+  private get = async (key: SettingsDB["settings"]["key"]) =>
+    this.database().get("settings", key);
 
-  set = async (key: string, val: string) => {
+  set = async (
+    key: SettingsDB["settings"]["key"],
+    val: SettingsDB["settings"]["value"],
+  ) => {
     await this.database().put("settings", val, key);
     this.settings[key] = val;
   };

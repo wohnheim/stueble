@@ -28,6 +28,18 @@ export function sortAlphabetically<T extends Object>(obj: T) {
   ) as T;
 }
 
+// Mutates array
+export function findAndRemove<T>(
+  array: Array<T>,
+  find0: Parameters<Array<T>["findIndex"]>[0],
+  find1?: Parameters<Array<T>["findIndex"]>[1],
+) {
+  const index = array.findIndex(find0, find1);
+  if (index !== -1) return array.splice(index, 1).at(0);
+
+  return undefined;
+}
+
 export const stringToArrayBuffer = (str: string) => {
   return new TextEncoder().encode(str).buffer;
 };

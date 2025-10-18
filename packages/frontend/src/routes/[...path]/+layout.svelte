@@ -6,6 +6,9 @@
   import { get } from "svelte/store";
   import { fade } from "svelte/transition";
 
+  import { pwaInfo } from "virtual:pwa-info";
+  import { useRegisterSW } from "virtual:pwa-register/svelte";
+
   import ui from "beercss";
   import * as materialSymbols from "beercss/dist/cdn/material-symbols-outlined.woff2";
 
@@ -18,6 +21,7 @@
   import Dialog from "$lib/components/Dialog.svelte";
   import LargeDialog from "$lib/components/LargeDialog.svelte";
   import Snackbar from "$lib/components/Snackbar.svelte";
+  import { settings } from "$lib/lib/settings.svelte";
 
   let {
     children,
@@ -25,12 +29,18 @@
     children?: Snippet;
   } = $props();
 
+  let webManifest = $derived(pwaInfo?.webManifest?.linkTag);
   const { error: errorStore, overlay } = error;
 
   let offlineInterval: ReturnType<typeof setInterval> | undefined = undefined;
 
   onMount(async () => {
+    const open = () =>
+      settings.settings["welcomeClosed"] == "true" &&
+      ui_object.openDialog({ mode: "welcome" });
+
     if (browser) {
+      await settings.init();
       if (!navigator.onLine) error.offline();
 
       const continueMount = () => {
@@ -76,6 +86,21 @@
         }
       }
     }
+
+    if (pwaInfo) {
+      useRegisterSW({
+        immediate: true,
+        onRegistered(r) {
+          if (r !== undefined) {
+            ui_object.registration = r;
+            open();
+          }
+        },
+        onRegisterError(error) {
+          console.log("SW registration error", error);
+        },
+      });
+    }
   });
 
   $effect(() => {
@@ -85,6 +110,8 @@
 </script>
 
 <svelte:head>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+  {@html webManifest === undefined ? "" : webManifest}
   <link
     rel="preload"
     as="font"

@@ -24,6 +24,7 @@ import {
 import { error } from "$lib/lib/error";
 import { ui_object } from "$lib/lib/UI.svelte";
 import { timeoutPromise } from "$lib/lib/utils";
+import { settings } from "$lib/lib/settings.svelte";
 
 class HTTPClient {
   /* General */
@@ -600,7 +601,7 @@ class WebSocketClient {
         }
       }
     } else if (message.event == "stuebleStatus") {
-      ui_object.status = {
+      const newStatus = {
         ...message.data,
         date: new Date(message.data.date),
         registrationStartsAt:
@@ -608,6 +609,15 @@ class WebSocketClient {
             ? new Date(message.data.registrationStartsAt)
             : undefined,
       };
+
+      if (
+        ui_object.status !== undefined &&
+        ui_object.status.date != newStatus.date
+      ) {
+        // Awful dependency
+        settings.set("guestListFetched", JSON.stringify(false));
+        // TODO: Maybe fetch
+      }
     } else if (
       message.event == "guestAdded" ||
       message.event == "guestModified"

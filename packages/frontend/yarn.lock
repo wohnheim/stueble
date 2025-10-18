@@ -1828,14 +1828,14 @@
     "@typescript-eslint/types" "8.39.1"
     eslint-visitor-keys "^4.2.1"
 
-"@vite-pwa/sveltekit@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@vite-pwa/sveltekit/-/sveltekit-1.0.0.tgz#6ae2b2825a9ec8eb0d4f5badcf68f4f5650a2f53"
-  integrity sha512-Tv2Bb0EtXlkYQ/7sFSaK69KYcRJiybGvQbJOcdwna+GngCPAM1g1EsvKQ5Be+r7WqtNJfCzKnMhVVbOGxXjF5A==
+"@vite-pwa/sveltekit@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@vite-pwa/sveltekit/-/sveltekit-1.0.1.tgz#dd4b77318173b948bac0e8827051fd27a69cdfc8"
+  integrity sha512-usweKTR0/Cj1rBGLNs+LCvBbGcCDuwtFCKxhPEijU0SCnbVOZEXuzX+8JulURYFnIsYzSX9L+FfHbtGRgl+5rw==
   dependencies:
     kolorist "^1.8.0"
     tinyglobby "^0.2.9"
-    vite-plugin-pwa "^1.0.0"
+    vite-plugin-pwa "^1.1.0"
 
 "@zxing/library@^0.21.3":
   version "0.21.3"
@@ -5082,10 +5082,10 @@ vite-plugin-environment@^1.1.3:
   resolved "https://registry.yarnpkg.com/vite-plugin-environment/-/vite-plugin-environment-1.1.3.tgz#d01a04abb2f69730a4866c9c9db51d3dab74645b"
   integrity sha512-9LBhB0lx+2lXVBEWxFZC+WO7PKEyE/ykJ7EPWCq95NEcCpblxamTbs5Dm3DLBGzwODpJMEnzQywJU8fw6XGGGA==
 
-vite-plugin-pwa@^1.0.0, vite-plugin-pwa@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/vite-plugin-pwa/-/vite-plugin-pwa-1.0.2.tgz#ad70181256633c56ce7aa85c66377d916b9e8296"
-  integrity sha512-O3UwjsCnoDclgJANoOgzzqW7SFgwXE/th2OmUP/ILxHKwzWxxKDBu+B/Xa9Cv4IgSVSnj2HgRVIJ7F15+vQFkA==
+vite-plugin-pwa@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/vite-plugin-pwa/-/vite-plugin-pwa-1.1.0.tgz#3c08c638be084abda48fac977eac3e9cbcfb0d96"
+  integrity sha512-VsSpdubPzXhHWVINcSx6uHRMpOHVHQcHsef1QgkOlEoaIDAlssFEW88LBq1a59BuokAhsh2kUDJbaX1bZv4Bjw==
   dependencies:
     debug "^4.3.6"
     pretty-bytes "^6.1.1"
