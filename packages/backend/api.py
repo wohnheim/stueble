@@ -950,9 +950,7 @@ def guest_change():
         user_data["residence"] = user_info["residence"]
         user_data["verified"] = True
 
-    message = {
-        "event": "guestModified",
-        "data": user_data}
+    message = user_data
 
     result = sessions.get_session_ids(cursor=cursor, user_id=guest_user_id)
     close_conn_cursor(conn, cursor)
