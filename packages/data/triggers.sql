@@ -49,22 +49,6 @@ BEGIN
                 RAISE EXCEPTION 'User is not registered for stueble %; code: 400', NEW.stueble_id;
             END IF;
 
-            -- check, whether inviter is still added for stueble
-            IF COALESCE((SELECT user_role FROM users WHERE id = NEW.user_id), 'extern') = 'extern'
-                AND COALESCE((SELECT event_type
-                              FROM events
-                              WHERE user_id = NEW.invited_by
-                                AND stueble_id = NEW.stueble_id
-                                AND event_type IN ('add', 'remove')
-                              ORDER BY submitted
-                                  DESC
-                              LIMIT 1),
-                             'remove') != 'add'
-            THEN
-                RAISE EXCEPTION 'Inviter of user % is not registered for stueble % anymore; code: 400', NEW.user_id, NEW.stueble_id;
-            END IF;
-
-
         -- if user is leaving, check if not already left and whether they arrived first
         ELSE
             IF COALESCE((SELECT event_type
@@ -226,6 +210,24 @@ BEGIN
             VALUES (NEW.user_id, NEW.stueble_id, 'leave');
              */
         END IF;
+    END IF;
+
+    IF NEW.event_type IN ('add', 'arrive')
+    THEN
+        -- check, whether inviter is still added for stueble
+        IF COALESCE((SELECT user_role FROM users WHERE id = NEW.user_id), 'extern') = 'extern'
+            AND COALESCE((SELECT event_type
+                            FROM events
+                            WHERE user_id = NEW.invited_by
+                            AND stueble_id = NEW.stueble_id
+                            AND event_type IN ('add', 'remove')
+                            ORDER BY submitted
+                                DESC
+                            LIMIT 1),
+                            'remove') != 'add'
+        THEN
+            RAISE EXCEPTION 'Inviter of user % is not registered for stueble % anymore; code: 400', NEW.user_id, NEW.stueble_id;
+            END IF;
     END IF;
 
     PERFORM pg_notify(
