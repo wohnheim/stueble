@@ -10,6 +10,11 @@
 
     try {
       await apiClient("http").modifyGuest(data);
+      let g = database.guests.find((g) => g.id == guest.id);
+      if (g === undefined) g = guest;
+
+      const modifiedGuest = { ...g, verified: true };
+      database.addGuests([modifiedGuest]);
     } catch (e) {
       if (networkError(e)) {
         database.addToBuffer({
