@@ -5,6 +5,7 @@ import uuid
 from typing import Literal
 
 import websockets
+from websockets.exceptions import ConnectionClosed, ConnectionClosedOK, ConnectionClosedError
 import msgpack
 import datetime
 from cryptography.hazmat.primitives import serialization
@@ -225,7 +226,7 @@ le_
             try:
                 await ws.send(message)
             # when websocket connection is already closed, remove it from lists
-            except websockets.Exceptions.ConnectionClosedOK: # TODO: check, whether rather using .ConnectionClosed
+            except (ConnectionClosed, ConnectionClosedOK, ConnectionClosedError):
                 host_upwards_room.discard(ws)
                 admins_room.discard(ws)
                 connections.discard(ws)
