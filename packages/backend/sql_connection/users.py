@@ -299,9 +299,9 @@ def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> Multip
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": friends} otherwise
     """
-
-    query = """
-    SELECT u.first_name, u.last_name, u.user_role, u.user_uuid
+    arguments = ["first_name", "last_name", "user_uuid"]
+    query = f"""
+    SELECT {', '.join(['u.' + i for i in arguments])}
     FROM (SELECT user_id
           FROM (SELECT DISTINCT ON (user_id) *
                 FROM events
@@ -348,6 +348,8 @@ def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> Multip
         if result["success"] is True and result["data"] is None:
             return {"success": False, "error": "User has to be in stueble in order to invite friends."}
         return {"success": True, "data": []}
+
+    result["data"] = [{key: value for key, value in zip(arguments, guest)} for guest in result["data"]]
 
     return result
 

@@ -14,7 +14,7 @@ from enum import Enum
 
 from packages.backend.sql_connection.common_functions import check_permissions, get_motto
 from packages.backend.data_types import *
-from packages.backend.sql_connection import events, sessions, database as db, users
+from packages.backend.sql_connection import events, sessions, database as db, users, motto
 from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -222,7 +222,15 @@ le_
     for ws in list(room):
         ws_sid = websockets_info.get(id(ws), {}).get("session_id", None)
         if ws_sid != skip_sid and ws_sid is not None:
-            await ws.send(message)
+            try:
+                await ws.send(message)
+            # when websocket connection is already closed, remove it from lists
+            except websockets.Exceptions.ConnectionClosedOK: # TODO: check, whether rather using .ConnectionClosed
+                host_upwards_room.discard(ws)
+                admins_room.discard(ws)
+                connections.discard(ws)
+                sid_to_websocket.pop(next(key for key, value in sid_to_websocket.items() if id(value) == id(ws)), None) # check, whether that works
+                del websockets_info[id(ws)]
         if ws_sid is None:
             pass
 
@@ -757,6 +765,8 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         return result
 
     session_ids = [i[0] for i in result["data"]]
+    # unneccessary but for style of coding
+    # stueble_id = None
 
     if date is None:
         result = get_motto(cursor=cursor, date=None)
@@ -764,6 +774,13 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
             close_conn_cursor(conn, cursor)
             return result
         date = result["data"]["date"]
+        stueble_id = result["data"]["stueble_id"]
+    else:
+        result = motto.get_info(cursor=cursor, date=date)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            return result
+        stueble_id = result["data"][0]
         # stueble_id = result["data"]["stueble_id"]
     if registered is None or present is None:
         result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
@@ -771,22 +788,29 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
             close_conn_cursor(conn, cursor)
             return result
         if result["data"] is False:
-            close_conn_cursor(conn, cursor)
             registered = False
             present = False
         else:
             result = users.check_user_present(cursor=cursor, user_id=user_id)
-            close_conn_cursor(conn, cursor)
             if result["success"] is False:
+                close_conn_cursor(conn, cursor)
                 return result
             registered = True
             present = result["data"]
+    # if person is registered, check for invited guests
+    if registered is True:
+        result = users.get_invited_friends(cursor, user_id=user_id, stueble_id=stueble_id)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            return result
+        invited_guests = result["data"]
+        invited_guests = [{key if key != "user_uuid" else "id": value for key, value in guest.items()} for guest in invited_guests]
     else:
         close_conn_cursor(conn, cursor)
 
     date = date.isoformat()
 
-    data = {"date": date, "registered": registered, "present": present}
+    data = {"date": date, "registered": registered, "present": present, "invitedGuests": invited_guests}
 
     user_room = [sid_to_websocket.get(i, None) for i in session_ids]
     try:
