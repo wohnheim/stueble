@@ -27,10 +27,13 @@ import { ui_object } from "$lib/lib/UI.svelte";
 import { timeoutPromise } from "$lib/lib/utils";
 import { settings } from "$lib/lib/settings.svelte";
 
+export const networkError = (e: unknown) =>
+  !(e instanceof Error && /^\d+$/.test(e.message));
+
 class HTTPClient {
   /* General */
 
-  private async parseError(res: Response, message?: string) {
+  private static async parseError(res: Response, message?: string) {
     try {
       const body = await res.json();
 
@@ -86,7 +89,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Fehler beim Login");
+    await HTTPClient.parseError(res, "Fehler beim Login");
     return false;
   }
 
@@ -110,7 +113,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Fehler bei Kontoerstellung");
+    await HTTPClient.parseError(res, "Fehler bei Kontoerstellung");
     return false;
   }
 
@@ -125,7 +128,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Fehler bei Verifikation des Kontos");
+    await HTTPClient.parseError(res, "Fehler bei Verifikation des Kontos");
     return false;
   }
 
@@ -148,7 +151,8 @@ class HTTPClient {
       method: "DELETE",
     });
 
-    if (!res.ok) await this.parseError(res, "Fehler bei Löschung des Kontos");
+    if (!res.ok)
+      await HTTPClient.parseError(res, "Fehler bei Löschung des Kontos");
 
     if (browser && res.ok && forward) {
       localStorage.removeItem("loggedIn");
@@ -171,7 +175,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern>();
 
-    await this.parseError(res, "Fehler bei Nutzererstellung");
+    await HTTPClient.parseError(res, "Fehler bei Nutzererstellung");
     throw new Error(res.status.toString());
   }
 
@@ -184,7 +188,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
 
-    await this.parseError(res, "Fehler bei Änderung des Nutzers");
+    await HTTPClient.parseError(res, "Fehler bei Änderung des Nutzers");
     throw new Error(res.status.toString());
   }
 
@@ -193,7 +197,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<User>();
 
-    await this.parseError(res, "Fehler beim Anfragen der Nutzerdaten");
+    await HTTPClient.parseError(res, "Fehler beim Anfragen der Nutzerdaten");
     throw new Error(res.status.toString());
   }
 
@@ -221,7 +225,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<User[]>();
 
-    await this.parseError(res, "Fehler bei der Suche nach Nutzern");
+    await HTTPClient.parseError(res, "Fehler bei der Suche nach Nutzern");
     throw new Error(res.status.toString());
   }
 
@@ -232,7 +236,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<(GuestIntern | GuestExtern)[]>();
 
-    await this.parseError(res, "Fehler beim Abfragen der Gästeliste");
+    await HTTPClient.parseError(res, "Fehler beim Abfragen der Gästeliste");
     throw new Error(res.status.toString());
   }
 
@@ -251,7 +255,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<GuestIntern | GuestExtern>();
 
-    await this.parseError(res, "Fehler beim Hinzufügen zur Gästeliste");
+    await HTTPClient.parseError(res, "Fehler beim Hinzufügen zur Gästeliste");
     throw new Error(res.status.toString());
   }
 
@@ -262,9 +266,9 @@ class HTTPClient {
       body: JSON.stringify(props),
     });
 
-    if (res.ok) return await res.json<GuestIntern | GuestExtern>();
+    if (res.ok) return true;
 
-    await this.parseError(res, "Fehler bei der Änderung eines Gasts");
+    await HTTPClient.parseError(res, "Fehler bei der Änderung eines Gasts");
     throw new Error(res.status.toString());
   }
 
@@ -283,7 +287,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Fehler beim Entfernen eines Gasts");
+    await HTTPClient.parseError(res, "Fehler beim Entfernen eines Gasts");
     throw new Error(res.status.toString());
   }
 
@@ -306,7 +310,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Fehler beim Einladen eines Gasts");
+    await HTTPClient.parseError(res, "Fehler beim Einladen eines Gasts");
     throw new Error(res.status.toString());
   }
 
@@ -317,7 +321,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<HostOrTutor[]>();
 
-    await this.parseError(res, "Fehler beim Abfragen der Wirte");
+    await HTTPClient.parseError(res, "Fehler beim Abfragen der Wirte");
     throw new Error(res.status.toString());
   }
 
@@ -333,7 +337,10 @@ class HTTPClient {
 
     if (res.ok) return await res.json<HostOrTutor[]>();
 
-    await this.parseError(res, "Fehler beim Hinzufügen von Berechtigungen");
+    await HTTPClient.parseError(
+      res,
+      "Fehler beim Hinzufügen von Berechtigungen",
+    );
     return null;
   }
 
@@ -349,7 +356,10 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Fehler beim Entfernen von Berechtigungen");
+    await HTTPClient.parseError(
+      res,
+      "Fehler beim Entfernen von Berechtigungen",
+    );
     return false;
   }
 
@@ -360,7 +370,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<HostOrTutor[]>();
 
-    await this.parseError(res, "Fehler beim Abfragen der Tutoren");
+    await HTTPClient.parseError(res, "Fehler beim Abfragen der Tutoren");
     throw new Error(res.status.toString());
   }
 
@@ -375,7 +385,10 @@ class HTTPClient {
 
     if (res.ok) return await res.json<HostOrTutor[]>();
 
-    await this.parseError(res, "Fehler beim Hinzufügen von Berechtigungen");
+    await HTTPClient.parseError(
+      res,
+      "Fehler beim Hinzufügen von Berechtigungen",
+    );
     return null;
   }
 
@@ -390,7 +403,10 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Fehler beim Entfernen von Berechtigungen");
+    await HTTPClient.parseError(
+      res,
+      "Fehler beim Entfernen von Berechtigungen",
+    );
     return false;
   }
 
@@ -411,7 +427,7 @@ class HTTPClient {
 
     if (res.ok) return true;
 
-    await this.parseError(res, "Fehler bei der Änderung des Mottos");
+    await HTTPClient.parseError(res, "Fehler bei der Änderung des Mottos");
     return false;
   }
 
@@ -422,7 +438,10 @@ class HTTPClient {
 
     if (res.ok) return await res.json<Config>();
 
-    await this.parseError(res, "Fehler beim Abfragen der Server-Konfiguration");
+    await HTTPClient.parseError(
+      res,
+      "Fehler beim Abfragen der Server-Konfiguration",
+    );
     throw new Error(res.status.toString());
   }
 
@@ -435,7 +454,7 @@ class HTTPClient {
 
     if (res.ok) return await res.json<Config>();
 
-    await this.parseError(
+    await HTTPClient.parseError(
       res,
       "Fehler bei der Änderung der Server-Konfiguration",
     );

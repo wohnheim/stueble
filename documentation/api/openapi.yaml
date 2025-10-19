@@ -401,39 +401,6 @@ paths:
       security:
         - guest_sid: []
 
-    post:
-      tags:
-        - guests
-      summary: Modify a guest.
-      description: Modifies properties of a specified guest.
-      operationId: modifyGuest
-      requestBody:
-        required: true
-        description: A JSON object containing values to be modified.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/requestBodies/GuestModificationRequest"
-      responses:
-        "200":
-          description: Success.
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Guest"
-        "403":
-          description: Authorization failure (not a host).
-        "401":
-          description: Authentication failure.
-        "5xx":
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/responses/Error"
-      security:
-        - host_sid: []
-
     delete:
       tags:
         - guests
@@ -462,6 +429,36 @@ paths:
                 $ref: "#/components/responses/Error"
       security:
         - guest_sid: []
+
+  /guest:
+    post:
+      tags:
+        - guests
+      summary: Modify a guest.
+      description: Modifies properties of a specified guest.
+      operationId: modifyGuest
+      requestBody:
+        required: true
+        description: A JSON object containing values to be modified.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/GuestModificationRequest"
+      responses:
+        "204":
+          description: Success.
+        "403":
+          description: Authorization failure (not a host).
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+      security:
+        - host_sid: []
 
   /guests/invitee:
     put:

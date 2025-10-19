@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { apiClient } from "$lib/api/client";
+  import { apiClient, networkError } from "$lib/api/client";
   import { database } from "$lib/lib/database.svelte";
   import { ui_object, type DialogCheckIn } from "$lib/lib/UI.svelte";
 
@@ -9,13 +9,14 @@
     const data = { id: guest.id, present: true };
 
     try {
-      const modifiedGuest = await apiClient("http").modifyGuest(data);
-      database.addGuests([modifiedGuest]);
+      await apiClient("http").modifyGuest(data);
     } catch (e) {
-      database.addToBuffer({
-        action: "modifyGuest",
-        data,
-      });
+      if (networkError(e)) {
+        database.addToBuffer({
+          action: "modifyGuest",
+          data,
+        });
+      }
     }
   };
 
@@ -32,10 +33,12 @@
         const modifiedGuest = { ...g, verified: true };
         database.addGuests([modifiedGuest]);
       } catch (e) {
-        database.addToBuffer({
-          action: "modifyUser",
-          data,
-        });
+        if (networkError(e)) {
+          database.addToBuffer({
+            action: "modifyUser",
+            data,
+          });
+        }
       }
     }
   };
