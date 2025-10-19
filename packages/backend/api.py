@@ -884,7 +884,7 @@ def guest_change():
     event_type = EventType.ARRIVE if present else EventType.LEAVE
 
     # get user data
-    keywords = ["first_name", "last_name", "room", "residence", "verified", "user_role"]
+    keywords = ["first_name", "last_name", "room", "residence", "verified", "user_role", "id"]
     data = users.get_user(
         cursor=cursor,
         user_uuid=user_uuid,
@@ -898,6 +898,9 @@ def guest_change():
             status=500,
             mimetype="application/json")
         return response
+    
+    guest_user_id = data["data"][-1]
+    data["data"] = data["data"][:-1]
 
     if event_type == EventType.ARRIVE:
         # verify guest if not verified yet
@@ -915,8 +918,8 @@ def guest_change():
 
     # change guest status to arrive / leave
     result = guest_events.change_guest(cursor=cursor, user_uuid=user_uuid, event_type=event_type)
-    close_conn_cursor(conn, cursor)
     if result["success"] is False:
+        close_conn_cursor(conn, cursor)
         error = {"code": 500, "message": str(result["error"])}
         if all(i in error["message"] for i in ["Inviter of user", "is not registered for stueble"]):
             error = {"code": 400, "message": "Inviter not registered to stueble any more"}
@@ -951,11 +954,22 @@ def guest_change():
         "event": "guestModified",
         "data": user_data}
 
+    result = sessions.get_session_ids(cursor=cursor, user_id=guest_user_id)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    guest_session_ids = result["data"]
+
     # send a websocket message to all hosts that the guest list changed
     asyncio.run(ws.broadcast(event="guestModified", data=message)) # don't skip_sid for guestModified
 
     # send a websocket message to the user
-    asyncio.run(ws.stueble_status(session_id=session_id, registered=True, present=present))
+    for sess_id in guest_session_ids:
+        asyncio.run(ws.stueble_status(session_id=sess_id, registered=True, present=present))
 
     # return 204
     response = Response(
