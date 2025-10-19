@@ -1056,6 +1056,17 @@ def attend_stueble():
             return response
         user_id = result["data"][0]
         user_uuid = result["data"][1]
+    
+    # get all sessions of user
+    result = sessions.get_session_ids(cursor=cursor, user_id=guest_user_id)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            status=500,
+            mimetype="application/json")
+        return response
+    guest_session_ids = result["data"]
 
     result = motto.get_info(cursor=cursor, date=date)
     if result["success"] is False:
@@ -1145,7 +1156,8 @@ def attend_stueble():
     asyncio.run(ws.broadcast(event=action_type.value, data=user_data if request.method == "PUT" else user_uuid, skip_sid=session_id))
 
     # send a websocket message to the user
-    asyncio.run(ws.stueble_status(session_id=session_id, date=date, registered=True if request.method == "PUT" else False, present=False))
+    for sess_id in guest_session_ids:
+        asyncio.run(ws.stueble_status(session_id=sess_id, date=date, registered=True if request.method == "PUT" else False, present=False))
 
     return response
 
@@ -1215,6 +1227,24 @@ def invitee():
                     status=403,
                     mimetype="application/json")
                 return response
+        
+        # check, whether user is present
+        result = users.check_user_present(cursor=cursor, user_id=user_id)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            return response
+        present = result["data"]
+
+        # get all sessions for user
+        result = sessions.get_session_ids(cursor=cursor, user_id=guest_user_id)
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        guest_session_ids = result["data"]
 
         result = motto.get_info(cursor=cursor, date=date)
         if result["success"] is False:
@@ -1402,6 +1432,10 @@ def invitee():
 
         # send a websocket message to all hosts that the guest list changed
         asyncio.run(ws.broadcast(event=action_type.value, data=invitee_data)) # don't skip_sid for guestModified
+
+        # send a websocket message to the user
+        for sess_id in guest_session_ids:
+            asyncio.run(ws.stueble_status(session_id=sess_id, date=date, registered=True, present=present))
 
         if request.method == "DELETE":
             response = Response(

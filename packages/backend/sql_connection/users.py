@@ -309,7 +309,7 @@ def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> Multip
                   AND stueble_id = %s
                   AND event_type IN ('add', 'remove')
                 ORDER BY user_id, submitted DESC) as latest_event
-          WHERE latest_event = 'add'
+          WHERE latest_event.event_type = 'add'
           ORDER BY user_id) AS invitees
     JOIN users u ON invitees.user_id = u.id;
     """
