@@ -209,19 +209,20 @@ def check_session_id(cursor: cursor, session_id: int) -> CheckSessionIdSuccess |
 
     return {"success": True, "data": True}
 
-def get_session_ids(cursor: cursor, user_id: int) -> SingleSuccess | GenericFailure:
+def get_session_ids(cursor: cursor, user_id: int, uuid: bool = False) -> SingleSuccess | GenericFailure:
     """
     gets all session ids of a user from the table sessions
     Parameters:
         cursor: cursor for the connection
         user_id (int): id of the user
+        uuid (bool): whether to return the session_id (uuid) or the internal id
     Returns:
         dict: {"success": bool, "data": session_ids}, {"success": False, "error": e} if error occurred
     """
 
     result = db.read_table(
         cursor=cursor,
-        keywords=["id"],
+        keywords=["id"] if uuid is False else ["session_id"],
         table_name="sessions",
         conditions={"user_id": user_id}, 
         expect_single_answer=False

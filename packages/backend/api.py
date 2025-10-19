@@ -1058,7 +1058,7 @@ def attend_stueble():
         user_uuid = result["data"][1]
     
     # get all sessions of user
-    result = sessions.get_session_ids(cursor=cursor, user_id=user_id)
+    result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=True)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1236,7 +1236,7 @@ def invitee():
         present = result["data"]
 
         # get all sessions for user
-        result = sessions.get_session_ids(cursor=cursor, user_id=user_id)
+        result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=True)
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             response = Response(
