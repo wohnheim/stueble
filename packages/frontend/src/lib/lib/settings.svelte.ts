@@ -72,3 +72,8 @@ class Settings {
 }
 
 export const settings = new Settings();
+
+// Helper functions
+
+export const falsyValue = (key: SettingsDB["settings"]["key"]) =>
+  !settings.settings[key] || !JSON.parse(settings.settings[key]);

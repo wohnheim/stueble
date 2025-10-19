@@ -1,4 +1,4 @@
-import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import { openDB, type DBSchema, type IDBPDatabase, type StoreNames } from "idb";
 
 import type {
   GuestExtern,
@@ -105,11 +105,11 @@ class Database {
     this.ready = true;
   };
 
-  clear = async () => {
-    for (const store of this.database().objectStoreNames) {
+  async clear(stores?: StoreNames<StuebleDB>[]) {
+    for (const store of stores ?? this.database().objectStoreNames) {
       await this.database().clear(store);
     }
-  };
+  }
 
   private openDatabase = () =>
     openDB<StuebleDB>("stueble", 2, {

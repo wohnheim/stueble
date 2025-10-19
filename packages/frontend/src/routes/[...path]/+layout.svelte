@@ -12,7 +12,9 @@
   import * as materialSymbols from "beercss/dist/cdn/material-symbols-outlined.woff2";
 
   import { apiClient } from "$lib/api/client";
+  import { parseStuebleStatus } from "$lib/api/data";
   import { error } from "$lib/lib/error";
+  import { settings } from "$lib/lib/settings.svelte";
   import { ui_object } from "$lib/lib/UI.svelte";
 
   import Logo from "$lib/assets/Stueble.svelte";
@@ -20,7 +22,6 @@
   import Dialog from "$lib/components/Dialog.svelte";
   import LargeDialog from "$lib/components/LargeDialog.svelte";
   import Snackbar from "$lib/components/Snackbar.svelte";
-  import { settings } from "$lib/lib/settings.svelte";
 
   let {
     children,
@@ -28,7 +29,6 @@
     children?: Snippet;
   } = $props();
 
-  let webManifest = $derived(pwaInfo?.webManifest?.linkTag);
   const { error: errorStore, overlay } = error;
 
   let offlineInterval: ReturnType<typeof setInterval> | undefined = undefined;
@@ -40,6 +40,13 @@
 
     if (browser) {
       await settings.init();
+
+      // Load before connecting to WebSocket
+      if (settings.settings["status"])
+        ui_object.status = parseStuebleStatus(
+          JSON.parse(settings.settings["status"]),
+        );
+
       if (!navigator.onLine) error.offline();
 
       const continueMount = () => {
@@ -110,8 +117,6 @@
 </script>
 
 <svelte:head>
-  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-  {@html webManifest === undefined ? "" : webManifest}
   <link
     rel="preload"
     as="font"

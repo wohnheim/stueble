@@ -13,9 +13,6 @@ const config = {
     adapter: adapterStatic({
       fallback: "index.html",
     }),
-    csrf: {
-      checkOrigin: false,
-    },
   },
 };
 

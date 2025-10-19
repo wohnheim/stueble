@@ -13,6 +13,7 @@ import type {
   User,
   UserProperties,
 } from "$lib/api/types";
+import { parseStuebleStatus } from "$lib/api/data";
 import {
   database,
   type AddToGuestListAction,
@@ -601,23 +602,29 @@ class WebSocketClient {
         }
       }
     } else if (message.event == "stuebleStatus") {
-      const newStatus = {
-        ...message.data,
-        date: new Date(message.data.date),
-        registrationStartsAt:
-          message.data.registrationStartsAt !== undefined
-            ? new Date(message.data.registrationStartsAt)
-            : undefined,
-      };
+      const newStatus = parseStuebleStatus(message.data);
 
       if (
         ui_object.status !== undefined &&
-        ui_object.status.date != newStatus.date
+        ui_object.status.date.getTime() != newStatus.date.getTime()
       ) {
-        // Awful dependency
-        settings.set("guestListFetched", JSON.stringify(false));
-        // TODO: Maybe fetch
+        apiClient("http")
+          .getGuestList()
+          .then((guests) => {
+            database.clear(["guestsExtern", "guestsIntern"]);
+            database.addGuests(guests);
+          });
+
+        apiClient("http")
+          .getHosts()
+          .then((hosts) => {
+            database.clear(["hosts"]);
+            database.addHosts(hosts);
+          });
       }
+
+      ui_object.status = newStatus;
+      settings.set("status", JSON.stringify(newStatus));
     } else if (
       message.event == "guestAdded" ||
       message.event == "guestModified"

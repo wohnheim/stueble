@@ -17,10 +17,6 @@ export default async function (config: ConfigEnv): Promise<UserConfig> {
         injectManifest: {
           globPatterns: ["**/*.{js,css,html,woff2}"],
         },
-        useCredentials: true,
-        devOptions: {
-          enabled: false,
-        },
         manifest: (await import(
           "./static/manifest.json"
         )) as Partial<ManifestOptions>,
