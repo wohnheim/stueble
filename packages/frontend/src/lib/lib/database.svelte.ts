@@ -108,6 +108,12 @@ class Database {
   async clear(stores?: StoreNames<StuebleDB>[]) {
     for (const store of stores ?? this.database().objectStoreNames) {
       await this.database().clear(store);
+
+      if (store == "guestsIntern" || store == "guestsExtern")
+        this.guests.splice(0, this.guests.length);
+      else if (Array.isArray(this[store]))
+        this[store].splice(0, this[store].length);
+      else this[store] = {} as any;
     }
   }
 
