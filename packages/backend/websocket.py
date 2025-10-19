@@ -64,7 +64,7 @@ def is_valid_room(room: str) -> bool:
 
 # handle websocket_info and sid_to_websocket garbage collection
 
-allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey", "acknowledgment"]
+allowed_events = ["connect", "disconnect", "ping", "heartbeat", "requestMotto", "requestQRCode", "requestPublicKey", "acknowledgement"]
 
 # add achievements
 def get_websocket_by_sid(sid: str):
@@ -337,11 +337,11 @@ async def handle_ws(websocket):
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "reqId must be specified"})
                 await request_public_key(websocket=websocket, req_id=req_id)
-            elif event == "acknowledgment":
+            elif event == "acknowledgement":
                 if res_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "resId must be specified"})
-                await acknowledgment(websocket=websocket, res_id=res_id)
+                await acknowledgement(websocket=websocket, res_id=res_id)
     finally:
         host_upwards_room.discard(websocket)
         admins_room.discard(session_id)
@@ -360,7 +360,7 @@ async def handle_ws(websocket):
         if result["success"] is False:
             # remove after debugging
             print("ERROR OCCURRED")
-        # TODO: only remove invalid session_ids from message_log, when acknowledgment received
+        # TODO: only remove invalid session_ids from message_log, when acknowledgement received
         if result["success"] is True:
             allowed_session_ids = result["data"]
             for key, value in message_log.items():
@@ -369,9 +369,9 @@ async def handle_ws(websocket):
                     if message_log[key]["session_ids"] == []:
                         del message_log[key]
 
-async def acknowledgment(websocket, res_id: str | int):
+async def acknowledgement(websocket, res_id: str | int):
     """
-    handle acknowledgment
+    handle acknowledgement
 
     Parameters:
         websocket (websocket): websocket connection
