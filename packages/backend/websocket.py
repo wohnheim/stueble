@@ -293,6 +293,7 @@ async def handle_ws(websocket):
                          "message": f"unknown event: {event}"})
                     continue
                 req_id = msg.get("reqId", None)
+                res_id = msg.get("resId", None)
                 data = msg.get("data", None)
             except:
                 await send(websocket=websocket, event="error", data={"code": "500",
@@ -328,10 +329,10 @@ async def handle_ws(websocket):
                          "message": "reqId must be specified"})
                 await request_public_key(websocket=websocket, req_id=req_id)
             elif event == "acknowledgment":
-                if req_id is None:
+                if res_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
-                         "message": "reqId must be specified"})
-                await acknowledgment(websocket=websocket, req_id=req_id)
+                         "message": "resId must be specified"})
+                await acknowledgment(websocket=websocket, res_id=res_id)
     finally:
         host_upwards_room.discard(websocket)
         admins_room.discard(session_id)
