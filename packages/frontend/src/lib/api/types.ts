@@ -138,8 +138,8 @@ export const guestModified = z.object({
   data: guestIntern.or(guestExtern),
 });
 
-export const acknowledgment = z.object({
-  event: constant("acknowledgment"),
+export const acknowledgement = z.object({
+  event: constant("acknowledgement"),
   resId,
 });
 
@@ -264,7 +264,7 @@ export const error = z.object({
 export const messageFromClient = z.union([
   ping,
   heartbeat,
-  acknowledgment,
+  acknowledgement,
   requestMotto,
   requestQRCode,
   requestPublicKey,

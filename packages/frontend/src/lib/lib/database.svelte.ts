@@ -108,6 +108,12 @@ class Database {
   async clear(stores?: StoreNames<StuebleDB>[]) {
     for (const store of stores ?? this.database().objectStoreNames) {
       await this.database().clear(store);
+
+      if (store == "guestsIntern" || store == "guestsExtern")
+        this.guests.splice(0, this.guests.length);
+      else if (Array.isArray(this[store]))
+        this[store].splice(0, this[store].length);
+      else this[store] = {} as any;
     }
   }
 
@@ -224,6 +230,9 @@ class Database {
 
     await this.database().put("guestsIntern", guestWithoutExtern);
 
+    const index = this.guests.findIndex((g) => guest.id == g.id);
+    if (index !== -1) this.guests.splice(index, 1);
+
     this.guests.push(guest);
   };
 
@@ -231,6 +240,9 @@ class Database {
     const { extern, ...guestWithoutExtern } = guest;
 
     await this.database().put("guestsExtern", guestWithoutExtern);
+
+    const index = this.guests.findIndex((g) => guest.id == g.id);
+    if (index !== -1) this.guests.splice(index, 1);
 
     this.guests.push(guest);
   };
@@ -246,6 +258,9 @@ class Database {
 
   addHost = async (host: HostOrTutor) => {
     await this.database().put("hosts", host);
+
+    const index = this.hosts.findIndex((h) => host.id == h.id);
+    if (index !== -1) this.hosts.splice(index, 1);
 
     this.hosts.push(host);
   };
@@ -273,6 +288,9 @@ class Database {
 
   addTutor = async (tutor: HostOrTutor) => {
     await this.database().put("tutors", tutor);
+
+    const index = this.tutors.findIndex((t) => tutor.id == t.id);
+    if (index !== -1) this.tutors.splice(index, 1);
 
     this.tutors.push(tutor);
   };

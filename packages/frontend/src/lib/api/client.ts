@@ -651,28 +651,28 @@ class WebSocketClient {
       if (message.data.extern) database.addGuestExtern(message.data);
       else database.addGuestIntern(message.data);
 
-      this.sendMessage({ event: "acknowledgment", resId: message.resId });
+      this.sendMessage({ event: "acknowledgement", resId: message.resId });
     } else if (message.event == "guestRemoved") {
       database.deleteGuestExtern(message.data);
       database.deleteGuestInternById(message.data);
 
-      this.sendMessage({ event: "acknowledgment", resId: message.resId });
+      this.sendMessage({ event: "acknowledgement", resId: message.resId });
     } else if (message.event == "hostAdded") {
       database.addHost(message.data);
 
-      this.sendMessage({ event: "acknowledgment", resId: message.resId });
+      this.sendMessage({ event: "acknowledgement", resId: message.resId });
     } else if (message.event == "hostRemoved") {
       database.deleteHost(message.data);
 
-      this.sendMessage({ event: "acknowledgment", resId: message.resId });
+      this.sendMessage({ event: "acknowledgement", resId: message.resId });
     } else if (message.event == "tutorAdded") {
       database.addTutor(message.data);
 
-      this.sendMessage({ event: "acknowledgment", resId: message.resId });
+      this.sendMessage({ event: "acknowledgement", resId: message.resId });
     } else if (message.event == "tutorRemoved") {
       database.deleteTutor(message.data);
 
-      this.sendMessage({ event: "acknowledgment", resId: message.resId });
+      this.sendMessage({ event: "acknowledgement", resId: message.resId });
     } else if (message.event == "error") {
       if (message.reqId !== undefined) {
         const promise = this.promises[message.reqId];
