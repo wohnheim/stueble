@@ -768,7 +768,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     session_ids = [i[0] for i in result["data"]]
     # unneccessary but for style of coding
     # stueble_id = None
-
+    invited_guests = None
     if date is None:
         result = get_motto(cursor=cursor, date=None)
         if result["success"] is False:
@@ -811,7 +811,9 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
 
     date = date.isoformat()
 
-    data = {"date": date, "registered": registered, "present": present, "invitedGuests": invited_guests}
+    data = {"date": date, "registered": registered, "present": present}
+    if invited_guests is not None:
+        data["invitedGuests"] = invited_guests
 
     user_room = [sid_to_websocket.get(i, None) for i in session_ids]
     try:
