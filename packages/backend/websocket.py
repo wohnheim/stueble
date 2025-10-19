@@ -72,7 +72,7 @@ def get_websocket_by_sid(sid: str):
     Get the websocket connection by session id (SID)
 
     Parameters:
-        sid (str): the session id from the cookies
+        sid (str): the session id (a uuid) from the cookies
     """
     return sid_to_websocket.get(sid, None)
 
