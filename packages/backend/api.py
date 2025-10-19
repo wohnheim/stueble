@@ -927,7 +927,7 @@ def guest_change():
             status_code = int(status_code.split("\n")[0])
             error = {"code": status_code, "message": error_message}
         response = Response(
-            response=json.dumps(error["message"]),
+            response=json.dumps(error),
             status=error["code"],
             mimetype="application/json")
         return response
