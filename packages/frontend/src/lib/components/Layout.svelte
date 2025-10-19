@@ -20,7 +20,7 @@
   <Menu />
 {/if}
 
-{#if !(ui_object.path.main == "wirte" && ui_object.path.sub == "liste")}
+{#if !(ui_object.routing.path.main == "wirte" && ui_object.routing.path.sub == "liste")}
   <Header />
 {/if}
 
@@ -30,7 +30,7 @@
   {/if}
 </main>
 
-{#if ui_object.path.main == "wirte" && ui_object.path.sub == "liste"}
+{#if ui_object.routing.path.main == "wirte" && ui_object.routing.path.sub == "liste"}
   <button id="add" class="extend square round extra">
     <i>add</i>
     <span>Hinzufügen</span>

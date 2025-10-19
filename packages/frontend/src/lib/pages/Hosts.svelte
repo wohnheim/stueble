@@ -120,12 +120,8 @@
 <svelte:window on:keydown={handleKeyDown} />
 
 {#if page == "list"}
-  <Fullscreen header={title} backAction={ui_object.pathBackwards}>
+  <Fullscreen header={title} backAction={ui_object.routing.pathBackwards}>
     {#each elements as element, i}
-      {#if i != 0}
-        <br />
-      {/if}
-
       <Button
         onclick={async () => {
           if (
@@ -181,17 +177,17 @@
       </div>
     </header>
 
-    {#each selected as host}
-      <HostComponent {host} selected={true} onclick={() => select(host)} />
-    {/each}
-
-    {#each searchResults.filter((r) => !selected.some((s) => s.id == r.id)) as host}
-      <HostComponent {host} selected={false} onclick={() => select(host)} />
+    {#each searchResults as host}
+      <HostComponent
+        {host}
+        selected={selected.some((s) => s.id == host.id)}
+        onclick={() => select(host)}
+      />
     {/each}
 
     {#if selected.length === 0 && searchResults.length === 0}
       <div class="center-align">
-        <p class="large-text">Keine Nutzer gefunden</p>
+        <p class="large-margin large-text">Keine Nutzer gefunden</p>
       </div>
     {/if}
 

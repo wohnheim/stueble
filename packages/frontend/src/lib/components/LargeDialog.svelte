@@ -26,10 +26,10 @@
   onMount(() => {
     ui_object.largeDialog?.addEventListener("close", () => {
       if (
-        ui_object.path.main == "einstellungen" &&
-        ui_object.path.sub !== undefined
+        ui_object.routing.path.main == "einstellungen" &&
+        ui_object.routing.path.sub !== undefined
       )
-        ui_object.changePath({ main: "einstellungen" });
+        ui_object.routing.changePath({ main: "einstellungen" });
 
       if (hostsPage)
         setTimeout(() => {
@@ -43,8 +43,8 @@
 </script>
 
 <dialog id="dialog-large" bind:this={ui_object.largeDialog} class="right large">
-  {#if ui_object.path.main == "einstellungen"}
-    {#if ui_object.path.sub == "wirte"}
+  {#if ui_object.routing.path.main == "einstellungen"}
+    {#if ui_object.routing.path.sub == "wirte"}
       <Hosts
         title={"Wirt*innen"}
         addFunction={apiClient("http").addHosts}

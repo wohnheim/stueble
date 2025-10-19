@@ -92,7 +92,7 @@
   };
 </script>
 
-{#if (ui_object.path as RouteHost).sub === undefined}
+{#if (ui_object.routing.path as RouteHost).sub === undefined}
   <div id="center-container" class="middle-align center-align">
     <h4>Willkommen Wirt*innen!</h4>
     <p>
@@ -107,7 +107,8 @@
       </button>
       <button
         class="top-margin secondary"
-        onclick={() => ui_object.changePath({ main: "wirte", sub: "liste" })}
+        onclick={() =>
+          ui_object.routing.changePath({ main: "wirte", sub: "liste" })}
       >
         <i>checklist</i>
         <span>Zur Gästeliste</span>

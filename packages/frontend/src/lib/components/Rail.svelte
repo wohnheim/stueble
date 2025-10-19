@@ -16,9 +16,9 @@
   </header>
 
   <a
-    class={ui_object.path.main == "start" ? "active" : ""}
+    class={ui_object.routing.path.main == "start" ? "active" : ""}
     onclick={() =>
-      ui_object.changePath({
+      ui_object.routing.changePath({
         main: "start",
       })}
   >
@@ -28,9 +28,9 @@
 
   {#if ui_object.capabilities.some((c) => c == "host")}
     <a
-      class={ui_object.path.main == "wirte" ? "active" : ""}
+      class={ui_object.routing.path.main == "wirte" ? "active" : ""}
       onclick={() =>
-        ui_object.changePath({
+        ui_object.routing.changePath({
           main: "wirte",
         })}
     >
@@ -40,9 +40,9 @@
   {/if}
 
   <a
-    class={ui_object.path.main == "einstellungen" ? "active" : ""}
+    class={ui_object.routing.path.main == "einstellungen" ? "active" : ""}
     onclick={() =>
-      ui_object.changePath({
+      ui_object.routing.changePath({
         main: "einstellungen",
       })}
   >
@@ -51,9 +51,9 @@
   </a>
 
   <a
-    class={ui_object.path.main == "credits" ? "active" : ""}
+    class={ui_object.routing.path.main == "credits" ? "active" : ""}
     onclick={() =>
-      ui_object.changePath({
+      ui_object.routing.changePath({
         main: "credits",
       })}
   >

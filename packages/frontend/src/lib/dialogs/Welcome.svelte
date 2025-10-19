@@ -3,7 +3,7 @@
   import { settings } from "$lib/lib/settings.svelte";
 
   const click = async () => {
-    settings.set("welcomeClosed", "true");
+    settings.set("welcomeClosed", JSON.stringify(true));
     await ui_object.closeDialog(true);
   };
 </script>
@@ -13,11 +13,11 @@
 <div id="properties">
   <div class="row">
     <i class="icon large">event</i>
-    <p>In der Regel: Wöchentliches Stüble </p>
+    <p>In der Regel: Wöchentliches Stüble</p>
   </div>
   <div class="row">
-    <i class="icon large">mobile_ticket</i>
-    <p>Einfache Anmeldung & Abmeldung </p>
+    <i class="icon large">schedule</i>
+    <p>Einlass ab 22:00 Uhr</p>
   </div>
   <div class="row">
     <i class="icon large">person_add</i>

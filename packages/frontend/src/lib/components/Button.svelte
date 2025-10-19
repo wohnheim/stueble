@@ -39,12 +39,8 @@
   #common.notClickable {
     height: 70px;
     padding: 0 20px;
-  }
 
-  #common.notClickable {
-    & :global(#title) {
-      margin-bottom: -3px;
-    }
+    line-height: normal;
   }
 
   #common {

@@ -1,4 +1,3 @@
-import { pushState } from "$app/navigation";
 import ui from "beercss";
 import z from "zod";
 
@@ -12,6 +11,7 @@ import type {
   User,
 } from "$lib/api/types";
 import type { Overwrite } from "$lib/lib/utils";
+import { Routing } from "$lib/lib/routing.svelte";
 
 /* Site navigation */
 
@@ -78,7 +78,7 @@ class UI {
   capabilities = $state<Capabilities>([]);
 
   // Navigation
-  path = $state<Routes>({ main: "start" });
+  routing = new Routing(routes, { main: "start" });
 
   // Persistent properties (using IndexedDB)
   publicKey = $state<CryptoKey>();
@@ -133,21 +133,6 @@ class UI {
 
   // Snackbar
   snackbarElement = $state<HTMLDivElement>();
-
-  // String utils
-  returnSubstring = (name: string, length: number) => {
-    const position = name.lastIndexOf(".");
-
-    if (name.length <= length) return name;
-
-    if (position !== -1) {
-      const end = name.slice(position);
-
-      return name.slice(0, length - 1 - end.length) + end;
-    } else {
-      return name.slice(0, length - 1);
-    }
-  };
 
   /* Dialogs */
 
@@ -212,45 +197,6 @@ class UI {
       this.generalDialog?.addEventListener("close", onClose);
       ui(this.generalDialog);
     });
-  };
-
-  /* Path */
-
-  getPath = (pathU: string, pathStore?: string): Routes => {
-    if (pathU.charAt(0) == "/") pathU = pathU.slice(1);
-
-    const params = pathU.split("/");
-
-    if (params.length != 0 && params[0] != "") {
-      const res = routes.safeParse({
-        main: params[0],
-        sub: params.length > 1 ? params[1] : undefined,
-      });
-
-      if (res.success) return res.data;
-    }
-
-    return { main: "start" };
-  };
-
-  changePath = (route: Routes) => {
-    let url: string;
-    if (route.main == "start") {
-      url = "/";
-    } else {
-      url =
-        "/" +
-        route.main +
-        ("sub" in route && route.sub !== undefined ? "/" + route.sub : "");
-    }
-
-    pushState(url, {});
-    this.path = route;
-  };
-
-  pathBackwards = () => {
-    pushState("/" + this.path.main, {});
-    if ("sub" in this.path) this.path.sub = undefined;
   };
 }
 

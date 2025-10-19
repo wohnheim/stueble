@@ -33,8 +33,15 @@
     {/if}
   </div>
 
-  <div>
+  <div id="host">
     <p id="title">{host.firstName} {host.lastName}</p>
     <p id="subtitle">{subtitle}</p>
   </div>
 </Button>
+
+<style>
+  #host {
+    display: flex;
+    flex-flow: column;
+  }
+</style>

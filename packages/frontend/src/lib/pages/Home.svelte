@@ -81,7 +81,7 @@
         <button
           class="top-margin-small secondary"
           onclick={() =>
-            ui_object.changePath({ main: "start", sub: "einladen" })}
+            ui_object.routing.changePath({ main: "start", sub: "einladen" })}
         >
           <i>person_add</i>
           <span>Externer Gast</span>

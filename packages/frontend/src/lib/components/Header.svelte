@@ -17,8 +17,11 @@
       </button>
     {/if}
 
-    {#if ui_object.path.main == "start" && ui_object.path.sub == "einladen"}
-      <button class="circle transparent" onclick={ui_object.pathBackwards}>
+    {#if ui_object.routing.path.main == "start" && ui_object.routing.path.sub == "einladen"}
+      <button
+        class="circle transparent"
+        onclick={ui_object.routing.pathBackwards}
+      >
         <i>arrow_back</i>
         {#if ui_object.layout == "desktop"}
           <div class="tooltip bottom">Zurück</div>
@@ -28,7 +31,7 @@
 
     {#if ui_object.layout == "mobile"}
       <p style="font-size: large; font-weight: 600;">
-        {capitalizeFirstLetter(ui_object.path.main)}
+        {capitalizeFirstLetter(ui_object.routing.path.main)}
       </p>
     {/if}
 

@@ -2,14 +2,15 @@
   import { apiClient } from "$lib/api/client";
   import { ui_object, type RouteSettings } from "$lib/lib/UI.svelte";
   import { capitalizeFirstLetter } from "$lib/lib/utils";
+  import { settings } from "$lib/lib/settings.svelte";
 
   import Button from "$lib/components/Button.svelte";
-  import { settings } from "$lib/lib/settings.svelte";
+  import { database } from "$lib/lib/database.svelte";
 
   $effect(() => {
     // Open dialog
     if (
-      (ui_object.path as RouteSettings).sub &&
+      (ui_object.routing.path as RouteSettings).sub &&
       ui_object.largeDialog &&
       !ui_object.largeDialog.open
     )
@@ -17,7 +18,7 @@
 
     // Close dialog
     if (
-      (ui_object.path as RouteSettings).sub === undefined &&
+      (ui_object.routing.path as RouteSettings).sub === undefined &&
       ui_object.largeDialog &&
       ui_object.largeDialog.open
     )
@@ -122,7 +123,7 @@
     {#if ui_object.capabilities.some((c) => c == "tutor")}
       <Button
         onclick={() => {
-          ui_object.changePath({ main: "einstellungen", sub: "wirte" });
+          ui_object.routing.changePath({ main: "einstellungen", sub: "wirte" });
         }}
       >
         <div>
@@ -135,7 +136,10 @@
     {#if ui_object.capabilities.some((c) => c == "admin")}
       <Button
         onclick={() => {
-          ui_object.changePath({ main: "einstellungen", sub: "tutoren" });
+          ui_object.routing.changePath({
+            main: "einstellungen",
+            sub: "tutoren",
+          });
         }}
       >
         <div>
@@ -178,6 +182,19 @@
   {/if}
 
   <p id="header" class="bold">Account</p>
+
+  <Button
+    onclick={async () => {
+      await settings.clear();
+      await database.clear();
+      location.href = "/";
+    }}
+  >
+    <div>
+      <p id="title">Cache leeren</p>
+      <p id="subtitle">Behebt mögliche Out-of-Sync-Probleme</p>
+    </div>
+  </Button>
 
   <Button onclick={async () => apiClient("http").logout(true)}>
     <div>

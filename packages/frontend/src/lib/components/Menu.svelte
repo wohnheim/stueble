@@ -22,9 +22,9 @@
     </header>
 
     <li
-      class="wave round {ui_object.path.main == 'start' ? 'fill' : ''}"
+      class="wave round {ui_object.routing.path.main == 'start' ? 'fill' : ''}"
       onclick={() => {
-        ui_object.changePath({
+        ui_object.routing.changePath({
           main: "start",
         });
         ui(ui_object.menuDialog);
@@ -35,9 +35,9 @@
     </li>
     {#if ui_object.capabilities.some((c) => c == "host")}
       <li
-        class="wave round {ui_object.path.main == 'wirte' ? 'fill' : ''}"
+        class="wave round {ui_object.routing.path.main == 'wirte' ? 'fill' : ''}"
         onclick={() => {
-          ui_object.changePath({
+          ui_object.routing.changePath({
             main: "wirte",
           });
           ui(ui_object.menuDialog);
@@ -52,9 +52,9 @@
     <span class="section">Einstellungen</span>
 
     <li
-      class="wave round {ui_object.path.main == 'einstellungen' ? 'fill' : ''}"
+      class="wave round {ui_object.routing.path.main == 'einstellungen' ? 'fill' : ''}"
       onclick={() => {
-        ui_object.changePath({
+        ui_object.routing.changePath({
           main: "einstellungen",
         });
         ui(ui_object.menuDialog);
@@ -65,9 +65,9 @@
     </li>
 
     <li
-      class="wave round {ui_object.path.main == 'credits' ? 'fill' : ''}"
+      class="wave round {ui_object.routing.path.main == 'credits' ? 'fill' : ''}"
       onclick={() => {
-        ui_object.changePath({
+        ui_object.routing.changePath({
           main: "credits",
         });
         ui(ui_object.menuDialog);

@@ -14,7 +14,7 @@
   import { apiClient } from "$lib/api/client";
   import { parseStuebleStatus } from "$lib/api/data";
   import { error } from "$lib/lib/error";
-  import { settings } from "$lib/lib/settings.svelte";
+  import { falsyValue, settings } from "$lib/lib/settings.svelte";
   import { ui_object } from "$lib/lib/UI.svelte";
 
   import Logo from "$lib/assets/Stueble.svelte";
@@ -35,8 +35,7 @@
 
   onMount(async () => {
     const open = () =>
-      settings.settings["welcomeClosed"] == "true" &&
-      ui_object.openDialog({ mode: "welcome" });
+      falsyValue("welcomeClosed") && ui_object.openDialog({ mode: "welcome" });
 
     if (browser) {
       await settings.init();
@@ -112,7 +111,10 @@
 
   $effect(() => {
     if (browser)
-      ui_object.path = ui_object.getPath(location.pathname, page.url.pathname);
+      ui_object.routing.path = ui_object.routing.getPath(
+        location.pathname,
+        page.url.pathname,
+      );
   });
 </script>
 
@@ -159,7 +161,7 @@
 
 {#if $overlay}
   <!-- Dialogs -->
-  {#if ui_object.path.main == "einstellungen"}
+  {#if ui_object.routing.path.main == "einstellungen"}
     <LargeDialog />
   {/if}
   <Dialog />

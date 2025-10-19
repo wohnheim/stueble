@@ -179,16 +179,16 @@
   on:keydown={handleKeyDown}
 />
 
-{#if ui_object.path.main == "start"}
-  {#if ui_object.path.sub === undefined}
+{#if ui_object.routing.path.main == "start"}
+  {#if ui_object.routing.path.sub === undefined}
     <Home />
   {:else}
     <Invite />
   {/if}
-{:else if ui_object.path.main == "wirte"}
+{:else if ui_object.routing.path.main == "wirte"}
   <Guests />
-{:else if ui_object.path.main == "einstellungen"}
+{:else if ui_object.routing.path.main == "einstellungen"}
   <Settings />
-{:else if ui_object.path.main == "credits"}
+{:else if ui_object.routing.path.main == "credits"}
   <Credits />
 {/if}

@@ -12,7 +12,7 @@
   <div id="overlay-circle"></div>
 
   <div id="badge">
-    <i>done</i>
+    <i>check</i>
   </div>
 </div>
 
@@ -50,7 +50,6 @@
 
     display: flex;
     justify-content: center;
-    align-items: end;
 
     border-radius: 50%;
     background-color: var(--error);
