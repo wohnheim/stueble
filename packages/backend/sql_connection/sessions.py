@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Annotated, Literal, TypedDict, cast, overload
+from typing import Literal, TypedDict, cast, overload
 
 from psycopg2.extensions import cursor
 import pytz
@@ -130,20 +130,16 @@ def get_user(cursor: cursor, session_id: str, keywords: tuple[Literal["id"], Lit
 @overload
 def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str]) -> SingleSuccess | SingleSuccessCleaned | GenericFailure: ...
 
-def get_user(cursor: cursor, session_id: Annotated[str | None, "Explicit with sql_session_id"] = None, sql_session_id: Annotated[str | None, "Explicit with session_id"] = None, keywords: tuple[str] | list[str] | None = None) -> SingleSuccess | SingleSuccessCleaned | GenericFailure:
+def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str] | None = None) -> SingleSuccess | SingleSuccessCleaned | GenericFailure:
     """
     gets the user role of a user from the table users via the sessions table
     Parameters:
         cursor: cursor for the connection
-        session_id (str | None): session_id of the user
-        sql_session_id (str | None): sql_session_id of the user
+        session_id (str): id of the user
         keywords (tuple[str] | list[str]): list of keywords to be returned
     Returns:
         dict: {"success": bool, "data": user_role}, {"success": False, "error": e} if error occurred
     """
-
-    if (session_id is None and sql_session_id is None) or (session_id is not None and sql_session_id is not None):
-        return {"success": False, "error": "provide either session_id or sql_session_id, not both, not none"}
 
     allowed_keywords = ["id", "user_role", "user_uuid", "room", "residence", "first_name", "last_name", "email", "user_name"]
 
@@ -159,7 +155,7 @@ def get_user(cursor: cursor, session_id: Annotated[str | None, "Explicit with sq
         keywords=["u." + i for i in keywords],
         table_name="sessions s JOIN users u ON s.user_id = u.id",
         expect_single_answer=True,
-        conditions={"s.session_id" if session_id is not None else "s.id": sql_session_id})
+        conditions={"s.session_id": session_id})
 
     if result["success"] is False:
         return error_to_failure(result)
