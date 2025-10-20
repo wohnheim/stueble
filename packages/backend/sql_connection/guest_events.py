@@ -163,7 +163,7 @@ SELECT
     room, 
     residence, 
     COALESCE((SELECT event_type FROM events WHERE user_id = users_user_id AND event_type IN ('arrive', 'leave', 'remove') ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive' AS present, 
-    (SELECT user_uuid FROM users WHERE users_user_id = invited_by) AS invited_by
+    (SELECT user_uuid FROM users WHERE users.id = invited_by) AS invited_by
 FROM (
     SELECT
         u.id AS users_user_id,
