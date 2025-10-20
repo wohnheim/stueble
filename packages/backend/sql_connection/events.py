@@ -118,7 +118,7 @@ def check_guest(cursor: cursor, user_id: int, stueble_id: int | None = None) -> 
 
     # TODO: add 6 o'clock handling
     if stueble_id is None:
-        query = """SELECT id FROM stueble_motto WHERE date_of_time = CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
+        query = """SELECT id FROM stueble_motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
         result = db.custom_call(
             cursor=cursor,
             query=query,
