@@ -12,7 +12,6 @@ CREATE TYPE USER_ROLE AS ENUM ('admin', 'tutor', 'host', 'user', 'extern');
 -- arrive, leave will be handled by python, add, remove, modify by triggers
 CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave');
 
-CREATE TYPE ACTION_TYPE AS ENUM('guestArrived', 'guestLeft', 'guestAdded', 'guestRemoved', 'userVerification');
 
 -- CREATE TYPE VERIFICATION AS ENUM('idCard', 'roomKey', 'kolping');
 
@@ -64,13 +63,6 @@ CREATE TABLE IF NOT EXISTS events (
     stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS events_affected_users (
-    id SERIAL PRIMARY KEY,
-    event_id INTEGER REFERENCES events(id) NOT NULL,
-    affected_user_id INTEGER REFERENCES users(id) NOT NULL,
-    submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 -- table to save configuration settings
 CREATE TABLE IF NOT EXISTS configurations (
     id SERIAL PRIMARY KEY,
@@ -105,6 +97,7 @@ CREATE TABLE IF NOT EXISTS verification_codes (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+/*
 -- error table
 CREATE TABLE IF NOT EXISTS error_logs (
     id SERIAL PRIMARY KEY,
@@ -115,13 +108,14 @@ CREATE TABLE IF NOT EXISTS error_logs (
     raised_python TEXT,
     actions_taken BOOLEAN DEFAULT FALSE
 );
+*/
 
 CREATE TABLE IF NOT EXISTS websocket_messages (
     id SERIAL PRIMARY KEY,
-    session_id INTEGER REFERENCES sessions(id) NOT NULL,
-    action ACTION_TYPE NOT NULL,
-    message_content JSONB,
-    required_role USER_ROLE NOT NULL,
+    -- session_id INTEGER REFERENCES sessions(id) NOT NULL,
+    event TEXT NOT NULL,
+    data JSONB,
+    required_role USER_ROLE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
