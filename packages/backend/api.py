@@ -1175,6 +1175,15 @@ def invitee():
         invitee_first_name = data.get("firstName", None)
         invitee_last_name = data.get("lastName", None)
         invitee_email = data.get("email", None)
+        if invitee_email is not None:
+            try:
+                invitee_email = Email(invitee_email)
+            except ValueError:
+                response = Response(
+                    response=json.dumps({"code": 400, "message": "Invalid email format"}),
+                    status=400,
+                    mimetype="application/json")
+                return response
 
         if any(i is None for i in [session_id, invitee_first_name, invitee_last_name, invitee_email]):
             response = Response(
@@ -1451,7 +1460,7 @@ def invitee():
                                     stueble_date=stueble_date,
                                     motto_name=motto_name,
                                     qr_code=qr_code)
-            mail.send_mail(Email(invitee_email), result["subject"], result["body"], html=True, images=result["images"])
+            mail.send_mail(invitee_email, result["subject"], result["body"], html=True, images=result["images"])
 
         if request.method == "PUT":
             response = Response(

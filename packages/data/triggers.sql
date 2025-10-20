@@ -235,8 +235,7 @@ BEGIN
             json_build_object(
                     'event', NEW.event_type,
                     'user_id', NEW.user_id,
-                    'stueble_id',
-                    NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
+                    'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
             )::text);
     RETURN NEW;
 END;

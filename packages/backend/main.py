@@ -47,13 +47,15 @@ def main():
     # Start both threads
     flask_thread.start()
     websocket_thread.start()
+    db_listener_thread.start()
     
     print(f"Flask server started in thread: {flask_thread.name}")
     print(f"WebSocket server started in thread: {websocket_thread.name}")
+    print(f"DB listener started in thread: {db_listener_thread.name}")
     print("Both servers started. Press Ctrl+C to stop.")
     
     # Keep main thread alive
-    while flask_thread.is_alive() or websocket_thread.is_alive():
+    while flask_thread.is_alive() or websocket_thread.is_alive() or db_listener_thread.is_alive():
         time.sleep(1)
 
 if __name__ == "__main__":
