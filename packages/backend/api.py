@@ -1473,8 +1473,10 @@ def invitee():
             mimetype="application/json")
         return response
     finally:
-        close_conn_cursor(conn, cursor)
-
+        try:
+            close_conn_cursor(conn, cursor)
+        except:
+            pass
 """
 User management
 """
