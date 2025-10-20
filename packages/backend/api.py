@@ -952,7 +952,7 @@ def guest_change():
 
     message = user_data
 
-    result = sessions.get_session_ids(cursor=cursor, user_id=guest_user_id)
+    result = sessions.get_session_ids(cursor=cursor, user_id=guest_user_id, uuid=True)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
