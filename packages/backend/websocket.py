@@ -1,8 +1,9 @@
 import asyncio
 import base64
+import copy
 import os
 import uuid
-from typing import Literal
+from typing import Annotated, Literal
 
 import websockets
 from websockets.exceptions import ConnectionClosed, ConnectionClosedOK, ConnectionClosedError
@@ -15,7 +16,7 @@ from enum import Enum
 
 from packages.backend.sql_connection.common_functions import check_permissions, get_motto
 from packages.backend.data_types import *
-from packages.backend.sql_connection import events, sessions, database as db, users, motto
+from packages.backend.sql_connection import events, sessions, database as db, users, motto, websocket_db as wsdb
 from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -165,6 +166,48 @@ def add_to_message_log(func):
             else:
                 room = {args[0]} if len(args) > 0 else None
 
+        # role_mapping
+        events_roles = {
+            "guestModified": UserRole.HOST, 
+            "guestAdded": UserRole.HOST, 
+            "guestRemoved": UserRole.HOST, 
+            "tutorAdded": UserRole.HOST, 
+            "tutorRemoved": UserRole.HOST, 
+            "hostAdded": UserRole.HOST, 
+            "hostRemoved": UserRole.HOST, 
+            "stuebleStatus": UserRole.USER, 
+            "configUpdate": UserRole.ADMIN, 
+            "guest_list_update": UserRole.HOST}
+
+        # set default to UserRole.USER
+        # if error also mapping from rooms possible
+        required_role = events_roles.get(params.get("event", ""), UserRole.USER)
+        user_id = None
+
+        # insert into db
+        conn, cursor = get_conn_cursor()
+
+        # TODO: add all params, but remove event, room, event
+        # NOTE: do not iterate over send, but rather use broadcast with user_id
+        # insert message into websocket_db
+        event = params["event"]
+        data = params["data"]
+
+        insert_params = copy.deepcopy(params)
+        if required_role in (UserRole.USER, UserRole.EXTERN, None):
+            user_id = params["user_id"]
+            required_role = None
+            insert_params.pop("user_id", None)
+        insert_params.pop("event", None)
+        insert_params.pop("room", None)
+        insert_params.pop("data", None)
+
+        result = wsdb.insert_message(cursor, event=event, data=data, required_role=required_role, user_id=user_id, **insert_params)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            raise ValueError("Couldn't insert message into database")
+        message_id = result["data"]["message_id"]
+        
         # retrieve session_ids that receive the message
         session_ids = [websockets_info.get(i, {}).get("session_id", None) for i in room]
         session_ids = [i for i in session_ids if i is not None]
@@ -197,7 +240,12 @@ async def send(websocket, event: str, data: dict | bool, **kwargs):
     await websocket.send(message)
 
 @add_to_message_log
-async def broadcast(event, data, room: None | Room | list=None, skip_sid=None, **kwargs):
+async def broadcast(event, 
+                    data, 
+                    room: Annotated[None | Room | list, "Explicit  with room; when both None, default room will be used"] = None, 
+                    skip_sid=None, 
+                    user_id:Annotated[str | int | None, "Explicit  with user_is; when both None, default room will be used"] = None, 
+                    **kwargs) -> None | NotImplementedError | ValueError:
     """
     broadcasts an event to a room
 le_
@@ -205,9 +253,26 @@ le_
         event (str): the event to broadcast
         data (dict): the data to send
         skip_sid (str): the session id to skip (optional)
-        room (set): the room to broadcast to (optional, defaults to all connections)
+        room (set | None): the room to broadcast to (optional, defaults to all connections)
+        user_id (str | int | None): the user_id to broadcast to (all sessions of that user_id)
         **kwargs: additional keyword arguments to send
     """
+
+    if all(i is not None for i in [room, user_id]):
+        raise ValueError("Either room or user_id can be specified, not both")
+
+    if user_id is not None:
+
+        # get conn, cursor
+        conn, cursor = get_conn_cursor()
+
+        # get all sessions from user
+        result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=False)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            raise ValueError("Couldn't retrieve session ids")
+        room = result["success"]
+
     if room is None or room == Room.HOST_UPWARDS:
         room = host_upwards_room
     elif room == Room.ADMINS:
@@ -734,38 +799,38 @@ async def request_public_key(websocket, req_id):
     await send(websocket=websocket, event="publicKey", reqId=req_id, data=jwk)
     return
 
-async def stueble_status(session_id: str | int, date: datetime.date | None=None, registered: bool | None=None, present: bool | None=None, skip_sid: str | int | None=None):
+async def stueble_status(session_id: Annotated[str | int, "Explicit with user_id"], 
+                         user_id: Annotated[str | int, "Explicit with session_id"] = None, 
+                         date: datetime.date | None=None, 
+                         registered: bool | None=None, 
+                         present: bool | None=None, 
+                         skip_sid: str | int | None=None):
     """
     broadcasts a user
 
     Parameters:
         session_id (str | int): the session id of the user whose status changed
+        user_id (str | int): the user id of the user whose status changed; explicit with session_id
         date (date): the stueble id of the stueble party
         registered (bool): whether the user is registered or not
         present (bool): whether the user is present or not
     """
 
+    if session_id is not None and user_id is not None:
+        return {"success": False, "error": "specify either session_id or user_id, not both"}
+
     # get conn, cursor
     conn, cursor = get_conn_cursor()
 
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id"])
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        return result
-    user_id = result["data"]
+    if user_id is not None:
+        result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=True)
 
-    result = db.read_table(
-        cursor=cursor,
-        table_name="sessions",
-        conditions={"user_id": user_id},
-        keywords=["session_id"],
-        expect_single_answer=False)
-
-    if result["success"] is False:
-        close_conn_cursor(conn, cursor)
-        return result
-
-    session_ids = [i[0] for i in result["data"]]
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            return result
+        session_ids = result["data"]
+    else:
+        session_ids = [session_id]
     # unneccessary but for style of coding
     # stueble_id = None
     invited_guests = None
@@ -820,7 +885,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         user_room.remove(None)
     except:
         pass
-    await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
+    await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid) # only being sent to available sessions since others get data with connecting to websocket
     return {"success": True}
 
 
