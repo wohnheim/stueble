@@ -193,25 +193,18 @@ def add_to_message_log(func):
         event = params["event"]
         data = params["data"]
 
-        insert_params = params.copy()
-        for key, value in insert_params.get("kwargs", {}).items():
-            insert_params[key] = value
-        insert_params.pop("kwargs", None) # dangerous
-
+        insert_params = copy.deepcopy(params)
         if required_role in (UserRole.USER, UserRole.EXTERN, None):
-            user_id = insert_params["user_id"]
+            user_id = params["user_id"]
             required_role = None
             insert_params.pop("user_id", None)
         insert_params.pop("event", None)
         insert_params.pop("room", None)
         insert_params.pop("data", None)
-        specific_session_uuid = insert_params.get("session_id", None)
-        insert_params.pop("session_id", None)
 
-        result = wsdb.add_websocket_message(cursor, event=event, data=data, required_role=required_role, user_id=user_id, specific_session_uuid=specific_session_uuid, **insert_params)
+        result = wsdb.insert_message(cursor, event=event, data=data, required_role=required_role, user_id=user_id, **insert_params)
         close_conn_cursor(conn, cursor)
         if result["success"] is False:
-            raise ValueError(str(result["error"]))
             raise ValueError("Couldn't insert message into database")
         message_id = result["data"]["message_id"]
         
@@ -829,8 +822,6 @@ async def stueble_status(session_id: Annotated[str | int, "Explicit with user_id
     # get conn, cursor
     conn, cursor = get_conn_cursor()
 
-    arguments = {}
-
     if user_id is not None:
         result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=True)
 
@@ -838,10 +829,8 @@ async def stueble_status(session_id: Annotated[str | int, "Explicit with user_id
             close_conn_cursor(conn, cursor)
             return result
         session_ids = result["data"]
-        arguments["user_id"] = user_id
     else:
         session_ids = [session_id]
-        arguments["session_id"] = session_id
     # unneccessary but for style of coding
     # stueble_id = None
     invited_guests = None
@@ -896,7 +885,7 @@ async def stueble_status(session_id: Annotated[str | int, "Explicit with user_id
         user_room.remove(None)
     except:
         pass
-    await broadcast(event="stuebleStatus", data=data, skip_sid=skip_sid, **arguments) # only being sent to available sessions since others get data with connecting to websocket
+    await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid) # only being sent to available sessions since others get data with connecting to websocket
     return {"success": True}
 
 
