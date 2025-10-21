@@ -12,7 +12,6 @@ CREATE TYPE USER_ROLE AS ENUM ('admin', 'tutor', 'host', 'user', 'extern');
 -- arrive, leave will be handled by python, add, remove, modify by triggers
 CREATE TYPE EVENT_TYPE AS ENUM('add', 'remove', 'arrive', 'leave');
 
-CREATE TYPE ACTION_TYPE AS ENUM('guestArrived', 'guestLeft', 'guestAdded', 'guestRemoved', 'userVerification');
 
 -- CREATE TYPE VERIFICATION AS ENUM('idCard', 'roomKey', 'kolping');
 
@@ -64,13 +63,6 @@ CREATE TABLE IF NOT EXISTS events (
     stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS events_affected_users (
-    id SERIAL PRIMARY KEY,
-    event_id INTEGER REFERENCES events(id) NOT NULL,
-    affected_user_id INTEGER REFERENCES users(id) NOT NULL,
-    submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 -- table to save configuration settings
 CREATE TABLE IF NOT EXISTS configurations (
     id SERIAL PRIMARY KEY,
@@ -105,6 +97,7 @@ CREATE TABLE IF NOT EXISTS verification_codes (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+/*
 -- error table
 CREATE TABLE IF NOT EXISTS error_logs (
     id SERIAL PRIMARY KEY,
@@ -115,24 +108,25 @@ CREATE TABLE IF NOT EXISTS error_logs (
     raised_python TEXT,
     actions_taken BOOLEAN DEFAULT FALSE
 );
+*/
 
 CREATE TABLE IF NOT EXISTS websocket_messages (
     id SERIAL PRIMARY KEY,
-    session_id INTEGER REFERENCES sessions(id) NOT NULL,
-    action ACTION_TYPE NOT NULL,
-    message_content JSONB,
-    required_role USER_ROLE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    -- session_id INTEGER REFERENCES sessions(id) NOT NULL,
+    event TEXT NOT NULL,
+    data JSONB,
+    required_role USER_ROLE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
+    additional_data JSONB DEFAULT NULL -- other parameters
 );
 
 CREATE TABLE IF NOT EXISTS websockets_affected (
     id SERIAL PRIMARY KEY, 
     message_id INTEGER REFERENCES websocket_messages(id) NOT NULL,
-    session_id INTEGER REFERENCES sessions(id) NOT NULL, 
-    received BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_DATE
+    session_id INTEGER REFERENCES sessions(id) NOT NULL, -- save session_id instead of user_id since an acknowledgement is needed for each session
+    created_at TIMESTAMPTZ DEFAULT CURRENT_DATE,
+    UNIQUE (message_id, session_id)
 );
-
 CREATE TABLE IF NOT EXISTS hosts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
