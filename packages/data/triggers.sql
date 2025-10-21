@@ -339,40 +339,57 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+-- TODO: doesn't check, whether only one is specified
 CREATE OR REPLACE FUNCTION add_websockets_affected()
 RETURNS trigger AS $$
 DECLARE 
-    affected_users int[] := NULL; -- array of affected user ids
     user_id int := NULLIF(current_setting('additional.user_id', true), '')::int; -- user_id from additional settings if message is just sent to a specific user like stuebleStatus
+    skip_session_uuid int := NULLIF(current_setting('additional.skip_sid', true), '')::int; -- session_uuid from additional settings to skip sending message to this session (used when user triggers an event themselves)
+    session_uuid int := NULLIF(current_setting('additional.specific_session_uuid', true), '')::int; -- session_uuid from additional settings to explicitly only send the message to
+    
+    affected_users int[] := NULL; -- array of affected user ids
+    affected_sessions int[] := NULL; -- array of affected session ids
     affected RECORD; -- for loop variable
     session_id RECORD; -- for loop variable
 BEGIN
 
-    -- get all affected users depending on required_role
-    IF COALESCE(NEW.required_role, 'extern') = 'host'
-    THEN
-        affected_users := ARRAY(SELECT id FROM users WHERE user_role IN ('host', 'tutor', 'admin'));
-    ELSIF COALESCE(NEW.required_role, 'extern') = 'tutor'
-    THEN
-        affected_users := ARRAY(SELECT id FROM users WHERE user_role IN ('tutor', 'admin'));
-    ELSIF COALESCE(NEW.required_role, 'extern') = 'admin'
-    THEN
-        affected_users := ARRAY(SELECT id FROM users WHERE user_role = 'admin');
-    
-    -- specific user
-    ELSIF NEW.required_role = NULL OR NEW.required_role = 'user'
-    THEN
-        IF user_id IS NULL
+    IF NOT session_uuid IS NULL
+    THEN 
+        -- get all affected users depending on required_role
+        IF COALESCE(NEW.required_role, 'extern') = 'host'
         THEN
-            RAISE EXCEPTION 'User ID must be provided in additional.user_id for required_role user or required_role NULL; code: 500';
+            affected_users := ARRAY(SELECT id FROM users WHERE user_role IN ('host', 'tutor', 'admin'));
+        ELSIF COALESCE(NEW.required_role, 'extern') = 'tutor'
+        THEN
+            affected_users := ARRAY(SELECT id FROM users WHERE user_role IN ('tutor', 'admin'));
+        ELSIF COALESCE(NEW.required_role, 'extern') = 'admin'
+        THEN
+            affected_users := ARRAY(SELECT id FROM users WHERE user_role = 'admin');
+        
+        -- specific user
+        ELSIF NEW.required_role = NULL OR NEW.required_role = 'user' OR NEW.required_role = 'extern'
+        THEN
+            IF user_id IS NULL
+            THEN
+                RAISE EXCEPTION 'User ID must be provided in additional.user_id for required_role user or required_role NULL; code: 500';
+            END IF;
+            affected_users := ARRAY[user_id];
         END IF;
-        affected_users := ARRAY[user_id];
+
+        -- set affected_sessions based on affected_users
+        affected_sessions := ARRAY(SELECT id FROM sessions WHERE user_id = ANY(affected_users));
+    ELSE
+        -- set affected_sessions based on session_uuids
+        affected_sessions := ARRAY(SELECT id FROM sessions WHERE session_id = ANY(session_uuids))
     END IF;
 
+    affected_sessions := ARRAY(SELECT unnest(affected_sessions)
+                             EXCEPT
+                             SELECT id FROM sessions WHERE session_id = skip_session_uuid);
+
     -- insert into websockets_affected for all affected users for all their sessions
-    FOR affected IN (SELECT unnest(affected_users) AS id)
-    LOOP
-        FOR session_id IN (SELECT id FROM sessions WHERE user_id = affected.id)
+    
+    FOR session_id IN affected_sessions
         LOOP
             INSERT INTO websockets_affected (message_id, session_id)
             VALUES (NEW.id, session_id.id);
