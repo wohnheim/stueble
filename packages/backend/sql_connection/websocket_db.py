@@ -7,8 +7,10 @@ from typing import Annotated
 # TODO: for future also allow sending websockets to all users, therefore only specify user_id when only for one specific user
 def add_websocket_message(cursor, event: str, 
                           data: any, 
-                          required_role: Annotated[UserRole, "Explicit with user_id"] = None, 
-                          user_id: Annotated[int | str, "Explicit with required_role"] = None, 
+                          required_role: Annotated[UserRole, "Explicit with user_id, specific_session_uuid"] = None, 
+                          user_id: Annotated[int | str, "Explicit with required_role, specific_session_uuid"] = None, 
+                          specific_session_uuid: Annotated[str, "Explicit with required_role, user_id"] = None,
+                          skip_sid: str = None, 
                           **kwargs) -> dict[str, any]:
     """
     Add a websocket message to the database.
@@ -17,25 +19,39 @@ def add_websocket_message(cursor, event: str,
         cursor: Database cursor to execute the query.
         event (str): The event type of the websocket message.
         data (any): The data payload of the websocket message.
-        required_role (UserRole): The minimum user role required to receive the message.
+        required_role (UserRole): The minimum user role required to receive the message, use this when sending to a group of users (like hosts).
+        user_id (int | str): The ID of the specific user to receive the message, use this when sending to all sessions of a specific user.
+        specific_session_uuid (str): session_uuid of the specific session to receive the message, use this when sending to a specific session only.
+        skip_sid (str): session_uuid to skip sending the message to (used when user triggers an event themselves).
         **kwargs: Additional keyword arguments to be stored as JSONB.
     Returns:
         dict[str, any]: Result of the database operation.
     """
-
-    if all(i is None for i in (required_role, user_id)) is True or all(i is not None for i in (required_role, user_id)):
-        raise ValueError("Either required_role or user_id must be provided, not both, not none.")
+    if all(i is None for i in (required_role, user_id, specific_session_uuid)) is True or sum(1 if i is not None else 0 for i in (required_role, user_id, specific_session_uuid)) > 1:
+        raise ValueError("Either required_role or user_id or specific_session_uuid must be provided, not 2 or all, not none.")
 
     # initialize query parts
     query = """"""
     variables = []
     additional_data = None
 
-    if required_role == UserRole.USER:
+    if specific_session_uuid is not None:
+        query = """WITH _ AS (SELECT set_config('additional.specific_session_uuid', %s, true))"""
+        variables.append(str(specific_session_uuid))
+
+    if required_role == UserRole.USER or required_role == UserRole.EXTERN or required_role is None:
         query = """WITH _ AS (SELECT set_config('additional.user_id', %s, true))"""
         variables.append(str(user_id))
-    
+        required_role = None
+    if skip_sid is not None:
+        if query == "":
+            query = """WITH _ AS (SELECT set_config('additional.skip_sid', %s, true))"""
+        else:
+            query += """, _2 AS (SELECT set_config('additional.skip_sid', %s, true))"""
+        variables.append(str(skip_sid))
+
     variables.append(event)
+    variables.append(json.dumps(data))
 
     if required_role is not None:
         variables.append(required_role)
