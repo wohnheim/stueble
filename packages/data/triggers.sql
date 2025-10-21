@@ -241,23 +241,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-CREATE OR REPLACE FUNCTION add_to_affected_users()
-RETURNS trigger AS $$
-DECLARE affected RECORD;
-BEGIN
-    IF NEW.event_type = 'arrive' OR NEW.event_type = 'leave'
-    THEN
-        FOR affected IN (SELECT id FROM users WHERE user_role = 'host' OR user_role = 'admin')
-        LOOP
-            INSERT INTO events_affected_users (event_id, affected_user_id)
-            VALUES (NEW.id, affected.id);
-        END LOOP;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION check_user_role()
 RETURNS trigger AS $$
 BEGIN
@@ -420,10 +403,6 @@ CREATE OR REPLACE TRIGGER event_guest_change_trigger
 BEFORE INSERT OR UPDATE ON events
 FOR EACH ROW
 EXECUTE FUNCTION event_guest_change();
-
-CREATE OR REPLACE TRIGGER event_guest_change_two_trigger
-AFTER INSERT OR UPDATE ON events
-FOR EACH ROW EXECUTE FUNCTION add_to_affected_users();
 
 CREATE OR REPLACE TRIGGER set_uuid_hash_trigger
     BEFORE INSERT ON users -- only on insert
