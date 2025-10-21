@@ -2124,6 +2124,7 @@ def update_tutors():
             mimetype="application/json")
         return response
 
+    # NOTE: unneccessary due to trigger
     user_ids = result["data"]
     query = """DELETE FROM hosts WHERE user_id IN %s"""
     result = db.custom_call(cursor=cursor, query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
@@ -2235,7 +2236,7 @@ def update_hosts():
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
 
-    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence"])
+    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2244,13 +2245,14 @@ def update_hosts():
             mimetype="application/json")
         return response
     hosts_data = result["data"]
-    hosts_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3]} for i in hosts_data]
+    hosts_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3]} for i in hosts_data if i[4] == ('user' if request.method == "PUT" else 'host')]
     if len(hosts_data) != len(user_uuids):
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 404, "message": "Not all users found"}),
+            response=json.dumps({"code": 404, "message": "Tutoren und Admins können nicht zu Hosts gemacht werden"}), # "Not all users found"}),
             status=404,
             mimetype="application/json")
+        return response
 
     result = motto.update_hosts(cursor=cursor, stueble_id=stueble_id, method="add" if request.method == "PUT" else "remove", user_uuids=user_uuids)
 
@@ -2265,8 +2267,25 @@ def update_hosts():
     user_ids = result["data"]
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
-    result = db.custom_call(cursor=cursor, query="UPDATE users SET user_role = 'user' WHERE id IN %s AND user_role = 'host'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
-
+    if request.method == "DELETE":
+        result = db.custom_call(cursor=cursor, query="UPDATE users SET user_role = 'user' WHERE id IN %s AND user_role = 'host'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+    else:
+        result = db.custom_call(cursor=cursor, query="UPDATE users SET user_role = 'host' WHERE id IN %s AND user_role = 'user'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
+        if result["success"] is False:
+            close_conn_cursor(conn, cursor)
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+    
     query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
     result = db.custom_call(
         cursor=cursor,

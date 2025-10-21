@@ -331,6 +331,26 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+
+CREATE OR REPLACE FUNCTION remove_hosts()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.user_role = 'host'
+    THEN
+        RETURN NEW;
+    END IF;
+    DELETE FROM hosts 
+    WHERE user_id = NEW.id 
+      AND stueble_id = (
+        SELECT id
+        FROM stueble_motto
+        WHERE ((date_of_time >= CURRENT_DATE)
+          OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1))
+        ORDER BY date_of_time ASC LIMIT 1);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION check_user_constants()
 RETURNS trigger AS $$
 BEGIN
@@ -414,6 +434,10 @@ CREATE OR REPLACE TRIGGER set_uuid_hash_trigger
 CREATE OR REPLACE TRIGGER check_user_constants
     BEFORE UPDATE ON users -- only on updates
     FOR EACH ROW EXECUTE FUNCTION check_user_constants();
+
+CREATE OR REPLACE TRIGGER remove_hosts_trigger
+    AFTER UPDATE OF user_role ON users
+    FOR EACH ROW EXECUTE FUNCTION remove_hosts();
 
 CREATE OR REPLACE TRIGGER set_session_id_trigger
     BEFORE INSERT OR UPDATE ON sessions
