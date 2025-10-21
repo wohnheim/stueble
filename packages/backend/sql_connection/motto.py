@@ -132,7 +132,7 @@ def create_stueble(cursor: cursor, date: date, motto: str,
         return {"success": False, "error": "error occurred"}
     return clean_single_data(result)
 
-def update_stueble(cursor: cursor, date: date | None, **kwargs) -> SingleSuccessCleaned | GenericFailure:
+def update_stueble(cursor: cursor, date: date, **kwargs) -> SingleSuccessCleaned | GenericFailure:
     """
     updates an entry in the table stueble_motto
     Parameters:
@@ -150,20 +150,11 @@ def update_stueble(cursor: cursor, date: date | None, **kwargs) -> SingleSuccess
     if len(arguments) == 0:
         return {"success": False, "error": "no fields to update"}
 
-    conditions = None
-    specific_where = ""
-
-    if (date is None):
-        specific_where = "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"
-    else:
-        conditions =  {"date_of_time": date}
-
     result = db.update_table(
         cursor=cursor,
         table_name="stueble_motto",
         arguments=arguments,
-        conditions=conditions,
-        specific_where=specific_where,
+        conditions={"date_of_time": date},
         returning_column="id"
     )
     

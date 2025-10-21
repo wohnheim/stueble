@@ -1923,6 +1923,11 @@ def create_stueble():
     actual_user_role = result["data"]["user_role"]
     actual_user_role = UserRole(actual_user_role)
 
+    if date is None:
+        date = datetime.date.today()
+        days_ahead = (2 - date.weekday() + 7) % 7
+        date = date + datetime.timedelta(days=days_ahead)
+
     result = motto.update_stueble(cursor=cursor,
                                 date=date,
                                 motto=stueble_motto,
