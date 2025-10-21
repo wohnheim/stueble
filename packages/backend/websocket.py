@@ -194,7 +194,14 @@ async def send(websocket, event: str, data: dict | bool, **kwargs):
         **kwargs: additional keyword arguments to send
     """
     message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
-    await websocket.send(message)
+    try:
+        await websocket.send(message)
+    except (ConnectionClosed, ConnectionClosedOK, ConnectionClosedError):
+        host_upwards_room.discard(websocket)
+        admins_room.discard(websocket)
+        connections.discard(websocket)
+        sid_to_websocket.pop(next(key for key, value in sid_to_websocket.items() if id(value) == id(websocket)), None) # check, whether that works
+        del websockets_info[id(websocket)]
 
 @add_to_message_log
 async def broadcast(event, data, room: None | Room | list=None, skip_sid=None, **kwargs):

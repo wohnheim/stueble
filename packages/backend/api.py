@@ -1437,7 +1437,7 @@ def invitee():
             "lastName": invitee_info["last_name"],
             "extern": True}
 
-        action_type = Action_Type("guestModified")
+        action_type = Action_Type("guestAdded") if request.method == "PUT" else Action_Type("guestRemoved")
 
         # send a websocket message to all hosts that the guest list changed
         asyncio.run(ws.broadcast(event=action_type.value, data=invitee_data)) # don't skip_sid for guestModified
@@ -2589,7 +2589,6 @@ def websocket_change():
     """
     receive data from websocket_runner and send it to all connected clients
     """
-
     if request.remote_addr != "127.0.0.1":
         response = Response(
             response=json.dumps({"code": 401, "message": "Unauthorized, only local requests are allowed"}),
@@ -2599,19 +2598,19 @@ def websocket_change():
 
     # load data
     data = request.get_json()
-    first_name = data.get("firstName", None)
-    last_name = data.get("lastName", None)
+    first_name = data.get("first_name", None)
+    last_name = data.get("last_name", None)
     user_uuid = data.get("user_uuid", None)
     stueble_id = data.get("stuebleId", None)
-    event = data.get("event", None)
-    if first_name is None or last_name is None or event is None:
+    # event = data.get("event", None)
+    if first_name is None or last_name is None or user_uuid is None: # or event is None:
         response = Response(
-            response=json.dumps({"code": 400, "message": f"first_name, last_name and event must be specified"}),
+            response=json.dumps({"code": 400, "message": f"first_name, last_name and user_uuid must be specified"}),
             status=400,
             mimetype="application/json")
         return response
 
-    asyncio.run(ws.broadcast(event="guest_list_update", data={"first_name": first_name, "last_name": last_name}))
+    asyncio.run(ws.broadcast(event="guestRemoved", data=user_uuid))
 
     response = Response(
         status=200)

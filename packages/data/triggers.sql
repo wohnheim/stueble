@@ -230,13 +230,16 @@ BEGIN
             END IF;
     END IF;
 
-    PERFORM pg_notify(
-            'guest_list_update',
-            json_build_object(
-                    'event', NEW.event_type,
-                    'user_id', NEW.user_id,
-                    'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
-            )::text);
+    IF NEW.event_type = 'remove'
+    THEN
+        PERFORM pg_notify(
+                'automatically_removed_users',
+                json_build_object(
+                        'event', NEW.event_type,
+                        'user_id', NEW.user_id,
+                        'stueble_id', NEW.stueble_id -- unnecessary since only for one stueble at a time this method is allowed
+                )::text);
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
