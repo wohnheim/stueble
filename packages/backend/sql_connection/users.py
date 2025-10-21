@@ -127,8 +127,8 @@ def update_user(
         cursor: cursor,
         user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        user_uuid: Annotated[str | None, "Explicit with user_id, user_email OR user_name OR user_uuid"] = None,
+        user_name_key: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
+        user_uuid_key: Annotated[str | None, "Explicit with user_id, user_email OR user_name OR user_uuid"] = None,
         **kwargs) -> AddRemoveUserSuccess | GenericFailure:
     """
     updates a user in the table users
@@ -150,7 +150,7 @@ def update_user(
         if k not in allowed_fields:
             return {"success": False, "error": f"Field {k} is not allowed to be updated."}
 
-    if all(i is None for i in [user_id, user_email, user_name, user_uuid]):
+    if all(i is None for i in [user_id, user_email, user_name_key, user_uuid_key]):
         return {"success": False, "error": "Either user_id or user_email or user_name or user_uuid must be set."}
 
     conditions = {}
@@ -158,10 +158,10 @@ def update_user(
         conditions["id"] = user_id
     elif user_email is not None:
         conditions["email"] = user_email.email
-    elif user_uuid is not None:
-        conditions["user_uuid"] = user_uuid
+    elif user_uuid_key is not None:
+        conditions["user_uuid"] = user_uuid_key
     else:
-        conditions["user_name"] = user_name
+        conditions["user_name"] = user_name_key
 
     result = db.update_table(cursor=cursor, table_name="users", arguments=kwargs,
                              conditions=conditions, returning_column="id")

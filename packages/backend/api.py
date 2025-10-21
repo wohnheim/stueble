@@ -394,7 +394,7 @@ def logout():
         status=204)
     return response
 
-@app.route("/auth/delete", methods=["DELETE"])
+# @app.route("/auth/delete", methods=["DELETE"])
 def TEST_DELETE_PLEASE_REMOVE():
     """
     TEST FUNCTION - PLEASE REMOVE
@@ -436,7 +436,7 @@ def TEST_DELETE_PLEASE_REMOVE():
 
 # TODO: test automatic deletion from all stueble parties
 # TODO: uncomment route
-# app.route("/auth/delete", methods=["DELETE"])
+@app.route("/auth/delete", methods=["DELETE"])
 def delete():
     """
     delete a user (set password to NULL)
@@ -906,7 +906,7 @@ def guest_change():
         # verify guest if not verified yet
         if data["data"][4] is False:
             result = users.update_user(cursor=cursor,
-                                       user_uuid=user_uuid, 
+                                       user_uuid_key=user_uuid, 
                                        verified=True)
             if result["success"] is False:
                 close_conn_cursor(conn, cursor)
@@ -1661,7 +1661,7 @@ def change_user_role():
 
     result = users.update_user(
         cursor=cursor,
-        user_uuid=user_uuid,
+        user_uuid_key=user_uuid,
         user_role=UserRole(new_role))
 
     if result["success"] is False:
