@@ -206,7 +206,6 @@ def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove
 
     if method == "add":
         rows = [(user_id, stueble_id) for user_id in user_ids]
-
         query = """INSERT INTO hosts (user_id, stueble_id) VALUES %s"""
     else:
         rows = [tuple((user_id, stueble_id) for user_id in user_ids)]
