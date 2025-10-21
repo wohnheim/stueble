@@ -116,17 +116,17 @@ CREATE TABLE IF NOT EXISTS websocket_messages (
     event TEXT NOT NULL,
     data JSONB,
     required_role USER_ROLE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
+    additional_data JSONB DEFAULT NULL -- other parameters
 );
 
 CREATE TABLE IF NOT EXISTS websockets_affected (
     id SERIAL PRIMARY KEY, 
     message_id INTEGER REFERENCES websocket_messages(id) NOT NULL,
-    session_id INTEGER REFERENCES sessions(id) NOT NULL, 
-    received BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_DATE
+    session_id INTEGER REFERENCES sessions(id) NOT NULL, -- save session_id instead of user_id since an acknowledgement is needed for each session
+    created_at TIMESTAMPTZ DEFAULT CURRENT_DATE,
+    UNIQUE (message_id, session_id)
 );
-
 CREATE TABLE IF NOT EXISTS hosts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,

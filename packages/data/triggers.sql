@@ -393,6 +393,38 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION remove_sessions_from_websockets_affected()
+RETURNS trigger AS $$
+BEGIN
+    DELETE FROM websockets_affected WHERE session_id = OLD.id;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION remove_sessions_from_change_role()
+RETURNS trigger AS $$
+BEGIN
+    IF OLD.user_role = 'user' OR OLD.user_role = 'extern' -- extern check is unneccessary but for future changes better to have
+    THEN
+        RETURN NEW;
+    END IF;
+
+    DELETE FROM websockets_affected wsa
+    WHERE (
+        session_id IN (
+            SELECT id 
+            FROM sessions 
+            WHERE user_id = NEW.id) 
+      AND (
+        SELECT required_role 
+        FROM websocket_messages wm  
+        WHERE wm.id = wsa.message_id) IN ('tutor', 'admin') -- not using COALESCE, since in case it would be needed, a previous trigger didn't work and this doesn't make it worse, rather fixes it
+        );
+
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- NOTE: DO NOT RENAME THE TRIGGERS, SINCE THEIR ALPHABETICAL ORDER SPECIFIES THE ORDER OF EXECUTION
 CREATE OR REPLACE TRIGGER event_add_invited_by_trigger
 BEFORE INSERT OR UPDATE ON events
@@ -431,3 +463,11 @@ CREATE OR REPLACE TRIGGER add_websockets_affected_trigger
 CREATE OR REPLACE TRIGGER remove_messages_trigger
     AFTER DELETE ON websockets_affected
     FOR EACH ROW EXECUTE FUNCTION remove_messages();
+
+CREATE OR REPLACE TRIGGER remove_affected_sessions_trigger
+    AFTER DELETE ON sessions
+    FOR EACH ROW EXECUTE FUNCTION remove_sessions_from_websockets_affected();
+
+CREATE OR REPLACE TRIGGER remove_sessions_from_change_role_trigger
+    AFTER UPDATE OF user_role ON users
+    FOR EACH ROW EXECUTE FUNCTION remove_sessions_from_change_role();
