@@ -154,7 +154,7 @@ def update_stueble(cursor: cursor, date: date | None, **kwargs) -> SingleSuccess
     specific_where = ""
 
     if (date is None):
-        specific_where = "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"
+        specific_where = """id = (SELECT id FROM stueble_motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1) ORDER BY date_of_time ASC LIMIT 1)"""
     else:
         conditions =  {"date_of_time": date}
 
