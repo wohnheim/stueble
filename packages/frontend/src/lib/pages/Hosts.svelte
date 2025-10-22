@@ -7,6 +7,7 @@
   import Fullscreen from "$lib/components/Fullscreen.svelte";
   import HostComponent from "$lib/components/buttons/Host.svelte";
   import { findAndRemove } from "$lib/lib/utils";
+  import Avatar from "$lib/components/Avatar.svelte";
 
   let {
     title,
@@ -140,6 +141,8 @@
           }
         }}
       >
+        <Avatar residence={element.residence} />
+
         <div>
           <p id="title">
             {element.firstName}
