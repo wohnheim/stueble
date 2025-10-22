@@ -21,6 +21,7 @@ from packages.backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from packages.backend.sql_connection.conn_cursor_functions import *
+from packages.backend.basic_functions import *
 
 # load environment variables
 load_dotenv("~/stueble/packages/backend/.env")
@@ -756,11 +757,13 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     # get conn, cursor
     conn, cursor = get_conn_cursor()
 
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id"])
+    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_role"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         return result
-    user_id = result["data"]
+    user_id = result["data"][0]
+    user_role = result["data"][1]
+    user_role = UserRole(user_role)
 
     result = db.read_table(
         cursor=cursor,
@@ -807,13 +810,13 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
             registered = True
             present = result["data"]
     # if person is registered, check for invited guests
-    if registered is True:
+    if registered is True or user_role >= UserRole.TUTOR:
         result = users.get_invited_friends(cursor, user_id=user_id, stueble_id=stueble_id)
         close_conn_cursor(conn, cursor)
         if result["success"] is False:
             return result
         invited_guests = result["data"]
-        invited_guests = [{key if key != "user_uuid" else "id": value for key, value in guest.items()} for guest in invited_guests]
+        invited_guests = [{snake_to_camel_case(key) if key != "user_uuid" else "id": value for key, value in guest.items()} for guest in invited_guests]
     else:
         close_conn_cursor(conn, cursor)
 
