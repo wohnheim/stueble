@@ -1,3 +1,6 @@
+# TODO: check, whether user is kicked from stueble_guest_list when promoted to host
+# TODO: forbid to remove host capabilities during stueble since: user -> present -> host -> host_removed, now not on guest list any more
+
 import asyncio
 import base64
 import datetime
@@ -1105,6 +1108,7 @@ def attend_stueble():
         return response
 
     if request.method == "PUT":
+        # TODO unneccessary
         timestamp = int(datetime.datetime.now().timestamp())
         
         information = {"id": user_uuid, "timestamp": timestamp, "extern": False}
@@ -1406,7 +1410,16 @@ def invitee():
 
             information = {"id": invitee_uuid, "timestamp": timestamp, "extern": True}
 
-            signature = hp.create_signature(message=information)
+            result = hp.create_signature(message=information)
+            if result["success"] is False:
+                close_conn_cursor(conn, cursor)
+                response = Response(
+                    response=json.dumps({"code": 500, "message": str(result["error"])}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+            
+            signature = result["data"]
 
             data = {"data":information,
                     "signature": signature}
@@ -2048,7 +2061,7 @@ def update_tutors():
         return response
 
     # get information about users
-    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role"])
+    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role", "user_uuid"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2059,7 +2072,7 @@ def update_tutors():
     
     # clean result data
     tutors_data = result["data"]
-    tutors_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3], "user_role": UserRole(i[4])} for i in tutors_data]
+    tutors_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3], "user_role": UserRole(i[4]), "user_uuid": i[5]} for i in tutors_data]
     
     # check, whether all users were found
     if len(tutors_data) != len(user_uuids):
@@ -2070,16 +2083,19 @@ def update_tutors():
             mimetype="application/json")
         return response
 
+    # if any user is admin, raise error
+    if any(i["user_role"] >= UserRole.ADMIN for i in tutors_data):
+        close_conn_cursor(conn, cursor)
+        response = Response(
+            response=json.dumps({"code": 403, "message": "Can only remove tutors or make admins to tutors"}),
+            status=403,
+            mimetype="application/json")
+        return response
+    
+    hosts_removed = []
+
     # changing tutors back to users
     if request.method == "DELETE":
-        # if any user is admin, raise error
-        if any(i["user_role"] >= UserRole.ADMIN for i in tutors_data):
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 403, "message": "Can only remove tutors"}),
-                status=403,
-                mimetype="application/json")
-            return response
         # set new role
         new_role = UserRole.USER
 
@@ -2093,6 +2109,7 @@ def update_tutors():
                 status=403,
                 mimetype="application/json")
             return response
+        hosts_removed = [i["user_uuid"] for i in tutors_data if i["user_role"] == UserRole.HOST]
         # set new role
         new_role = UserRole.TUTOR
         # remove wrong users from tutor list
@@ -2158,9 +2175,13 @@ def update_tutors():
     if request.method == "PUT":
         for user in tutors_data:
             asyncio.run(ws.broadcast(event="tutorAdded", data=user, skip_sid=session_id))
+            asyncio.run(ws.status(user_uuid=user["id"]))
+        for host in hosts_removed:
+            asyncio.run(ws.broadcast(event="hostRemoved", data=host))
     else:
         for user in user_uuids:
             asyncio.run(ws.broadcast(event="tutorRemoved", data=user, skip_sid=session_id))
+            asyncio.run(ws.status(user_uuid=user))
 
     if request.method == "DELETE":
         response = Response(
@@ -2309,9 +2330,12 @@ def update_hosts():
     if request.method == "PUT":
         for user in hosts_data:
             asyncio.run(ws.broadcast(event="hostAdded", data=user, skip_sid=session_id))
+            asyncio.run(ws.status(user_uuid=user["id"]))
     else:
         for user in user_uuids:
             asyncio.run(ws.broadcast(event="hostRemoved", data=user, skip_sid=session_id))
+
+            asyncio.run(ws.status(user_uuid=user))
 
     if request.method == "DELETE":
         response = Response(
