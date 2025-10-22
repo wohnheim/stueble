@@ -1,27 +1,9 @@
-from datetime import datetime
-from typing import Literal, TypedDict, cast
 from psycopg2.extensions import cursor
 
 from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import (
-    GenericFailure,
-    error_to_failure,
-)
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
 
-class AddGuestSuccess(TypedDict):
-    success: Literal[True]
-    data: int
-
-class RemoveGuestSuccess(TypedDict):
-    success: Literal[True]
-    data: datetime
-
-class CheckGuestSuccess(TypedDict):
-    success: Literal[True]
-    data: bool
-
-def add_guest(cursor: cursor, user_id: int, stueble_id: int, invited_by: int | None = None) -> AddGuestSuccess | GenericFailure:
+def add_guest(cursor: cursor, user_id: int, stueble_id: int, invited_by: int | None = None) -> dict:
     """
     adds a guest to the table events with event_type "add"
 
@@ -34,24 +16,26 @@ def add_guest(cursor: cursor, user_id: int, stueble_id: int, invited_by: int | N
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
     """
 
+    # converting arguments to dictionary
     arguments = {"user_id": user_id, "stueble_id": stueble_id, "event_type": "add"}
+
+    # adding optional argument invited_by
     if invited_by is not None:
         arguments["invited_by"] = invited_by
 
+    # inserting into database
     result = db.insert_table(
         cursor=cursor,
         table_name="events",
         arguments=arguments,
         returning_column="NOW()")
 
-    if result["success"] is False:
-        return error_to_failure(result)
     # maybe shouldn't be possible, but still left in
-    if result["data"] is None:
+    if result["success"] and result["data"] is None:
         return {"success": False, "error": "error occurred"}
-    return cast(AddGuestSuccess, clean_single_data(result))
+    return clean_single_data(result)
 
-def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> RemoveGuestSuccess | GenericFailure:
+def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> dict:
     """
     adds a guest to the table events with event_type "remove" effectively removing them from the guest list
 
@@ -62,6 +46,8 @@ def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> RemoveGuestSu
     Returns:
         dict: {"success": bool} by default, {"success": True, "data": timestamp} if returning is True, {"success": False, "error": e} if error occurred
     """
+
+    # if no stueble was specified (equals -1), remove from all stueble parties the user is currently added to
     if stueble_id == -1:
         # get all stueble ids where the user is currently added
         query = f"""
@@ -80,31 +66,31 @@ def remove_guest(cursor: cursor, user_id: int, stueble_id: int) -> RemoveGuestSu
         WHERE stuebles.event_type = 'add') AS to_remove
         RETURNING stueble_id;
         """
+
+        # execute query
         result = db.custom_call(
             cursor=cursor,
             query=query,
             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-            variables=[user_id]
-        )
-
-        if result["success"] is False:
-            return error_to_failure(result)
+            variables=[user_id])
         return result
+
+    # if a stueble was specified, just remove from that one
     else:
+
+        # insert into events table
         result = db.insert_table(
             cursor=cursor,
             table_name="events",
             arguments={"user_id": user_id, "stueble_id": stueble_id, "event_type": "remove"},
             returning_column="NOW()")
         # maybe shouldn't be possible, but still left in
-        if result["success"] is False:
-            return error_to_failure(result)
         if result["success"] is True and result["data"] is None:
             return {"success": False, "error": "error occurred"}
-        return cast(RemoveGuestSuccess, clean_single_data(result))
+        return clean_single_data(result)
 
-# use users.check_user_guest_list for automatic stueble_id handling
-def check_guest(cursor: cursor, user_id: int, stueble_id: int | None = None) -> CheckGuestSuccess | GenericFailure:
+# TODO: users.check_user_guest_list for automatic stueble_id handling
+def check_guest(cursor: cursor, user_id: int, stueble_id: int | None = None) -> dict:
     """
     checks if a user is currently a guest at a stueble party
 
@@ -116,21 +102,32 @@ def check_guest(cursor: cursor, user_id: int, stueble_id: int | None = None) -> 
         dict: {"success": bool, "data": bool} if successful, {"success": False, "error": e} if error occurred
     """
 
-    # TODO: add 6 o'clock handling
+    # select the currently running or next stueble, if none is specified
     if stueble_id is None:
-        query = """SELECT id FROM stueble_motto WHERE date_of_time >= (CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
+
+        # create query
+        query = """SELECT id 
+                   FROM stueble_motto 
+                   WHERE date_of_time >= CURRENT_DATE 
+                      OR (CURRENT_TIME < '06:00:00' 
+                       AND date_of_time = CURRENT_DATE - 1) 
+                   ORDER BY date_of_time ASC 
+                   LIMIT 1"""
+
+        # execute query
         result = db.custom_call(
             cursor=cursor,
             query=query,
-            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
-        )
+            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
+
+        # handle result
         if result["success"] is False:
-            return error_to_failure(result)
+            return result
         if result["data"] is None:
             return {"success": False, "error": "no stueble party_user found"}
         stueble_id = result["data"][0]
 
-
+    # if stueble_id was specified, specify it
     query = f"""
             SELECT 'add' =
                    COALESCE((SELECT event_type
@@ -141,17 +138,15 @@ def check_guest(cursor: cursor, user_id: int, stueble_id: int | None = None) -> 
                              ORDER BY submitted DESC
                              LIMIT 1), 'remove')
             """
+
+    # execute query
     result = db.custom_call(
         cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
-        variables=[user_id, stueble_id]
-    )
+        variables=[user_id, stueble_id])
 
-    if result["success"] is False:
-        return error_to_failure(result)
-
-    if result["data"] is None:
+    # handle result
+    if result["success"] and result["data"] is None:
         return {"success": False, "error": "user not on guest_list"}
-
-    return cast(CheckGuestSuccess, clean_single_data(result))
+    return clean_single_data(result)

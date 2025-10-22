@@ -1,5 +1,7 @@
 from enum import Enum
 import re
+from typing import TypedDict
+
 
 class UserRole(str, Enum):
     ADMIN = "admin"
@@ -97,3 +99,13 @@ class VerificationMethod(str, Enum):
 
 def valid_verification_method(value):
     return value in VerificationMethod._value2member_map_
+
+class NoSuccess(TypedDict):
+    error: str
+
+class Success(TypedDict):
+    data: dict | list | None
+
+class ReturningInformation(TypedDict):
+    success: bool
+    NoSuccess | Success

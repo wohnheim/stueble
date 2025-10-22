@@ -2030,7 +2030,8 @@ def update_hosts():
     return response
 
 @app.route("/hosts", methods=["GET"])
-def get_hosts():
+@app.route("/tutors", methods=["GET"])
+def get_hosts_tutors():
     """
     Get hosts for a stueble.
     """
@@ -2049,7 +2050,7 @@ def get_hosts():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts or above can change user role
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST if request.path == "/hosts" else UserRole.TUTOR)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2060,8 +2061,28 @@ def get_hosts():
     if result["data"]["allowed"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
+            response=json.dumps({"code": 403, "message": f"invalid permissions, need role {'host' if request.path == '/hosts' else 'tutor'} or above"}),
             status=403,
+            mimetype="application/json")
+        return response
+
+    if request.path == "/tutors":
+        query = """SELECT user_uuid, first_name, last_name, user_name FROM users WHERE user_role IN ('tutor', 'admin')"""
+        result = db.custom_call(cursor=cursor,
+                                query=query,
+                                type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
+        close_conn_cursor(conn, cursor)
+        if result["success"] is False:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result["error"])}),
+                status=500,
+                mimetype="application/json")
+            return response
+        result["data"] = [{"id" if key == "user_uuid" else "username" if key == "user_name" else snake_to_camel_case(key): value for key, value in host.items()}
+                          for host in [{"user_uuid": i[0], "first_name": i[1], "last_name": i[2], "user_name": i[3]} for i in result["data"]]]
+        response = Response(
+            response=json.dumps(result["data"]),
+            status=200,
             mimetype="application/json")
         return response
 

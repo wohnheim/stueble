@@ -28,14 +28,22 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
         images (list[str] | None): The list of images to attach to the email.
     """
 
+    # create the email message
+    # TODO: replace related with alternative for better compatibility, note that that might create problems with images
     msg = EmailMessage() if not html else MIMEMultipart("related")
+
+    # set subject, sender and receiver
     msg["Subject"] = subject
     msg["From"] = EMAIL_ADDRESS
     msg["To"] = recipient.email
+
+    # add body to email
     if not html:
         msg.set_content(body)
     else:
         msg.attach(MIMEText(body, "html"))
+
+    # add images to email
     if html is True and images is not None:
         for info in images:
             name = info["name"]
@@ -49,7 +57,11 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
             # hardcore hardcoding to png
             img_mime.add_header('Content-Disposition', 'inline', filename="image.png")
             msg.attach(img_mime)
+
+    # send email
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         smtp.send_message(msg)
+
+    # return success
     return {"success": True}
