@@ -1242,12 +1242,14 @@ def invitee():
                     mimetype="application/json")
                 return response
         
-        # check, whether user is present
-        result = users.check_user_present(cursor=cursor, user_id=user_id)
-        if result["success"] is False:
-            close_conn_cursor(conn, cursor)
-            return response
-        present = result["data"]
+            # check, whether user is present
+            result = users.check_user_present(cursor=cursor, user_id=user_id)
+            if result["success"] is False:
+                close_conn_cursor(conn, cursor)
+                return response
+            present = result["data"]
+        else:
+            present = False
 
         # get all sessions for user
         result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=True)
