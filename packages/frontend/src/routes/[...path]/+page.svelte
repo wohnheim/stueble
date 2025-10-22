@@ -45,19 +45,31 @@
     settings.set("publicKey", JSON.stringify(key));
     ui_object.publicKey = await importKey(key);
 
-    if (falsyValue("guestListFetched")) {
+    if (falsyValue("guestListFetched") || true) {
+      const guests = await apiClient("http").getGuestList();
+
+      await database.clear(["guestsExtern", "guestsIntern"]);
+      await database.addGuests(guests);
+
       settings.set("guestListFetched", JSON.stringify(true));
-      database.addGuests(await apiClient("http").getGuestList());
     }
 
-    if (falsyValue("hostsFetched")) {
+    if (falsyValue("hostsFetched") || true) {
+      const hosts = await apiClient("http").getHosts();
+
+      await database.clear(["hosts"]);
+      await database.addHosts(hosts);
+
       settings.set("hostsFetched", JSON.stringify(true));
-      database.addHosts(await apiClient("http").getHosts());
     }
 
-    if (falsyValue("tutorsFetched")) {
+    if (falsyValue("tutorsFetched") || true) {
+      const tutors = await apiClient("http").getTutors();
+
+      await database.clear(["tutors"]);
+      await database.addTutors(tutors);
+
       settings.set("tutorsFetched", JSON.stringify(true));
-      database.addTutors(await apiClient("http").getTutors());
     }
   };
 
