@@ -13,7 +13,10 @@ class VisibleError {
     error === false ? "hidden" : "",
   );
 
-  readonly snackbarError = writable<false | { icon?: string; text: string }>({
+  readonly snackbarError = writable<
+    false | { error: boolean; icon?: string; text: string }
+  >({
+    error: false,
     text: "",
   });
 
@@ -46,8 +49,8 @@ class VisibleError {
     return timeoutPromise(seconds * 1000);
   };
 
-  snackbar = (text: string, icon?: string, seconds = 10) => {
-    this.snackbarError.set({ icon, text });
+  snackbar = (text: string, error = true, icon?: string, seconds = 10) => {
+    this.snackbarError.set({ error, icon, text });
     ui(ui_object.snackbarElement, seconds * 1000);
   };
 }

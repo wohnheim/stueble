@@ -3,8 +3,9 @@
 
   import type { HostOrTutor } from "$lib/api/types";
 
-  import Badge from "../Badge.svelte";
-  import Button from "../Button.svelte";
+  import Avatar from "$lib/components/Avatar.svelte";
+  import Badge from "$lib/components/Badge.svelte";
+  import Button from "$lib/components/Button.svelte";
 
   let {
     host,
@@ -21,12 +22,7 @@
 
 <Button {onclick}>
   <div>
-    <img
-      class="circle medium"
-      style="height: 45px; width: 45px;"
-      alt="Avatar"
-      draggable="false"
-    />
+    <Avatar residence={host.residence} />
 
     {#if selected}
       <Badge user />

@@ -23,7 +23,12 @@
   );
 </script>
 
-<div bind:this={ui_object.snackbarElement} class="snackbar error">
+<div
+  bind:this={ui_object.snackbarElement}
+  class="snackbar {$snackbarError !== false && $snackbarError.error
+    ? 'error'
+    : ''}"
+>
   {#if $snackbarError !== false}
     <i>{$snackbarError.icon}</i>
     <span>{$snackbarError.text}</span>
