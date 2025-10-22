@@ -40,7 +40,8 @@
           },
         );
       } catch (e) {
-        ui_object.closeDialog(false);
+        properties.description =
+          "Fehlende Berechtigung beim Zugriff auf die Kamera. Stelle sicher, dass der Browser und die Webseite die Kamera-Berechtigung besitzen, oder wechsle den Browser.";
       }
     }
   });

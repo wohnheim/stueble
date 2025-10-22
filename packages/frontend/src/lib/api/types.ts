@@ -92,6 +92,11 @@ export const stuebleStatus = z.object({
     registrationStartsAt: z.iso.datetime().optional(),
     registered: z.boolean(),
     present: z.boolean(),
+    invitedGuests: z.optional(z.array(z.object({
+      id: z.string(),
+      firstName: z.string(),
+      lastName: z.string()
+    }))),
   }),
   // reqId,
 });
