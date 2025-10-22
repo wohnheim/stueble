@@ -38,5 +38,5 @@ def is_single_success(result: GenericSuccess | SingleSuccess | GenericFailure) -
 
 # Error convertion
 
-def error_to_failure(error: GenericError) -> GenericFailure:
+def error_to_failure(error: dict) -> dict:
   return {"success": False, "error": str(error['error'])}

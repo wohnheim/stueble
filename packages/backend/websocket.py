@@ -629,7 +629,7 @@ async def request_qrcode(websocket, msg, req_id):
     user_uuid = result["data"][1]
     extern = result["data"][2] == "extern"
 
-    result = events.check_guest(cursor=cursor,
+    result = users.check_guest(cursor=cursor,
                                 user_id=user_id,
                                 stueble_id=stueble_id)
     close_conn_cursor(conn, cursor)

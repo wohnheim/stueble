@@ -1,17 +1,14 @@
 from packages.backend.sql_connection import database as db
 from packages.backend import hash_pwd
 
+# set the password for the admin account
 pwd_hes = input("Bitte gib ein Passwort für das Administratorenkonto ein: ")
-# pwd_hirte = os.getenv("ADMIN_PASSWORD_HIRTE")
-
 if not pwd_hes:
     raise Exception("Please set pwd_hes")
-# if not pwd_hirte:
-#     raise Exception("Please set pwd_hirte")
 
+# create the admin account
 conn, cursor = db.connect()
 password_hes = hash_pwd.hash_pwd(pwd_hes)
-# password_hirte = hash_pwd.hash_pwd(pwd_hirte)
 result = db.insert_table(
     cursor=cursor,
     table_name="users",
@@ -20,16 +17,5 @@ result = db.insert_table(
 if result["success"] is False:
     raise result["error"]
 
-"""
-result = db.insert_table(
-    connection=conn,
-    cursor=cursor,
-    table_name="users",
-    arguments={"user_role":"admin",  "room": 0, "residence": "hirte", "first_name": "Hirte", "last_name": "Admin", "email": "tutorenhirte@gmail.com", "user_name": "admin hirte", "password_hash": password_hirte},
-    returning_column="id")
-
-if result["success"] is False:
-    raise result["error"]
-"""
-
+# print success message
 print("Admin user added.")

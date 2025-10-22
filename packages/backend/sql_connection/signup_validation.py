@@ -1,20 +1,7 @@
-from typing import Literal, TypedDict
-
 from psycopg2.extensions import cursor
 
 from packages.backend.data_types import Email, Residence, UserRole
 from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import error_to_failure
-
-class FailureWithStatus(TypedDict):
-    success: Literal[False]
-    error: str
-    status: int
-
-class SuccessWithStatus(TypedDict):
-    success: Literal[True]
-    status: int
-    warning: str | None
 
 def validate_user_data(cursor: cursor,
                        user_role: UserRole,
@@ -23,7 +10,7 @@ def validate_user_data(cursor: cursor,
                        first_name: str,
                        last_name: str,
                        email: Email,
-                       user_name: str) -> SuccessWithStatus | FailureWithStatus:
+                       user_name: str) -> dict:
     """
     Validate user data for signup.
 
@@ -42,23 +29,33 @@ def validate_user_data(cursor: cursor,
               'success' is True if all validations pass, otherwise False with an appropriate error message.
               'status' is 200 for success, 400 for client errors, and 500 for server errors.
     """
+
+    # check, whether user_role is admin
     if not isinstance(user_role, UserRole) or (user_role.value == "admin"):
         return {"success": False, "error": "Invalid user role, admin not allowed", "status": 400}
+
+    # check, whether room is actually a valid number
     try:
         room = int(room)
     except ValueError:
         return {"success": False, "error": "Room must be a number", "status": 400}
 
+    # check, whether residence is of the correct instance
     if not isinstance(residence, Residence):
         return {"success": False, "error": "Invalid residence", "status": 400}
 
+    # first_name and last_name have to be specified and can't be empty
     if not first_name or not last_name:
         return {"success": False, "error": "First name and last name cannot be or None", "status": 400}
 
+    # check whether email if of correct instance
     if not isinstance(email, Email):
         return {"success": False, "error": "Invalid email format, must be of type Email", "status": 400}
 
+    # create query
     query = """SELECT email, user_name, room, residence FROM users WHERE email = %s OR user_name = %s OR (room = %s AND residence = %s);"""
+
+    # fetch data
     result = db.custom_call(
         cursor=cursor,
         query=query,

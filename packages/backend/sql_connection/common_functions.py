@@ -1,35 +1,10 @@
 import datetime
-from typing import Literal, TypedDict
-
 from psycopg2.extensions import cursor
 
 from packages.backend.data_types import UserRole
-from packages.backend.sql_connection import database as db, motto, sessions
-from packages.backend.sql_connection.common_types import GenericFailure, error_to_failure
-from packages.backend.sql_connection.conn_cursor_functions import (
-    close_conn_cursor,
-    get_conn_cursor,
-)
+from packages.backend.sql_connection import database as db, sessions
 
-class PermissionCheckData(TypedDict):
-    allowed: bool
-    user_id: int
-    user_role: UserRole
-    user_uuid: str
-
-class PermissionCheckSuccess(TypedDict):
-    success: Literal[True]
-    data: PermissionCheckData
-
-class GetMottoData(TypedDict):
-    motto: str
-    date: str
-
-class GetMottoSuccess(TypedDict):
-    success: Literal[True]
-    data: GetMottoData
-
-def check_permissions(cursor: cursor, session_id: str | None, required_role: UserRole) -> PermissionCheckSuccess | GenericFailure:
+def check_permissions(cursor: cursor, session_id: str | None, required_role: UserRole) -> dict:
     """
     checks whether the user with the given session_id has the required role
     Parameters:
@@ -40,6 +15,7 @@ def check_permissions(cursor: cursor, session_id: str | None, required_role: Use
         dict: {"success": bool, "data": {"allowed": bool, "user_id": int, "user_role": UserRole}, {"success": False, "error": e} if error occurred
     """
 
+    # if session_id is None, return error
     if session_id is None:
         return {"success": False, "error": "The session id must be specified"}
 
@@ -47,7 +23,7 @@ def check_permissions(cursor: cursor, session_id: str | None, required_role: Use
     result = sessions.get_user(cursor=cursor, session_id=session_id)
 
     # if error occurred, return error
-    if (result["success"] is False):
+    if result["success"] is False:
         return result
 
     user_id = result["data"][0]

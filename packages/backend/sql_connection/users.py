@@ -1,26 +1,12 @@
 import enum
 import json
-from typing import Annotated, Any, Literal, TypedDict, cast, overload
+from typing import Annotated
 
 from psycopg2.extensions import cursor
 
 from packages.backend.data_types import Email, Residence, UserRole, VerificationMethod
 from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import (
-    GenericFailure,
-    GenericSuccess,
-    MultipleSuccess,
-    MultipleTupleSuccess,
-    SingleSuccess,
-    SingleSuccessCleaned,
-    error_to_failure,
-    is_single_success,
-)
 from packages.backend.sql_connection.ultimate_functions import clean_single_data
-
-class AddRemoveUserSuccess(TypedDict):
-    success: Literal[True]
-    data: int
 
 def add_user(cursor: cursor,
              user_role: UserRole,
@@ -31,7 +17,7 @@ def add_user(cursor: cursor,
              residence: Residence | None = None,
              email: Email | None = None,
              password_hash: str | None = None,
-             user_name: str | None = None) -> AddRemoveUserSuccess | GenericSuccess | GenericFailure:
+             user_name: str | None = None) -> dict:
     """
     adds a user to the table users
 
@@ -40,7 +26,7 @@ def add_user(cursor: cursor,
         user_role (UserRole): available roles for the user
         first_name (str): first name of the user
         last_name (str): last name of the user
-        returning (str): which column to return
+        returning_column (str): which column to return
         room (str | int | None): room of the user
         residence (Residence | None): residence of the user
         email (Email | None): email of the user
@@ -74,7 +60,7 @@ def add_user(cursor: cursor,
         returning_column=returning_column)
 
     if result["success"] is False:
-        return error_to_failure(result)
+        return result
     if is_single_success(result):
         if not ", " in returning_column:
             result = clean_single_data(result)
