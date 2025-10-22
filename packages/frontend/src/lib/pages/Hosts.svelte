@@ -18,10 +18,8 @@
     removeFromDatabase,
     page = $bindable(),
     selectedUnfiltered = $bindable(),
-    selected,
     searchInput = $bindable(),
     searchResultsUnfiltered = $bindable(),
-    searchResults,
   }: {
     title: string;
     subtitle?: string;
@@ -32,11 +30,17 @@
     removeFromDatabase: (ids: string[]) => Promise<void>;
     page: "list" | "add";
     selectedUnfiltered: HostOrTutor[];
-    selected: HostOrTutor[];
     searchInput: string;
     searchResultsUnfiltered: HostOrTutor[];
-    searchResults: HostOrTutor[];
   } = $props();
+
+  let selected = $derived(
+    selectedUnfiltered.filter((u) => !elements.some((h) => u.id == h.id)),
+  );
+
+  let searchResults = $derived(
+    searchResultsUnfiltered.filter((u) => !elements.some((h) => u.id == h.id)),
+  );
 
   let searchInputElement = $state<HTMLInputElement>();
 

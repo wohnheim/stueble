@@ -10,18 +10,8 @@
 
   let hostsPage = $state<"list" | "add">("list");
   let hostsSelectedUnfiltered = $state<HostOrTutor[]>([]);
-  let hostsSelected = $derived(
-    hostsSelectedUnfiltered.filter(
-      (u) => !database.hosts.some((h) => u.id == h.id),
-    ),
-  );
   let hostsSearchInput = $state("");
   let hostsSearchResultsUnfiltered = $state<HostOrTutor[]>([]);
-  let hostsSearchResults = $derived(
-    hostsSearchResultsUnfiltered.filter(
-      (u) => !database.hosts.some((h) => u.id == h.id),
-    ),
-  );
 
   onMount(() => {
     ui_object.largeDialog?.addEventListener("close", () => {
@@ -54,10 +44,8 @@
         elements={database.hosts}
         bind:page={hostsPage}
         bind:selectedUnfiltered={hostsSelectedUnfiltered}
-        selected={hostsSelected}
         bind:searchInput={hostsSearchInput}
         bind:searchResultsUnfiltered={hostsSearchResultsUnfiltered}
-        searchResults={hostsSearchResults}
       />
     {:else}
       <Hosts
@@ -69,10 +57,8 @@
         elements={database.tutors}
         bind:page={hostsPage}
         bind:selectedUnfiltered={hostsSelectedUnfiltered}
-        selected={hostsSelected}
         bind:searchInput={hostsSearchInput}
         bind:searchResultsUnfiltered={hostsSearchResultsUnfiltered}
-        searchResults={hostsSearchResults}
       />
     {/if}
   {/if}
