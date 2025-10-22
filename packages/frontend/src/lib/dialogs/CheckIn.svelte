@@ -2,6 +2,7 @@
   import { apiClient, networkError } from "$lib/api/client";
   import { database } from "$lib/lib/database.svelte";
   import { ui_object, type DialogCheckIn } from "$lib/lib/UI.svelte";
+  import { capitalizeFirstLetter } from "$lib/lib/utils";
 
   let guest = $derived((ui_object.dialogProperties as DialogCheckIn).guest);
 
@@ -68,8 +69,11 @@
 
 {#if !guest.extern && !guest.verified}
   <ul>
-    <li>Möchtest du diese Person einlassen?</li>
-    <li>Kannst du den Namen dieser Person bestätigen?</li>
+    <li>
+      Bewohner: {guest.roomNumber}
+      {capitalizeFirstLetter(guest.residence)}
+    </li>
+    <li>Möchtest du die Identität dieser Person bestätigen?</li>
   </ul>
 
   <nav id="buttons" class="right-align">
@@ -93,7 +97,22 @@
     >
   </nav>
 {:else}
-  <p>Möchtest du diese Person einlassen?</p>
+  <ul>
+    <li>
+      {#if guest.extern}
+        {@const invitingGuest = database.guests.find(
+          (g) => g.id == guest.invitedBy,
+        )}
+        Eingeladen von {invitingGuest !== undefined
+          ? `${invitingGuest.firstName} ${invitingGuest.lastName}`
+          : "den Tutoren"}
+      {:else}
+        Bewohner: {guest.roomNumber}
+        {capitalizeFirstLetter(guest.residence)}
+      {/if}
+    </li>
+    <li>Möchtest du diese Person einlassen?</li>
+  </ul>
 
   <nav id="buttons" class="right-align">
     <button
