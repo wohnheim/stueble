@@ -25,6 +25,7 @@ from packages.backend.mail_assets import templates
 from packages.backend.sql_connection.common_functions import check_permissions
 from packages.backend.sql_connection.conn_cursor_functions import *
 from packages.backend.sql_connection.signup_validation import validate_user_data
+from packages.backend.basic_functions import *
 
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
 # Initialize connections to database
@@ -2514,34 +2515,6 @@ RESET additional.skip_triggers;"""
 """
 Config management
 """
-
-def snake_to_camel_case(snake_case: str):
-    """
-    turns snake_case into camelCase
-    Parameters:
-        snake_case (str): the snake_case string
-    Returns:
-        str: the camelCase string
-    """
-    camel_case = re.sub(r"_([a-z])", lambda m: m.group(1).upper(), snake_case)
-    if "Qr" in camel_case:
-        camel_case = camel_case.replace("Qr", "QR")
-    return camel_case
-
-
-
-def camel_to_snake_case(camel_case: str):
-    """
-    turns camelCase into snake_case
-    Parameters:
-        camel_case (str): the camelCase string
-    Returns:
-        snake_case (str): the snake_case string
-    """
-    snake_case = re.sub(r'(?<!^)(?=[A-Z])', '_', camel_case).lower()
-    if "_q_r_" in snake_case:
-        snake_case = snake_case.replace("_q_r_", "_qr_")
-    return snake_case
 
 @app.route("/config", methods=["GET", "POST"])
 def config():
