@@ -347,6 +347,7 @@ async def handle_ws(websocket):
                          "message": "reqId must be specified"})
                 await request_public_key(websocket=websocket, req_id=req_id)
             elif event == "acknowledgement":
+                continue
                 if res_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
                          "message": "resId must be specified"})
