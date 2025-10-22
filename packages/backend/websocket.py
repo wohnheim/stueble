@@ -1,8 +1,9 @@
+# TODO: update_hosts_tutors doesn't remove sessions correctly
 import asyncio
 import base64
 import os
 import uuid
-from typing import Literal
+from typing import Annotated, Literal
 
 import websockets
 from websockets.exceptions import ConnectionClosed, ConnectionClosedOK, ConnectionClosedError
@@ -829,6 +830,40 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         pass
     await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
     return {"success": True}
+
+
+async def status(user_id: Annotated[str | int, "Explicit with user_uuid"] = None, user_uuid: Annotated[str | int, "Explicit with user_id"] = None):
+    """
+    sends the capabilities and authorized to the user
+    Authorized not specified
+    Parameters:
+        user_id (str | int): the user id of the user
+        user_uuid (str | int): the user uuid of the user
+    """
+
+    if (user_id is not None and user_uuid is not None) or (user_id is None and user_uuid is None):
+        return {"success": False, "error": "either user_id or user_uuid must be specified"}
+    conn, cursor = get_conn_cursor()
+
+    result = users.get_user(cursor=cursor, user_id=user_id, user_uuid=user_uuid, keywords=["id", "user_role"], expect_single_answer=True)
+    if result["success"] is False:
+        close_conn_cursor(conn, cursor)
+        return result
+
+    capabilities = [i.value for i in get_leq_roles(result["data"][1]) if i.value in ["user", "host", "tutor", "admin"]]
+
+    data = {"code": "200",
+            "capabilities": capabilities}
+    
+    result = sessions.get_session_ids(cursor=cursor, user_id=user_id)
+    close_conn_cursor(conn, cursor)
+    if result["success"] is False:
+        return result
+    session_ids = result["data"]
+    for sid in session_ids:
+        websocket = get_websocket_by_sid(sid=sid)
+        if websocket is not None:
+            asyncio.run(send(websocket=websocket, event="status", data=data))
 
 
 # Start server
