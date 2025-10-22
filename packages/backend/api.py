@@ -2577,7 +2577,7 @@ def config():
             return response
 
         # send websocket message to all admins
-        asyncio.run(ws.broadcast(event="configUpdate", data=data, room=ws.Room.ADMINS, skip_sid=session_id))
+        # asyncio.run(ws.broadcast(event="configUpdate", data=data, room=ws.Room.ADMINS, skip_sid=session_id))
     # Method GET & POST
     result = configs.get_all_configurations(cursor=cursor)
     close_conn_cursor(conn, cursor)
