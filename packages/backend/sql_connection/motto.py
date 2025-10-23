@@ -113,19 +113,31 @@ def create_stueble(cursor: cursor, date: date, motto: str,
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occurred
     """
 
+
     arguments: dict[str, Any] = {"date_of_time": date, "motto": motto}
     if shared_apartment is not None:
         arguments["shared_apartment"] = shared_apartment
     if description is not None:
         arguments["description"] = description
-
-    result = db.insert_table(
-        cursor=cursor,
-        table_name="stueble_motto",
-        arguments=arguments,
-        returning_column="id"
-    )
-
+    
+    if arguments["date_of_time"] is None:
+        del arguments["date_of_time"]
+        query = f"""INSERT INTO stueble_motto (date_of_time, {', '.join(arguments.keys())}) 
+        VALUES (CURRENT_DATE + ((2 + EXTRACT(DOW FROM CURRENT_DATE)) %% 7) * INTERVAL '1 day', {', '.join('%s' for _ in range(len(arguments)))})
+        RETURNING id"""
+        result = db.custom_call(
+            cursor=cursor, 
+            query=query, 
+            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER, 
+            variables=list(arguments.values())
+        )
+    else:
+        result = db.insert_table(
+            cursor=cursor,
+            table_name="stueble_motto",
+            arguments=arguments,
+            returning_column="id"
+        )
     if result["success"] is False:
         return error_to_failure(result)
     if result["data"] is None:
