@@ -28,3 +28,4 @@ DBNAME: stueble_data
 - Email von Gästen nicht speichern
 - testing
 - Add timelimit to host role
+- For wrapper db closing do not return conn, cursor in funcs but rather in finally block do tryp except
