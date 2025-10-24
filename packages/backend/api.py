@@ -2,10 +2,8 @@
 # TODO: forbid to remove host capabilities during stueble since: user -> present -> host -> host_removed, now not on guest list any more
 
 import asyncio
-import base64
 import datetime
 import json
-import os
 
 from flask import Flask, Response, request
 
@@ -554,15 +552,8 @@ def reset_password_mail():
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
-            status=500,
-            mimetype="application/json")
-        return response
-    if result["data"] is None:
-        close_conn_cursor(conn, cursor)
-        response = Response(
-            response=json.dumps({"code": 404, "message": "No user with the given email exists"}),
-            status=404,
+            response=json.dumps({"code": 500 if result["error"] != "No matching user found" else 404, "message": str(result["error"])}),
+            status=500 if result["error"] != "No matching user found" else 404,
             mimetype="application/json")
         return response
     user_id = result["data"][0]
@@ -753,7 +744,7 @@ def change_user_data():
         if username is None:
             close_conn_cursor(conn, cursor)
             response = Response(
-                response=json.dumps({"code": 400, "message": f"Username must be specified"}),
+                response=json.dumps({"code": 400, "message": "Username must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
@@ -860,7 +851,7 @@ def guest_change():
 
     if session_id is None or user_uuid is None or present is None:
         response = Response(
-            response=json.dumps({"code": 401, "message": f"The session id, uuid, present must be specified"}),
+            response=json.dumps({"code": 401, "message": "The session id, uuid, present must be specified"}),
             status=401,
             mimetype="application/json")
         return response
