@@ -7,3 +7,4 @@ venv
 .idea
 .vscode
 packages/backend/api.py.save
+*:Zone.Identifier
