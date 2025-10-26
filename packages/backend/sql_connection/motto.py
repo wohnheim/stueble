@@ -113,7 +113,6 @@ def create_stueble(cursor: cursor, date: date, motto: str,
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occurred
     """
 
-
     arguments: dict[str, Any] = {"date_of_time": date, "motto": motto}
     if shared_apartment is not None:
         arguments["shared_apartment"] = shared_apartment
