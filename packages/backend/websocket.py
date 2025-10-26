@@ -350,8 +350,8 @@ async def handle_ws(websocket):
                 continue
                 if res_id is None:
                     await send(websocket=websocket, event="error", data={"code": "400",
-                         "message": "resId must be specified"})
-                await acknowledgement(websocket=websocket, res_id=res_id)
+                        "message": "resId must be specified"})
+                # await acknowledgement(websocket=websocket, res_id=res_id)
     finally:
         host_upwards_room.discard(websocket)
         admins_room.discard(session_id)
