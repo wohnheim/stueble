@@ -352,6 +352,8 @@ async def handle_ws(websocket):
                     await send(websocket=websocket, event="error", data={"code": "400",
                         "message": "resId must be specified"})
                 # await acknowledgement(websocket=websocket, res_id=res_id)
+    except:
+        pass
     finally:
         host_upwards_room.discard(websocket)
         admins_room.discard(session_id)
