@@ -584,7 +584,7 @@ def reset_password_mail():
 
     result = templates.reset_password(first_name=first_name, last_name=last_name, reset_token=reset_token)
 
-    result = mail.send_mail(recipient=email, subject=result["subject"], body=result["body"], images=result["images"])
+    result = mail.send_mail(recipient=email, subject=result["subject"], body=result["body"], images=result["images"], html=True)
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
