@@ -1,6 +1,7 @@
 <script lang="ts">
   import { apiClient, networkError } from "$lib/api/client";
   import { database } from "$lib/lib/database.svelte";
+  import { error } from "$lib/lib/error";
   import { ui_object, type DialogCheckIn } from "$lib/lib/UI.svelte";
   import { capitalizeFirstLetter } from "$lib/lib/utils";
 
@@ -15,7 +16,8 @@
       if (g === undefined) g = guest;
 
       const modifiedGuest = { ...g, verified: true };
-      database.addGuests([modifiedGuest]);
+      await database.addGuests([modifiedGuest]);
+      error.snackbar("Check-In erfolgreich", false, "check");
     } catch (e) {
       if (networkError(e)) {
         database.addToBuffer({
