@@ -20,12 +20,15 @@
 
   const routeSetup = z.object({
     main: z.enum(["setup"]),
-    sub: z.enum(["login", "register", "email"]).optional(),
+    sub: z.enum(["login", "register", "email", "password-reset"]).optional(),
   });
 
   const routing = new Routing(routeSetup, { main: "setup" });
+  let resetStage = $state<"request-token" | "reset-password">("request-token");
 
   /* Input state */
+
+  let token = $state("");
 
   let firstNameValid = $state(true);
   let lastNameValid = $state(true);
@@ -33,11 +36,13 @@
   let roomNumberValid = $state(true);
   let passwordValid = $state(true);
   let usernameValid = $state(true);
+  let tokenValid = $state(true);
 
   let emailValid = $state(true);
   let emailInput = $state<HTMLInputElement>();
 
   let privacyPolicy = $state(false);
+  let passwordResetTokenInputDisabled = $state(false);
 
   /* Input validation */
 
@@ -58,6 +63,11 @@
   let loginButtonDisabled = $derived(
     ui_object.userParams.username == "" || ui_object.userParams.password == "",
   );
+  let resetButtonDisabled = $derived(
+    (resetStage == "request-token" && ui_object.userParams.username == "") ||
+      (resetStage == "reset-password" &&
+        (token == "" || ui_object.userParams.password == "")),
+  );
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Enter") {
@@ -65,6 +75,12 @@
         register();
       } else if (routing.path.sub == "login" && !loginButtonDisabled) {
         login();
+      } else if (routing.path.sub == "password-reset" && !resetButtonDisabled) {
+        if (resetStage == "request-token") {
+          passwordReset();
+        } else {
+          confirmPasswordReset();
+        }
       }
     }
   };
@@ -105,6 +121,25 @@
       ui_object.userParams.username,
     );
 
+    if (res) routing.changePath({ main: "setup", sub: "email" });
+  };
+
+  const passwordReset = async () => {
+    const res = await apiClient("http").resetPassword(
+      ui_object.userParams.username,
+    );
+
+    if (res) {
+      resetStage = "reset-password";
+    }
+  };
+
+  const confirmPasswordReset = async () => {
+    const res = await apiClient("http").confirmPasswordReset(
+      token,
+      ui_object.userParams.password,
+    );
+
     if (res) {
       localStorage.setItem("loggedIn", "true");
 
@@ -112,12 +147,22 @@
       await settings.clear();
       await database.init();
       await database.clear();
-      routing.changePath({ main: "setup", sub: "email" });
+      location.href = "/";
     }
   };
 
   onMount(() => {
-    if (!loaded) loaded = true;
+    if (!loaded) {
+      loaded = true;
+
+      const tmpToken = page.url.searchParams.get("token");
+      if (tmpToken !== null) {
+        token = tmpToken;
+
+        resetStage = "reset-password";
+        passwordResetTokenInputDisabled = true;
+      }
+    }
   });
 
   $effect(() => {
@@ -214,6 +259,94 @@
 
           <button class="large" disabled={loginButtonDisabled} onclick={login}
             >Anmelden</button
+          >
+
+          <div class="max top-margin secondary-text">
+            <!-- svelte-ignore a11y_missing_attribute, a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
+            <a
+              onclick={() =>
+                routing.changePath({ main: "setup", sub: "password-reset" })}
+              >Passwort vergessen?</a
+            >
+          </div>
+        {:else if routing.path.sub == "password-reset"}
+          <h5>Passwort zurücksetzen</h5>
+          <div class="space"></div>
+
+          {#if resetStage == "request-token" || ui_object.userParams.username != ""}
+            <div
+              class="max field border round label {usernameValid
+                ? ''
+                : 'invalid suffix'}"
+            >
+              <input
+                bind:value={ui_object.userParams.username}
+                disabled={resetStage == "reset-password"}
+                onchange={() =>
+                  (usernameValid = !!ui_object.userParams.username)}
+                onfocusout={() =>
+                  (usernameValid = !!ui_object.userParams.username)}
+              />
+              <!-- svelte-ignore a11y_label_has_associated_control -->
+              <label>E-Mail oder Benutzername</label>
+              {#if !usernameValid}
+                <i>error</i>
+                <span class="error">Ein Benutzername wird benötigt</span>
+              {/if}
+            </div>
+          {/if}
+
+          {#if resetStage == "reset-password"}
+            <div
+              class="max field border round label {tokenValid
+                ? ''
+                : 'invalid suffix'}"
+            >
+              <input
+                bind:value={token}
+                disabled={passwordResetTokenInputDisabled}
+                onchange={() => (tokenValid = !!token)}
+                onfocusout={() => (tokenValid = !!token)}
+              />
+              <!-- svelte-ignore a11y_label_has_associated_control -->
+              <label>Token aus E-Mail</label>
+              {#if !tokenValid}
+                <i>error</i>
+                <span class="error">Ein Token wird benötigt</span>
+              {/if}
+            </div>
+
+            <div
+              class="max field border round label {passwordValid
+                ? ''
+                : 'invalid suffix'}"
+            >
+              <input
+                bind:value={ui_object.userParams.password}
+                onchange={() =>
+                  (passwordValid = !!ui_object.userParams.password)}
+                onfocusout={() =>
+                  (passwordValid = !!ui_object.userParams.password)}
+                type="password"
+              />
+              <!-- svelte-ignore a11y_label_has_associated_control -->
+              <label>Passwort</label>
+              {#if !passwordValid}
+                <i>error</i>
+                <span class="error">Ein Passwort wird benötigt</span>
+              {/if}
+            </div>
+          {/if}
+
+          <button
+            class="large"
+            disabled={resetButtonDisabled}
+            onclick={resetStage == "request-token"
+              ? passwordReset
+              : confirmPasswordReset}
+            >{resetStage == "request-token"
+              ? "E-Mail anfordern"
+              : "Zurücksetzen"}</button
           >
         {:else}
           <h5>Registrieren</h5>
