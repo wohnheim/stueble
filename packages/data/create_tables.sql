@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS verification_codes (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     reset_code UUID UNIQUE NOT NULL,
     additional_data JSONB DEFAULT NULL, -- to store optional changes in users
+    used BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
