@@ -160,6 +160,37 @@ class HTTPClient {
     }
   }
 
+  async resetPassword(user: string) {
+    const res = await fetch("/api/auth/reset_password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user,
+      }),
+    });
+
+    if (res.ok) return true;
+
+    await HTTPClient.parseError(res, "Fehler beim Zurücksetzen");
+    return false;
+  }
+
+  async confirmPasswordReset(token: string, password: string) {
+    const res = await fetch("/api/auth/reset_password_confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        password,
+      }),
+    });
+
+    if (res.ok) return true;
+
+    await HTTPClient.parseError(res, "Fehler beim Zurücksetzen");
+    return false;
+  }
+
   /* Users */
 
   async createUser(user: CreateUserAction["data"]) {

@@ -17,6 +17,8 @@ channels:
   primary:
     address: /
     messages:
+      batch:
+        $ref: "#/components/messages/batch"
       status:
         $ref: "#/components/messages/status"
       stuebleStatus:
@@ -65,6 +67,14 @@ channels:
         $ref: "#/components/messages/error"
 
 operations:
+  receiveBatch:
+    summary: Returns multiple events inside one message.
+    action: receive
+    channel:
+      $ref: "#/channels/primary"
+    messages:
+      - $ref: "#/channels/primary/messages/batch"
+
   receiveStatus:
     summary: Notifies the client about the connection status.
     action: receive
@@ -190,6 +200,36 @@ operations:
 
 components:
   messages:
+    batch:
+      summary: Contains multiple messages.
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: batch
+          data:
+            type: array
+            items:
+              oneOf:
+                - $ref: "#/channels/primary/messages/status"
+                - $ref: "#/channels/primary/messages/stuebleStatus"
+                - $ref: "#/channels/primary/messages/pong"
+                - $ref: "#/channels/primary/messages/acknowledgement"
+                - $ref: "#/channels/primary/messages/guestAdded"
+                - $ref: "#/channels/primary/messages/guestRemoved"
+                - $ref: "#/channels/primary/messages/guestModified"
+                - $ref: "#/components/messages/guestVerification"
+                - $ref: "#/components/messages/hostAdded"
+                - $ref: "#/components/messages/hostRemoved"
+                - $ref: "#/components/messages/tutorAdded"
+                - $ref: "#/components/messages/tutorRemoved"
+                - $ref: "#/components/messages/invitees"
+                - $ref: "#/components/messages/motto"
+                - $ref: "#/components/messages/qrCode"
+                - $ref: "#/components/messages/publicKey"
+                - $ref: "#/components/messages/error"
+
     status:
       summary: Shows connection status (Application-Level).
       description: Needed because even unauthorized connections are being opened.

@@ -104,7 +104,7 @@ def reset_password(first_name: str, last_name: str, reset_token: str):
             <p>hier kannst du ein neues Passwort setzen:</p>
         </br>
         <div style="text-align:center; margin: 20px 0;">
-      <a href="https://stueble.pages.dev/reset_password?token={reset_token}"
+      <a href="https://stueble.pages.dev/setup/password-reset?token={reset_token}"
          style="
            background-color: #0b9a79;
            color: #ffffff;

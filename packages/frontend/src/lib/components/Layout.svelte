@@ -30,7 +30,7 @@
   {/if}
 </main>
 
-{#if ui_object.routing.path.main == "wirte" && ui_object.routing.path.sub == "liste"}
+{#if ui_object.routing.path.main == "wirte" && ui_object.routing.path.sub == "liste" && false}
   <button id="add" class="extend square round extra">
     <i>add</i>
     <span>Hinzufügen</span>
