@@ -624,11 +624,11 @@ def confirm_code():
     conn, cursor = get_conn_cursor()
 
     # check whether reset token exists
-    result = users.confirm_verification_code(cursor=cursor, reset_code=reset_token, expiration_minutes=30)
+    result = users.confirm_verification_code(cursor=cursor, reset_code=reset_token)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 500, "message": str(result["error"])}),
+            response=json.dumps({"code": 500 if str(result["error"]) != "Reset code doesn't exist" else 404, "message": str(result["error"])}),
             status=500,
             mimetype="application/json")
         return response

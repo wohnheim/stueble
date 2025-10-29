@@ -406,9 +406,10 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
 
     arguments = {}
     if expiration_minutes is not None:
-        arguments["conditions"] = {"reset_code": reset_code}
+        arguments["specific_where"] = f"reset_code = %s AND used = FALSE AND created >= NOW() - (%s * INTERVAL '1 minute')"
+        arguments["variables"] = (reset_code, expiration_minutes,)
     else:
-        arguments["specific_where"] = f"reset_code = %s AND created >= NOW() - INTERVAL '{expiration_minutes} minutes'"
+        arguments["specific_where"] = f"reset_code = %s AND created_at >= NOW() - ((SELECT value::int FROM configurations WHERE key = 'reset_code_expiration_minutes') * INTERVAL '1 minute') AND used = FALSE"
         arguments["variables"] = (reset_code,)
     result = db.read_table(
         cursor=cursor,
@@ -422,6 +423,12 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
         return error_to_failure(result)
     if result["data"] is None:
         return {"success": False, "error": "Reset code doesn't exist."}
+    
+    if result["success"] is True:
+        result_insert = db.update_table(cursor=cursor, table_name="verification_codes",
+                                 arguments={"used": True}, conditions={"reset_code": reset_code})
+        if result_insert["success"] is False:
+            return error_to_failure(result_insert)
 
     return result
 
