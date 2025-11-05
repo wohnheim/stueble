@@ -406,7 +406,7 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
 
     arguments = {}
     if expiration_minutes is not None:
-        arguments["specific_where"] = f"reset_code = %s AND used = FALSE AND created >= NOW() - (%s * INTERVAL '1 minute')"
+        arguments["specific_where"] = f"reset_code = %s AND used = FALSE AND created_at >= NOW() - (%s * INTERVAL '1 minute')"
         arguments["variables"] = (reset_code, expiration_minutes,)
     else:
         arguments["specific_where"] = f"reset_code = %s AND created_at >= NOW() - ((SELECT value::int FROM configurations WHERE key = 'reset_code_expiration_minutes') * INTERVAL '1 minute') AND used = FALSE"

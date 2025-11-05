@@ -162,7 +162,7 @@ SELECT
     verified, 
     room, 
     residence, 
-    COALESCE((SELECT event_type FROM events WHERE user_id = users_user_id AND event_type IN ('arrive', 'leave', 'remove') ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive' AS present, 
+    COALESCE((SELECT event_type FROM events WHERE user_id = users_user_id AND event_type IN ('arrive', 'leave', 'remove') AND stueble_id = {stueble_info}ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive' AS present, 
     (SELECT user_uuid FROM users WHERE users.id = invited_by) AS invited_by
 FROM (
     SELECT

@@ -1,6 +1,6 @@
 SELECT cron.schedule(
     '* * * * *', 
-WITH config AS (reset_code_expiration_minutes AS expiration_time;
+WITH config AS (SELECT reset_code_expiration_minutes AS expiration_time;
                 FROM configurations)
 
                 DELETE FROM verification_codes
