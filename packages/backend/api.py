@@ -1913,7 +1913,7 @@ Motto management (GET via WebSocket)
 @app.route("/motto", methods=["POST"])
 def create_stueble():
     """
-    creates a new stueble event
+    creates or modifies a stueble event
     """
 
     # load data
