@@ -99,13 +99,13 @@ def get_info(cursor: cursor, date: date | None=None) -> GetInfoSuccess | Generic
     
     return cast(GetInfoSuccess, cast(object, result))
 
-def create_stueble(cursor: cursor, date: date, motto: str,
+def create_stueble(cursor: cursor, date: date  | None, motto: str,
                    shared_apartment: str | None = None, description: str | None = None) -> SingleSuccessCleaned | GenericFailure:
     """
     creates a new entry in the table stueble_motto
     Parameters:
         cursor: cursor for the connection
-        date (datetime.date): date for which the motto is valid
+        date (datetime.date | None): date for which the motto is valid
         motto (str): motto for the stueble party
         shared_apartment (str): shared apartment for the stueble party, can be None
         description (str): description for the stueble party
@@ -122,7 +122,7 @@ def create_stueble(cursor: cursor, date: date, motto: str,
     if arguments["date_of_time"] is None:
         del arguments["date_of_time"]
         query = f"""INSERT INTO stueble_motto (date_of_time, {', '.join(arguments.keys())}) 
-        VALUES (CURRENT_DATE + ((2 + EXTRACT(DOW FROM CURRENT_DATE)) %% 7) * INTERVAL '1 day', {', '.join('%s' for _ in range(len(arguments)))})
+        VALUES CURRENT_DATE + (10 - EXTRACT(DOW FROM CURRENT_DATE)) % 7 * INTERVAL '1 day', {', '.join('%s' for _ in range(len(arguments)))})
         RETURNING id"""
         result = db.custom_call(
             cursor=cursor, 
