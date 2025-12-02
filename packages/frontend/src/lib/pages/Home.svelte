@@ -35,19 +35,27 @@
 
   <h5 class="primary-text bold medium-margin">{settings.settings["motto"]}</h5>
 
-  {#if !extended}
-    <div id="partial-text" class="no-margin row wrap center-align">
-      <p>{settings.settings["description"]?.split(" ", 7).join(" ")}</p>
-      <button class="chip fill round" onclick={() => (extended = true)}>
-        ...
-      </button>
-    </div>
-  {:else if settings.settings["description"] !== undefined}
-    <p class="no-margin">
-      {#each settings.settings["description"]?.split("\n") as line}
-        {line}<br />
-      {/each}
-    </p>
+  {#if settings.settings["description"]}
+    {#if !extended}
+      <div id="partial-text" class="no-margin row wrap center-align">
+        <p>
+          {settings.settings["description"]
+            ?.split("\n")
+            .at(0)
+            ?.split(" ", 7)
+            .join(" ")}
+        </p>
+        <button class="chip fill round" onclick={() => (extended = true)}>
+          ...
+        </button>
+      </div>
+    {:else}
+      <p class="no-margin">
+        {#each settings.settings["description"]?.split("\n") as line}
+          {line}<br />
+        {/each}
+      </p>
+    {/if}
   {/if}
 
   {#if !hostCapability && !ui_object.status?.registered}
