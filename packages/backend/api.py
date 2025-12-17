@@ -43,7 +43,7 @@ def login():
 
     # load data
     data = request.get_json()
-    
+
     name = data.get("user", None)
     password = data.get("password", None)
 
@@ -61,6 +61,8 @@ def login():
             status=400,
             mimetype="application/json")
         return response
+    else:
+      name = name.lower()
 
     user_email: Email | None = None
     user_name: str | None = None
@@ -85,7 +87,7 @@ def login():
             status=400,
             mimetype="application/json")
         return response
-    
+
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
@@ -159,6 +161,7 @@ def signup_data():
     """
     create a new user
     """
+
     # load data
     data = request.get_json()
 
@@ -187,6 +190,9 @@ def signup_data():
             status=400,
             mimetype="application/json")
         return response
+    else:
+      user_info["email"] = user_info["email"].lower()
+      user_info["user_name"] = user_info["user_name"].lower()
 
     # check, whether user data is valid
     try:
@@ -240,7 +246,7 @@ def signup_data():
     del user_info["password"]
 
     additional_data = user_info
-    
+
     if result["warning"] is not None:
         additional_data["method"] = "update"
     else:
@@ -755,7 +761,7 @@ def change_user_data():
                 status=400,
                 mimetype="application/json")
             return response
-        data["user_name"] = username
+        data["user_name"] = username.lower()
 
     # get user id from session id
     result = users.update_user(cursor=cursor, session_id=session_id,
@@ -893,7 +899,7 @@ def guest_change():
             status=500,
             mimetype="application/json")
         return response
-    
+
     guest_user_id = data["data"][-1]
     data["data"] = data["data"][:-1]
 
@@ -985,7 +991,7 @@ def attend_stueble():
     except:
         date = None
         user_uuid = None
-    
+
     required_role = UserRole.USER
     if user_uuid is not None:
         required_role = UserRole.HOST
@@ -1051,7 +1057,7 @@ def attend_stueble():
             return response
         user_id = result["data"][0]
         user_uuid = result["data"][1]
-    
+
     # get all sessions of user
     result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=True)
     if result["success"] is False:
@@ -1102,7 +1108,7 @@ def attend_stueble():
     if request.method == "PUT":
         # TODO unneccessary
         timestamp = int(datetime.datetime.now().timestamp())
-        
+
         information = {"id": user_uuid, "timestamp": timestamp, "extern": False}
 
         signature = hp.create_signature(message=information)
@@ -1232,7 +1238,7 @@ def invitee():
                     status=403,
                     mimetype="application/json")
                 return response
-        
+
             # check, whether user is present
             result = users.check_user_present(cursor=cursor, user_id=user_id)
             if result["success"] is False:
@@ -1412,7 +1418,7 @@ def invitee():
                     status=500,
                     mimetype="application/json")
                 return response
-            
+
             signature = result["data"]
 
             data = {"data":information,
@@ -1522,7 +1528,7 @@ def user():
             "roomNumber": data[3],
             "residence": data[4],
             "email": data[7],
-            "id": data[0], 
+            "id": data[0],
             "username": data[8]}
 
     close_conn_cursor(conn, cursor)
@@ -1824,7 +1830,7 @@ def search_intern():
             conditions=conditions,
             negated_conditions=negated_conditions,
             expect_single_answer=False) # originally True but since it is handled as list, False is specified
-    
+
     # search user_uuid
     elif "id" in data:
         conditions = {"user_uuid":data["id"]}
@@ -1858,7 +1864,7 @@ def search_intern():
             conditions=conditions,
             negated_conditions=negated_conditions,
             expect_single_answer=False) # originally True but since it is handled as list, False is specified
-        
+
     # search first_name and / or last_name as well as room or residence
     else:
         search_dict = {
@@ -1892,9 +1898,9 @@ def search_intern():
     users = []
     for entry in result["data"]:
 
-        users.append({"first_name": entry[0], 
-                      "last_name": entry[1], 
-                      "id": entry[2], 
+        users.append({"first_name": entry[0],
+                      "last_name": entry[1],
+                      "id": entry[2],
                       "residence": entry[3]})
     users = [{snake_to_camel_case(key): value for key, value in i.items()} for i in users]
 
@@ -1980,7 +1986,6 @@ def create_stueble():
                     status=403,
                     mimetype="application/json")
                 return response
-
             result = motto.create_stueble(cursor=cursor,
                                     date=date,
                                     motto=stueble_motto,
@@ -2023,7 +2028,7 @@ def update_tutors():
             status=401,
             mimetype="application/json")
         return response
-    
+
     data = request.get_json()
     user_uuids = data.get("tutors", None)
 
@@ -2033,10 +2038,10 @@ def update_tutors():
             status=403,
             mimetype="application/json")
         return response
-        
+
     # get conn, cursor
     conn, cursor = get_conn_cursor()
-    
+
     # check permissions, since only admins can change user role
     result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN)
     if result["success"] is False:
@@ -2063,11 +2068,11 @@ def update_tutors():
             status=500,
             mimetype="application/json")
         return response
-    
+
     # clean result data
     tutors_data = result["data"]
     tutors_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3], "user_role": UserRole(i[4]), "user_uuid": i[5]} for i in tutors_data]
-    
+
     # check, whether all users were found
     if len(tutors_data) != len(user_uuids):
         close_conn_cursor(conn, cursor)
@@ -2085,7 +2090,7 @@ def update_tutors():
             status=403,
             mimetype="application/json")
         return response
-    
+
     hosts_removed = []
 
     # changing tutors back to users
@@ -2126,7 +2131,7 @@ def update_tutors():
                             query=query,
                             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
                             variables=[new_role.value, tuple(i["id"] for i in tutors_data)])
-    
+
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2181,7 +2186,7 @@ def update_tutors():
         response = Response(
             status=204)
         return response
-    
+
     response = Response(
         response=json.dumps(tutors_data),
         status=201,
@@ -2200,7 +2205,7 @@ def update_hosts():
             status=401,
             mimetype="application/json")
         return response
-    
+
     data = request.get_json()
     date = data.get("date", None)
     user_uuids = data.get("hosts", None)
@@ -2211,7 +2216,7 @@ def update_hosts():
             status=403,
             mimetype="application/json")
         return response
-    
+
     # get conn, cursor
     conn, cursor = get_conn_cursor()
 
@@ -2231,7 +2236,7 @@ def update_hosts():
             status=403,
             mimetype="application/json")
         return response
-    
+
     result = motto.get_motto(cursor=cursor, date=date)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -2300,7 +2305,7 @@ def update_hosts():
                 status=500,
                 mimetype="application/json")
             return response
-    
+
     query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
     result = db.custom_call(
         cursor=cursor,
@@ -2355,7 +2360,7 @@ def get_hosts_tutors():
             status=401,
             mimetype="application/json")
         return response
-    
+
     try:
         data = request.get_json()
         date = data.get("date", None)
@@ -2381,7 +2386,7 @@ def get_hosts_tutors():
             status=403,
             mimetype="application/json")
         return response
-    
+
     if request.path == "/tutors":
         query = """SELECT user_uuid, first_name, last_name, residence FROM users WHERE user_role = 'tutor'"""
         result = db.custom_call(cursor=cursor,
@@ -2521,7 +2526,7 @@ def config():
             response=json.dumps({"code": 401, "message": "The session id must be specified"}),
             status=401,
             mimetype="application/json")
-        return response        
+        return response
 
     # get connection and cursor
     conn, cursor = get_conn_cursor()
@@ -2551,7 +2556,7 @@ def config():
         values = tuple(value for value in data.values())
 
         params = [elem for i in zip(keys, values) for elem in i] + [tuple(keys)]
-        
+
         query = f"""UPDATE configurations
         SET value = CASE key
         {case_statements}

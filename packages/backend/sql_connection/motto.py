@@ -118,16 +118,16 @@ def create_stueble(cursor: cursor, date: date  | None, motto: str,
         arguments["shared_apartment"] = shared_apartment
     if description is not None:
         arguments["description"] = description
-    
+
     if arguments["date_of_time"] is None:
         del arguments["date_of_time"]
-        query = f"""INSERT INTO stueble_motto (date_of_time, {', '.join(arguments.keys())}) 
-        VALUES CURRENT_DATE + (10 - EXTRACT(DOW FROM CURRENT_DATE)) % 7 * INTERVAL '1 day', {', '.join('%s' for _ in range(len(arguments)))})
+        query = f"""INSERT INTO stueble_motto (date_of_time, {', '.join(arguments.keys())})
+        VALUES (CURRENT_DATE + (10 - EXTRACT(DOW FROM CURRENT_DATE)) %% 7 * INTERVAL '1 day', {', '.join('%s' for _ in range(len(arguments)))})
         RETURNING id"""
         result = db.custom_call(
-            cursor=cursor, 
-            query=query, 
-            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER, 
+            cursor=cursor,
+            query=query,
+            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
             variables=list(arguments.values())
         )
     else:
@@ -137,6 +137,7 @@ def create_stueble(cursor: cursor, date: date  | None, motto: str,
             arguments=arguments,
             returning_column="id"
         )
+
     if result["success"] is False:
         return error_to_failure(result)
     if result["data"] is None:
@@ -177,12 +178,11 @@ def update_stueble(cursor: cursor, date: date | None, **kwargs) -> SingleSuccess
         specific_where=specific_where,
         returning_column="id"
     )
-    
+
     if result["success"] is False:
         return error_to_failure(result)
     if result["data"] is None:
         return {"success": False, "error": "no stueble found"}
-
     return clean_single_data(result)
 
 def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[list[int] | tuple[int] | None, "Explicit with user_uuid"] = None,
@@ -205,9 +205,9 @@ def update_hosts(cursor: cursor, stueble_id: str, method: Literal["add", "remove
 
     if user_uuids is not None:
         query = f"""SELECT id FROM users WHERE user_uuid IN ({', '.join(['%s' for _ in range(len(user_uuids))])})"""
-        result = db.custom_call(cursor=cursor, 
-                       query=query, 
-                       type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
+        result = db.custom_call(cursor=cursor,
+                       query=query,
+                       type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
                        variables=tuple(user_uuids))
         if result["success"] is False:
             return error_to_failure(result)
@@ -241,9 +241,9 @@ def get_hosts(cursor: cursor, stueble_id: int) -> GetHostsSuccess | GenericFailu
     params = ["user_uuid", "first_name", "last_name", "residence"]
 
     query = f"""SELECT {', '.join(['u.' + i for i in params])} FROM hosts h JOIN users u ON u.id = h.user_id WHERE h.stueble_id = %s"""
-    result = db.custom_call(cursor=cursor, 
-                   query=query, 
-                   type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, 
+    result = db.custom_call(cursor=cursor,
+                   query=query,
+                   type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
                    variables=[stueble_id])
     if result["success"] is False:
         return error_to_failure(result)
