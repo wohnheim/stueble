@@ -163,8 +163,8 @@ let
     }
   '';
 in {
-  # Production package
-  package = packageSet.mkVirtualEnv "backend-env" workspace.deps.default;
+  # Backend production package
+  backend = packageSet.mkVirtualEnv "backend-env" workspace.deps.default;
 
   # Development shell (doesn't contain source code)
   shell = let
@@ -225,7 +225,12 @@ in {
       export PGHOST="$PWD"
 
       if [ -e .overmind.sock ]; then
-          overmind quit && sleep 3
+          if overmind status 1>/dev/null; then
+              echo $(($(cat .OVERMIND_REF_COUNT) + 1)) > .OVERMIND_REF_COUNT
+              SKIP_OVERMIND=1
+          else
+              rm -f .overmind.sock
+          fi
       fi
 
       if [ -e .env ]; then
@@ -234,8 +239,6 @@ in {
           set +a
       fi
 
-
-      rm -f .PG_INIT
       if [ ! -d pg_data ]; then 
           CREATE_SCHEMA=1
           initdb 1>/dev/null
@@ -255,8 +258,10 @@ in {
           pg_ctl -s stop
       fi
 
-      trap "overmind quit --socket '$PWD/.overmind.sock'" EXIT
-      overmind start -D
+      trap "if [ ! -e .OVERMIND_REF_COUNT ] || [ \"\$(cat .OVERMIND_REF_COUNT)\" == '1' ]; then rm -f .OVERMIND_REF_COUNT; test -e '$PWD/.overmind.sock' && overmind quit --socket '$PWD/.overmind.sock'; else echo \$((\$(cat .OVERMIND_REF_COUNT) - 1)) > .OVERMIND_REF_COUNT; fi" EXIT
+      if [ "$SKIP_OVERMIND" != "1" ]; then
+          overmind start -D && echo "1" > .OVERMIND_REF_COUNT
+      fi
     '';
   };
 }
