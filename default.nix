@@ -6,18 +6,21 @@ let
 
   pyproject-nix = import (builtins.fetchGit {
     url = "https://github.com/pyproject-nix/pyproject.nix.git";
+    rev = "eb204c6b3335698dec6c7fc1da0ebc3c6df05937";
   }) {
     inherit lib;
   };
 
   uv2nix = import (builtins.fetchGit {
     url = "https://github.com/pyproject-nix/uv2nix.git";
+    rev = "482aba340ded40ef557d331315f227d5eba84ced";
   }) {
     inherit pyproject-nix lib;
   };
 
   pyproject-build-systems = import (builtins.fetchGit {
     url = "https://github.com/pyproject-nix/build-system-pkgs.git";
+    rev = "c37f66a953535c394244888598947679af231863";
   }) {
     inherit pyproject-nix uv2nix lib;
   };
@@ -138,22 +141,22 @@ let
       absolute_redirect off;
 
       server {
-        listen 0.0.0.0:${lib.toString webserverPort};
-        listen [::0]:${lib.toString webserverPort};
+        listen 0.0.0.0:${builtins.toString webserverPort};
+        listen [::0]:${builtins.toString webserverPort};
         server_name stueble.localhost;
 
         location / {
-          proxy_pass http://localhost:${lib.toString frontendPort};
+          proxy_pass http://localhost:${builtins.toString frontendPort};
           include ${recommendedProxyConfig};
         }
 
         location /api/ {
-          proxy_pass http://localhost:${lib.toString backendPort}/;
+          proxy_pass http://localhost:${builtins.toString backendPort}/;
           include ${recommendedProxyConfig};
         }
 
         location /api/websocket {
-          proxy_pass http://localhost:${lib.toString websocketPort};
+          proxy_pass http://localhost:${builtins.toString websocketPort};
           proxy_http_version 1.1;
           proxy_set_header Upgrade $http_upgrade;
           proxy_set_header Connection $connection_upgrade;
@@ -204,11 +207,11 @@ in {
       OVERMIND_NO_PORT = "1";
 
       PGDATABASE = "stueble_data";
-      PGPORT = lib.toString databasePort;
+      PGPORT = builtins.toString databasePort;
       HOST = "127.0.0.1";
-      PORT = lib.toString backendPort;
-      WS_PORT = lib.toString websocketPort;
-      FE_PORT = lib.toString frontendPort;
+      PORT = builtins.toString backendPort;
+      WS_PORT = builtins.toString websocketPort;
+      FE_PORT = builtins.toString frontendPort;
 
       NGINX_CONF = "${pkgs.writeText "nginx.conf" nginxConf}";
 
