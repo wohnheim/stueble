@@ -1,5 +1,5 @@
-from packages.backend.sql_connection import database as db
-from packages.backend import hash_pwd
+from backend.sql_connection import database as db
+from backend import hash_pwd
 
 pwd_hes = input("Bitte gib ein Passwort für das Administratorenkonto ein: ")
 # pwd_hirte = os.getenv("ADMIN_PASSWORD_HIRTE")

@@ -1,4 +1,4 @@
-from packages.backend.sql_connection.common_types import (
+from backend.sql_connection.common_types import (
     SingleSuccess,
     SingleSuccessCleaned,
 )

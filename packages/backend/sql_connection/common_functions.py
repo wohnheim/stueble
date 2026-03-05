@@ -3,10 +3,10 @@ from typing import Literal, TypedDict
 
 from psycopg2.extensions import cursor
 
-from packages.backend.data_types import UserRole
-from packages.backend.sql_connection import database as db, motto, sessions
-from packages.backend.sql_connection.common_types import GenericFailure, error_to_failure
-from packages.backend.sql_connection.conn_cursor_functions import (
+from backend.data_types import UserRole
+from backend.sql_connection import database as db, motto, sessions
+from backend.sql_connection.common_types import GenericFailure, error_to_failure
+from backend.sql_connection.conn_cursor_functions import (
     close_conn_cursor,
     get_conn_cursor,
 )

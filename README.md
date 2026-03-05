@@ -1,4 +1,4 @@
-# stueble
+# Stüble
 This repo manages the automatic access system for the stueble.
 It is splitted into frontend, backend and data (persistent data management).
 
@@ -17,14 +17,7 @@ HOST: localhost<br>
 PORT 5432<br>
 DBNAME: stueble_data
 
-# TODOs
-- Tablet mit akzeptabler Kamera und SIM kaufen
-- https://www.saturn.de/de/product/_lenovo-b2b-lenovo-tab-lte-business-tablet-64-gb-101-zoll-luna-grey-2980027.html
-- Accountsperre einrichten
-- Superadmin erstellen (mit eigenem Login)
-- Benutzername, change username
-- Passwort zurücksetzen
-- Email, Room, Residence nicht für Hosts nicht einsehbar, bereitstellen, wer eingeladen hat
-- Email von Gästen nicht speichern
-- testing
-- Add timelimit to host role
+## TODO
+- Benutzername ändern (UI)
+- Einladende Person anzeigen (UI)
+- Wirte-Berechtigung nach einer bestimmten Zeit entfernen (Backend)

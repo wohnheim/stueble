@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import psycopg2 as pg
 from psycopg2.extensions import connection, cursor
 
-from packages.backend.sql_connection.common_types import (
+from backend.sql_connection.common_types import (
     GenericError,
     GenericSuccess,
     MultipleSuccess,
@@ -17,11 +17,11 @@ from packages.backend.sql_connection.common_types import (
 
 load_dotenv()
 
-USER = os.getenv("USERDB") # stueble (like the linux user name!)
-PASSWORD = os.getenv("PASSWORD")
-HOST = os.getenv("HOST") # localhost
-PORT = os.getenv("PORT") # 5432
-DBNAME = os.getenv("DBNAME") # stueble_data
+USER = os.getenv("PGUSER") # stueble (like the linux user name!)
+PASSWORD = os.getenv("PGPASSWORD")
+HOST = os.getenv("PGHOST") # localhost
+PORT = os.getenv("PGPORT") # 5432
+DBNAME = os.getenv("PGDATABASE") # stueble_data
 
 class ANSWER_TYPE(Enum):
     NO_ANSWER = -1

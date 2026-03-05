@@ -14,17 +14,20 @@ import inspect
 from functools import wraps
 from enum import Enum
 
-from packages.backend.sql_connection.common_functions import check_permissions, get_motto
-from packages.backend.data_types import *
-from packages.backend.sql_connection import events, sessions, database as db, users, motto
-from packages.backend import hash_pwd as hp
+from backend.sql_connection.common_functions import check_permissions, get_motto
+from backend.data_types import *
+from backend.sql_connection import events, sessions, database as db, users, motto
+from backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-from packages.backend.sql_connection.conn_cursor_functions import *
-from packages.backend.basic_functions import *
+from backend.sql_connection.conn_cursor_functions import *
+from backend.basic_functions import *
 
 # load environment variables
 load_dotenv("~/stueble/packages/backend/.env")
+
+HOST = os.getenv("HOST") or "127.0.0.1"
+WS_PORT = os.getenv("WS_PORT") or 3001
 
 # initialize variables
 host_upwards_room = set()
@@ -874,7 +877,7 @@ async def status(user_id: Annotated[str | int, "Explicit with user_uuid"] = None
 
 # Start server
 async def main():
-    async with websockets.serve(handle_ws, "127.0.0.1", 3001, ping_interval=25, ping_timeout=20, close_timeout=9):
+    async with websockets.serve(handle_ws, HOST, WS_PORT, ping_interval=25, ping_timeout=20, close_timeout=9):
         await asyncio.Future()
 
 if __name__ == "__main__":

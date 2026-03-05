@@ -6,9 +6,9 @@ import psycopg2
 from psycopg2.extensions import connection, cursor
 import requests
 
-from packages.backend.data_types import Event_Notify
-from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection import users
+from backend.data_types import Event_Notify
+from backend.sql_connection import database as db
+from backend.sql_connection import users
 
 def is_valid_event_notify(other):
     if isinstance(other, Event_Notify):

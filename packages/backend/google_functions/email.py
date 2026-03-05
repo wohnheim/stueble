@@ -5,19 +5,20 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Annotated
 
-from packages.backend.data_types import Email
+from backend.data_types import Email
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 import io
 
 env_file_path = os.path.expanduser("~/stueble/packages/backend/.env")
 load_dotenv(env_file_path)
 
-EMAIL_ADDRESS = "stuebleheshirte@gmail.com"
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS") or "stuebleheshirte@gmail.com"
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 # NOTE: Images must have the size, that is specified in the html and cid and Content-ID must match
-def send_mail(recipient: Email, subject: str, body: str, html: bool=False, images: Annotated[tuple[dict[str, str | io.BytesIO]] | None, "Only possible if html is True"] = None):
+def send_mail(recipient: Email, subject: str, body: str, html: bool=False, images: Annotated[tuple[dict[str, str | Path | io.BytesIO]] | None, "Only possible if html is True"] = None):
     """
     Sends an email message.
     Parameters:
@@ -40,7 +41,7 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
         for info in images:
             name = info["name"]
             value = info["value"]
-            if isinstance(value, str):
+            if isinstance(value, str) or isinstance(value, Path):
                 with open(value, "rb") as f:
                     img_mime = MIMEImage(f.read())
             else:

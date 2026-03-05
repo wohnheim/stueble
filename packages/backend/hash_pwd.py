@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from packages.backend.sql_connection.common_types import GenericFailure
+from backend.sql_connection.common_types import GenericFailure
 
 class CreateSignatureSuccess(TypedDict):
     success: Literal[True]

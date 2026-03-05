@@ -4,16 +4,16 @@ from typing import Literal, TypedDict, cast, overload
 from psycopg2.extensions import cursor
 import pytz
 
-from packages.backend.data_types import UserRole
-from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import (
+from backend.data_types import UserRole
+from backend.sql_connection import database as db
+from backend.sql_connection.common_types import (
     GenericFailure,
     GenericSuccess,
     SingleSuccess,
     SingleSuccessCleaned,
     error_to_failure,
 )
-from packages.backend.sql_connection.ultimate_functions import clean_single_data
+from backend.sql_connection.ultimate_functions import clean_single_data
 
 class CreateSessionSuccess(TypedDict):
     success: Literal[True]

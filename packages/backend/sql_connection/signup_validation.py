@@ -2,9 +2,9 @@ from typing import Literal, TypedDict
 
 from psycopg2.extensions import cursor
 
-from packages.backend.data_types import Email, Residence, UserRole
-from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import error_to_failure
+from backend.data_types import Email, Residence, UserRole
+from backend.sql_connection import database as db
+from backend.sql_connection.common_types import error_to_failure
 
 class FailureWithStatus(TypedDict):
     success: Literal[False]

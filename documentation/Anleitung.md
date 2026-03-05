@@ -33,7 +33,7 @@ Um Deine Email-Adresse zu verifizieren, klicke bitte auf <span style="color: ora
 ## Zum Stüble anmelden
 Wenn Du Dich zu einer Stüble-Feier anmelden willst oder eine Freundin mitnehmen willst, erfährst Du hier, wie du vorgehen musst.
 
-1. Besuche die [Stüble-Website](https://stueble.pages.dev) und melde Dich an. 
+1. Besuche die [Stüble-Website](https://stueble.pages.dev) und melde Dich an.
 Danach wirst Du zur Startseite weitergeleitet. </br>
 Klicke nun auf <span style="color: orange; font-weight: bold;">📆 Anmelden</span> in der Mitte der Seite. <p style="line-height:1.5;"></p>
 ![start_page](anleitung_images/start_page.png)
@@ -91,16 +91,16 @@ Du kannst Dir den QR-Code auf der Website anzeigen lassen, nachdem Du Dich für 
 <span style="color: orange; font-weight: bold;">WICHTIG: Du benötigst Deinen Ausweis, um zum Stüble eingelassen zu werden.</span> </br>
 Als externer Gast bekommst Du einen QR-Code per Email zugesendet (falls die Email-Adresse bei der Einladung angegeben wurde). </br>
 Die Email stammt von stuebleheshirte@gmail.com. </br>
-Bitte zeige den QR-Code beim Einlass zum Stüble vor. <p style="line-height:1.5;"></p> 
+Bitte zeige den QR-Code beim Einlass zum Stüble vor. <p style="line-height:1.5;"></p>
 ![email_guest](anleitung_images/email_guest.png)
 
 Falls keine Email-Adresse bei der Einaldung angegeben wurde, musst du beim Einlass deinen Namen nennen. </br></br>
 <span style="color: orange; font-weight: bold;">Jetzt kannst Du das Stüble in vollen Zügen genießen.</span>
 
 ## Einstellungen
-Um zu deinen Einstellungen zu gelangen, klicke auf der linken Seite im Menü auf den Button <span style="color: orange; font-weight: bold;">Einstellungen</span>. <p style="line-height:1.5;"></p> 
-![settings](anleitung_images/settings.png) <p style="line-height:1.5;"></p> 
-Hier siehtst Du deine Account-Daten. 
+Um zu deinen Einstellungen zu gelangen, klicke auf der linken Seite im Menü auf den Button <span style="color: orange; font-weight: bold;">Einstellungen</span>. <p style="line-height:1.5;"></p>
+![settings](anleitung_images/settings.png) <p style="line-height:1.5;"></p>
+Hier siehtst Du deine Account-Daten.
 * Falls Probleme auftreten kannst Du hier mit einem Klick auf <span style="color: orange; font-weight: bold;">Cache leeren</span> einige Probleme beheben.
 * Du kannst Dich auch unter <span style="color: orange; font-weight: bold;">Abmelden</span> von deinem Account abmelden oder ihn unter <span style="color: orange; font-weight: bold;">Account löschen</span> löschen.
 

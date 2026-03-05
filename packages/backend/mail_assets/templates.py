@@ -1,5 +1,7 @@
 import io
-import os
+from pathlib import Path
+
+file_path = Path(__file__).resolve().parent
 
 def stueble_guest(invitee_first_name: str, invitee_last_name: str, first_name: str, last_name: str, stueble_date: str, motto_name: str, qr_code: io.BytesIO) -> dict:
     """
@@ -16,7 +18,7 @@ def stueble_guest(invitee_first_name: str, invitee_last_name: str, first_name: s
     Returns:
         dict: A dictionary containing the subject, body, and images for the email.
     """
-    stueble_logo = os.path.expanduser("~/stueble/packages/backend/mail_assets/images/favicon_150.png")
+    stueble_logo = file_path / "images" / "favicon_150.png"
     image_data = ({"name": "stueble_logo", "value": stueble_logo}, {"name": "qr_code", "value": qr_code})
 
     subject = f"Einladung zum Stüble am {stueble_date}"
@@ -51,7 +53,7 @@ def confirm_email(first_name: str, last_name: str, verification_token: str) -> d
     Returns:
         dict: A dictionary containing the subject, body, and images for the email.
     """
-    stueble_logo = os.path.expanduser("~/stueble/packages/backend/mail_assets/images/favicon_150.png")
+    stueble_logo = file_path / "images" / "favicon_150.png"
     image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
 
     subject = "Neuer Benutzeraccount für das Stüble"
@@ -91,7 +93,7 @@ def confirm_email(first_name: str, last_name: str, verification_token: str) -> d
 def reset_password(first_name: str, last_name: str, reset_token: str):
     """
     """
-    stueble_logo = os.path.expanduser("~/stueble/packages/backend/mail_assets/images/favicon_150.png")
+    stueble_logo = file_path / "images" / "favicon_150.png"
     image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
 
     subject = "Passwort zurücksetzen"

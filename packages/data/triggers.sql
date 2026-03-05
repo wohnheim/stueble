@@ -339,8 +339,8 @@ BEGIN
     THEN
         RETURN NEW;
     END IF;
-    DELETE FROM hosts 
-    WHERE user_id = NEW.id 
+    DELETE FROM hosts
+    WHERE user_id = NEW.id
       AND stueble_id = (
         SELECT id
         FROM stueble_motto
@@ -364,7 +364,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION add_websockets_affected()
 RETURNS trigger AS $$
-DECLARE 
+DECLARE
     affected_users int[] := NULL; -- array of affected user ids
     user_id int := NULLIF(current_setting('additional.user_id', true), '')::int; -- user_id from additional settings if message is just sent to a specific user like stuebleStatus
     affected RECORD; -- for loop variable
@@ -381,7 +381,7 @@ BEGIN
     ELSIF COALESCE(NEW.required_role, 'extern') = 'admin'
     THEN
         affected_users := ARRAY(SELECT id FROM users WHERE user_role = 'admin');
-    
+
     -- specific user
     ELSIF NEW.required_role = NULL OR NEW.required_role = 'user'
     THEN

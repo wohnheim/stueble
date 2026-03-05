@@ -7,10 +7,10 @@ import json
 
 from flask import Flask, Response, request
 
-from packages.backend import hash_pwd as hp, websocket as ws, qr_code as qr
-from packages.backend.data_types import *
-from packages.backend.google_functions import email as mail
-from packages.backend.sql_connection import (
+from backend import hash_pwd as hp, websocket as ws, qr_code as qr
+from backend.data_types import *
+from backend.google_functions import email as mail
+from backend.sql_connection import (
     configs,
     database as db,
     events,
@@ -19,11 +19,11 @@ from packages.backend.sql_connection import (
     sessions,
     users,
 )
-from packages.backend.mail_assets import templates
-from packages.backend.sql_connection.common_functions import check_permissions
-from packages.backend.sql_connection.conn_cursor_functions import *
-from packages.backend.sql_connection.signup_validation import validate_user_data
-from packages.backend.basic_functions import *
+from backend.mail_assets import templates
+from backend.sql_connection.common_functions import check_permissions
+from backend.sql_connection.conn_cursor_functions import *
+from backend.sql_connection.signup_validation import validate_user_data
+from backend.basic_functions import *
 
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
 # Initialize connections to database

@@ -1,10 +1,30 @@
-pyvenv.cfg
-passwords.md
-__pycache__
-do_not_track
-.env
-venv
-.idea
-.vscode
-packages/backend/api.py.save
+.*
+!.git*
+
+# Windows ADS
 *:Zone.Identifier
+
+# IDEs
+.idea/
+.vscode/
+do_not_track
+
+# Secrets
+.env
+passwords.md
+
+# Python
+__pycache__/
+.venv/
+dist/
+
+# Overmind
+.overmind.sock
+logs/
+
+# PostgreSQL
+.s.PGSQL.*
+pg_data/
+
+# Nix
+result

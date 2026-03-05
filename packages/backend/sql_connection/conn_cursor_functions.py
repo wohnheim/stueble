@@ -1,6 +1,6 @@
 from psycopg2.extensions import connection, cursor
 
-from packages.backend.sql_connection.pool import pool
+from backend.sql_connection.pool import pool
 
 def get_conn_cursor() -> tuple[connection, cursor]:
     """
