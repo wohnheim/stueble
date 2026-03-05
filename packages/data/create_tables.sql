@@ -76,7 +76,7 @@ INSERT INTO configurations (key, value) VALUES
 ('session_expiration_days', '30'),
 ('maximum_guests', '150'),
 ('maximum_invites_per_user', '1'),
-('maximum_guests_per_tutor', '10'), 
+('maximum_guests_per_tutor', '10'),
 ('reset_code_expiration_minutes', '15'),
 ('qr_code_expiration_minutes', '10');
 
@@ -121,9 +121,9 @@ CREATE TABLE IF NOT EXISTS websocket_messages (
 );
 
 CREATE TABLE IF NOT EXISTS websockets_affected (
-    id SERIAL PRIMARY KEY, 
+    id SERIAL PRIMARY KEY,
     message_id INTEGER REFERENCES websocket_messages(id) NOT NULL,
-    session_id INTEGER REFERENCES sessions(id) NOT NULL, 
+    session_id INTEGER REFERENCES sessions(id) NOT NULL,
     received BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_DATE
 );

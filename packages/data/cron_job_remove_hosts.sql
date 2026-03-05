@@ -4,4 +4,4 @@ SELECT cron.schedule(
     WHERE user_role = 'host';
     $$);
 
-  -- TODO: UPDATE users SET user_role = 'host' WHERE user_role = 'user' AND 
+  -- TODO: UPDATE users SET user_role = 'host' WHERE user_role = 'user' AND

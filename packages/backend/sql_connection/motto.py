@@ -5,14 +5,14 @@ from psycopg2 import DatabaseError
 from psycopg2.extensions import cursor
 from psycopg2.extras import execute_values
 
-from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import (
+from backend.sql_connection import database as db
+from backend.sql_connection.common_types import (
     GenericFailure,
     GenericSuccess,
     SingleSuccessCleaned,
     error_to_failure,
 )
-from packages.backend.sql_connection.ultimate_functions import clean_single_data
+from backend.sql_connection.ultimate_functions import clean_single_data
 
 class GetMottoSuccess(TypedDict):
     success: Literal[True]

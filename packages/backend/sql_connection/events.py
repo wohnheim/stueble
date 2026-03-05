@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import Literal, TypedDict, cast
 from psycopg2.extensions import cursor
 
-from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import (
+from backend.sql_connection import database as db
+from backend.sql_connection.common_types import (
     GenericFailure,
     error_to_failure,
 )
-from packages.backend.sql_connection.ultimate_functions import clean_single_data
+from backend.sql_connection.ultimate_functions import clean_single_data
 
 class AddGuestSuccess(TypedDict):
     success: Literal[True]

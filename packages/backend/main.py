@@ -4,6 +4,7 @@ Note: Variables WILL be shared between threads - same memory space
 """
 
 import asyncio
+import os
 import signal
 import sys
 import threading
@@ -11,15 +12,18 @@ import time
 
 from waitress import serve
 
-from packages.backend import api
-from packages.backend import websocket
-from packages.backend.sql_connection.conn_cursor_functions import *
-import packages.backend.websocket_runner as ws_runner  # to ensure DB listener is set up
+from backend import api
+from backend import websocket
+from backend.sql_connection.conn_cursor_functions import *
+import backend.websocket_runner as ws_runner  # to ensure DB listener is set up
+
+HOST = os.getenv("HOST") or "127.0.0.1"
+PORT = os.getenv("PORT") or 3000
 
 def run_flask():
     """Run the Flask API server in separate thread"""
     print(f"Starting Flask API server in thread {threading.current_thread().name}...")
-    serve(api.app, host="127.0.0.1", port=3000)
+    serve(api.app, host=HOST, port=PORT)
 
 def run_websocket():
     """Run the WebSocket server in separate thread"""

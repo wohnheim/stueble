@@ -4,9 +4,9 @@ from typing import Annotated, Any, Literal, TypedDict, cast, overload
 
 from psycopg2.extensions import cursor
 
-from packages.backend.data_types import Email, Residence, UserRole, VerificationMethod
-from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import (
+from backend.data_types import Email, Residence, UserRole, VerificationMethod
+from backend.sql_connection import database as db
+from backend.sql_connection.common_types import (
     GenericFailure,
     GenericSuccess,
     MultipleSuccess,
@@ -16,7 +16,7 @@ from packages.backend.sql_connection.common_types import (
     error_to_failure,
     is_single_success,
 )
-from packages.backend.sql_connection.ultimate_functions import clean_single_data
+from backend.sql_connection.ultimate_functions import clean_single_data
 
 class AddRemoveUserSuccess(TypedDict):
     success: Literal[True]

@@ -1,5 +1,5 @@
 SELECT cron.schedule(
-    '* * * * *', 
+    '* * * * *',
 WITH config AS ($$SELECT reset_code_expiration_minutes AS expiration_time;
                 FROM configurations)
 

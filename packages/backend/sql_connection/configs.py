@@ -2,8 +2,8 @@ from typing import Any, Literal, TypedDict
 
 from psycopg2.extensions import cursor
 
-from packages.backend.sql_connection import database as db
-from packages.backend.sql_connection.common_types import (
+from backend.sql_connection import database as db
+from backend.sql_connection.common_types import (
     GenericFailure,
     MultipleSuccess,
     SingleSuccess,
@@ -11,7 +11,7 @@ from packages.backend.sql_connection.common_types import (
     error_to_failure,
     is_single_success,
 )
-from packages.backend.sql_connection.ultimate_functions import clean_single_data
+from backend.sql_connection.ultimate_functions import clean_single_data
 
 class ChangeConfigurationMultipleSuccess(TypedDict):
     success: Literal[True]
