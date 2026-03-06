@@ -7,7 +7,7 @@ def stueble_guest(invitee_first_name: str, invitee_last_name: str, first_name: s
     """
     Returns the email template for inviting a guest to the Stüble event.
 
-    Parameters:
+    Args:
         invitee_first_name (str): First name of the invitee.
         invitee_last_name (str): Last name of the invitee.
         first_name (str): First name of the inviter.
@@ -46,7 +46,7 @@ def stueble_guest(invitee_first_name: str, invitee_last_name: str, first_name: s
 def confirm_email(first_name: str, last_name: str, verification_token: str) -> dict:
     """
     Returns the email template for confirming a user's email address.
-    Parameters:
+    Args:
         first_name (str): First name of the user.
         last_name (str): Last name of the user.
         verification_token (str): The verification token for email confirmation.

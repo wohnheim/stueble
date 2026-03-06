@@ -2,11 +2,10 @@ from datetime import datetime
 from typing import Annotated, Literal, TypedDict
 import uuid
 
-from psycopg2.extensions import cursor
 
 from backend.data_types import EventType
 from backend.data_types import FrontendUserRole
-from backend.sql_connection import database as db
+from backend.database import database as db
 from backend.sql_connection.common_types import GenericFailure, SingleSuccess, error_to_failure
 
 class GuestListPresentData(TypedDict):
@@ -32,13 +31,12 @@ class GuestListSuccess(TypedDict):
     success: Literal[True]
     data: list[GuestListData]
 
-def change_guest(cursor: cursor, event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "Explicit with user_id"] = None,
+def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "Explicit with user_id"] = None,
                  user_id: Annotated[int | None, "Explicit with user_uuid"] = None) -> SingleSuccess | GenericFailure:
     """
     add or remove a guest to the guest_list of present people in events for a stueble party \n
     used when a guest arrives / leaves
-    Parameters:
-        cursor: cursor from connection
+    Args:
         event_type (EventType): type of event
         user_uuid: uuid of guest
         user_id: id of guest
@@ -49,11 +47,10 @@ def change_guest(cursor: cursor, event_type: EventType, user_uuid: Annotated[uui
     
     if user_id is None:
         # get user id from uuid
-        result = db.read_table(
-            cursor=cursor,
-            keywords=["id"],
-            table_name="users",
-            expect_single_answer=True,
+        result = db.select(
+            columns=["id"],
+            table="users",
+            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
             conditions={"user_uuid": str(user_uuid)})
 
         if result["success"] is False:
@@ -64,11 +61,10 @@ def change_guest(cursor: cursor, event_type: EventType, user_uuid: Annotated[uui
         user_id = result["data"][0]
 
     # get stueble_id
-    result = db.read_table(
-        cursor=cursor,
-        keywords=["id"],
-        table_name="stueble_motto",
-        expect_single_answer=True,
+    result = db.select(
+        columns=["id"],
+        table="stueble_motto",
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         specific_where="date_of_time = CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = (CURRENT_DATE - INTERVAL '1 day' ))")
 
     if result["success"] is False:
@@ -79,10 +75,9 @@ def change_guest(cursor: cursor, event_type: EventType, user_uuid: Annotated[uui
     stueble_id = result["data"][0]
 
     # add user to events
-    result = db.insert_table(
-        cursor=cursor,
-        table_name="events",
-        arguments={"user_id": user_id, "event_type": event_type.value, "stueble_id": stueble_id},
+    result = db.insert(
+        table="events",
+        values={"user_id": user_id, "event_type": event_type.value, "stueble_id": stueble_id},
         returning_column="id")
 
     if result["success"] is False:
@@ -92,11 +87,10 @@ def change_guest(cursor: cursor, event_type: EventType, user_uuid: Annotated[uui
 
     return result
 
-def guest_list_present(cursor: cursor, stueble_id: int | None = None) -> GuestListPresentSuccess | GenericFailure:
+def guest_list_present(stueble_id: int | None = None) -> GuestListPresentSuccess | GenericFailure:
     """
     returns list of all guests that are currently present
-    Parameters:
-        cursor: cursor from connection
+    Args:
         stueble_id (int | None): id for a specific stueble party, if None the current stueble party is used
     """
 
@@ -123,7 +117,6 @@ def guest_list_present(cursor: cursor, stueble_id: int | None = None) -> GuestLi
     """
 
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         **parameters)
@@ -137,11 +130,10 @@ def guest_list_present(cursor: cursor, stueble_id: int | None = None) -> GuestLi
         "data": [{"first_name": i[0], "last_name": i[1], "user_role": FrontendUserRole.EXTERN if i[2] == "extern" else FrontendUserRole.INTERN} for i in data]
     }
 
-def guest_list(cursor: cursor, stueble_id: int | None = None) -> GuestListSuccess | GenericFailure:
+def guest_list(stueble_id: int | None = None) -> GuestListSuccess | GenericFailure:
     """
     returns list of all guests that have been at the party
-    Parameters:
-        cursor: cursor from connection
+    Args:
         stueble_id (int | None): id for a specific stueble party, if None the current stueble party is used
     """
 
@@ -188,7 +180,6 @@ WHERE rn = 1
     """
 
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         **parameters)

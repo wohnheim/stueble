@@ -6,7 +6,7 @@ def http_to_data(response: Response) -> bytes:
     """
     Turns an HTTP response into a WebSocket-compatible response.
 
-    Parameters:
+    Args:
         response (Response): The original HTTP response object.
     Returns:
         bytes: A bytes object containing the packed event and response data.

@@ -1,9 +1,7 @@
 from typing import Literal, TypedDict
 
-from psycopg2.extensions import cursor
-
 from backend.data_types import Email, Residence, UserRole
-from backend.sql_connection import database as db
+from backend.database import database as db
 from backend.sql_connection.common_types import error_to_failure
 
 class FailureWithStatus(TypedDict):
@@ -16,8 +14,7 @@ class SuccessWithStatus(TypedDict):
     status: int
     warning: str | None
 
-def validate_user_data(cursor: cursor,
-                       user_role: UserRole,
+def validate_user_data(user_role: UserRole,
                        room: str | int,
                        residence: Residence,
                        first_name: str,
@@ -27,8 +24,7 @@ def validate_user_data(cursor: cursor,
     """
     Validate user data for signup.
 
-    Parameters:
-        cursor: database cursor
+    Args:
         user_role (UserRole): Role of the user, must be one of UserRole except 'admin'.
         room (str | int): Room number, must be convertible to an integer.
         residence (Residence): Residence of the user, must be one of Residence.
@@ -60,7 +56,6 @@ def validate_user_data(cursor: cursor,
 
     query = """SELECT email, user_name, room, residence FROM users WHERE email = %s OR user_name = %s OR (room = %s AND residence = %s);"""
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         variables=[email.email, user_name, room, residence.value],
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
@@ -75,7 +70,6 @@ def validate_user_data(cursor: cursor,
     if len(result["data"]) != 0:
         query = """SELECT email, user_name, room, residence FROM users WHERE (email = %s OR user_name = %s OR (room = %s AND residence = %s)) AND password_hash IS NOT NULL"""
         result = db.custom_call(
-            cursor=cursor,
             query=query,
             variables=[email.email, user_name, room, residence.value],
             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)

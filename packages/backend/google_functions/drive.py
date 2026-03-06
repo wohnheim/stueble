@@ -5,13 +5,13 @@ import datetime
 from zoneinfo import ZoneInfo
 
 from backend import export
-from backend.sql_connection import database as db
+from backend.database import database as db
 from backend.google_functions.authentification import authenticate
 
 def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type: str):
     """
     Upload a file to a specific folder in Google Drive.
-    Parameters:
+    Args:
         file_name (str): The name of the file to be uploaded.
         folder_name (str): The name of the folder where the file will be uploaded; The folder will be created.
         content (str): The content of the file.
@@ -44,23 +44,21 @@ def upload_file_folder(file_name: str, folder_name: str, content: str, mime_type
     except HttpError as error:
         return {"success": False, "error": error}
 
-def export_stueble_guests(cursor, stueble_id: int):
+def export_stueble_guests(stueble_id: int):
     """
     Export the guest list for a specific Stueble event.
-    Parameters:
-        cursor: Database cursor object.
+    Args:
         stueble_id (int): The ID of the Stueble event.
         date (date): The date of the event.
     """
 
     default_tz = ZoneInfo("Europe/Berlin")
 
-    result = db.read_table(
-        cursor=cursor,
-        table_name="stueble_motto",
-        keywords=["date_of_time"],
+    result = db.select(
+        table="stueble_motto",
+        columns=["date_of_time"],
         conditions={"id": stueble_id},
-        expect_single_answer=True)
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
 
     if result["success"] is False:
         return {"success": False, "error": result["error"]}
@@ -76,8 +74,6 @@ def export_stueble_guests(cursor, stueble_id: int):
                 """
 
     result = db.custom_call(
-        connection=None,
-        cursor=cursor,
         query=query,
         variables=[stueble_id],
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
@@ -93,12 +89,11 @@ def export_stueble_guests(cursor, stueble_id: int):
 
     csv = csv["data"]
 
-    result = db.read_table(
-        cursor=cursor,
-        table_name="stueble_motto",
-        keywords=["date_of_time"],
+    result = db.select(
+        table="stueble_motto",
+        columns=["date_of_time"],
         conditions={"id": stueble_id},
-        expect_single_answer=True)
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
     if result["success"] is False:
         return {"success": False, "error": result["error"]}
 

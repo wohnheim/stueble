@@ -7,7 +7,7 @@ from psycopg2.extensions import connection, cursor
 import requests
 
 from backend.data_types import Event_Notify
-from backend.sql_connection import database as db
+from backend.database import database as db
 from backend.sql_connection import users
 
 def is_valid_event_notify(other):
@@ -23,7 +23,7 @@ def listen_to_db(connection: connection, cursor: cursor):
     When a notification is received, it processes the payload and retrieves user information.
     The payload is expected to be a JSON string with keys: event, user_id, stueble_id
 
-    Parameters:
+    Args:
         connection: psycopg2 connection object
         cursor: psycopg2 cursor object
     """
@@ -44,7 +44,7 @@ def listen_to_db(connection: connection, cursor: cursor):
             # event = Event_Notify(event) # only possible events are arrive and leave for notifications to be sent
             user_id = data["user_id"]
             stueble_id = data["stueble_id"]
-            result = users.get_user(cursor=cursor, user_id=user_id, keywords=["first_name", "last_name", "user_uuid"])
+            result = users.get_user(user_id=user_id, columns=["first_name", "last_name", "user_uuid"])
             if result["success"] is False:
                 # TODO catch this, e.g. by sending an error message to api.py
                 warnings.warn(f"Could not get user with id {user_id}")

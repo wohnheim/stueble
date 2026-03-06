@@ -3,7 +3,7 @@ import re
 def snake_to_camel_case(snake_case: str):
     """
     turns snake_case into camelCase
-    Parameters:
+    Args:
         snake_case (str): the snake_case string
     Returns:
         str: the camelCase string
@@ -18,7 +18,7 @@ def snake_to_camel_case(snake_case: str):
 def camel_to_snake_case(camel_case: str):
     """
     turns camelCase into snake_case
-    Parameters:
+    Args:
         camel_case (str): the camelCase string
     Returns:
         snake_case (str): the snake_case string
