@@ -2,10 +2,8 @@ import enum
 import json
 from typing import Annotated, Any, Literal, TypedDict, cast, overload
 
-from psycopg2.extensions import cursor
-
 from backend.data_types import Email, Residence, UserRole, VerificationMethod
-from backend.sql_connection import database as db
+from backend.database import database as db
 from backend.sql_connection.common_types import (
     GenericFailure,
     GenericSuccess,
@@ -22,8 +20,7 @@ class AddRemoveUserSuccess(TypedDict):
     success: Literal[True]
     data: int
 
-def add_user(cursor: cursor,
-             user_role: UserRole,
+def add_user(user_role: UserRole,
              first_name: str,
              last_name: str,
              returning_column: str | None = None,
@@ -35,8 +32,7 @@ def add_user(cursor: cursor,
     """
     adds a user to the table users
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_role (UserRole): available roles for the user
         first_name (str): first name of the user
         last_name (str): last name of the user
@@ -67,10 +63,9 @@ def add_user(cursor: cursor,
         if password_hash is not None: arguments["password_hash"] = password_hash
         if user_name is not None: arguments["user_name"] = user_name
 
-    result = db.insert_table(
-        cursor=cursor,
-        table_name="users",
-        arguments=arguments,
+    result = db.insert(
+        table="users",
+        values=arguments,
         returning_column=returning_column)
 
     if result["success"] is False:
@@ -85,15 +80,14 @@ def add_user(cursor: cursor,
     return result
 
 
-def remove_user(cursor: cursor, user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name"] = None,
+def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name"] = None,
                 user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name"] = None,
                 user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name"] = None) -> AddRemoveUserSuccess | GenericFailure:
     """
     removes a user from the table users \n
     actually not the whole user but just their password will be set to NULL
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int | None): id of the user to be removed
         user_email (Email | None): email of the user to be removed
         user_name (str | None): username of the user to be removed
@@ -111,8 +105,8 @@ def remove_user(cursor: cursor, user_id: Annotated[int | None, "set EITHER user_
     elif user_name is not None:
         conditions["user_name"] = user_name
 
-    result = db.update_table(cursor=cursor, table_name="users",
-                             arguments={"password_hash": None}, conditions=conditions, returning_column="id, user_role")
+    result = db.update(table="users",
+                       columns={"password_hash": None}, conditions=conditions, returning_column="id, user_role")
 
     if result["success"] is False:
         return error_to_failure(result)
@@ -124,7 +118,6 @@ def remove_user(cursor: cursor, user_id: Annotated[int | None, "set EITHER user_
     return {"success": True, "data": int(result["data"][0])}
 
 def update_user(
-        cursor: cursor,
         user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_name_key: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
@@ -133,8 +126,7 @@ def update_user(
     """
     updates a user in the table users
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int | None): id of the user to be updated
         user_email (Email | None): email of the user to be updated
         user_name (str | None): username of the user to be updated
@@ -163,7 +155,7 @@ def update_user(
     else:
         conditions["user_name"] = user_name_key
 
-    result = db.update_table(cursor=cursor, table_name="users", arguments=kwargs,
+    result = db.update(table="users", columns=kwargs,
                              conditions=conditions, returning_column="id")
 
     if result["success"] is False:
@@ -173,73 +165,43 @@ def update_user(
 
     return cast(AddRemoveUserSuccess, clean_single_data(result))
 
-@overload
-def get_user(
-        cursor: cursor,
-        expect_single_answer: Literal[True] = True,
-        user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        user_uuid: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        keywords: tuple[str] | list[str] = ("*",),
-        conditions: Annotated[dict[str, Any] | None, "Explicit with user_id, user_email, select_max_of_key, specific_where"] = None,
-        select_max_of_key: Annotated[str, "Explicit with user_id, user_email, conditions, specific_where"] = "",
-        specific_where: Annotated[str, "Explicit with user_id, user_email, select_max_of_key, conditions"] = "",
-        order_by: Annotated[tuple[str, Literal[0, 1]] | None, "Explicit with expect_single_answer=True"] = None
-    ) -> SingleSuccess | GenericFailure: ...
-
-@overload
-def get_user(
-        cursor: cursor,
-        expect_single_answer: Literal[False],
-        user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        user_uuid: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        keywords: tuple[str] | list[str] = ("*",),
-        conditions: Annotated[dict[str, Any] | None, "Explicit with user_id, user_email, select_max_of_key, specific_where"] = None,
-        select_max_of_key: Annotated[str, "Explicit with user_id, user_email, conditions, specific_where"] = "",
-        specific_where: Annotated[str, "Explicit with user_id, user_email, select_max_of_key, conditions"] = "",
-        order_by: Annotated[tuple[str, Literal[0, 1]] | None, "Explicit with expect_single_answer=True"] = None
-    ) -> MultipleSuccess | GenericFailure: ...
 
 def get_user(
-        cursor: cursor,
-        expect_single_answer: bool = True,
+        type_of_answer: db.ANSWER_TYPE = db.ANSWER_TYPE.SINGLE_ANSWER,
         user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_uuid: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
-        keywords: tuple[str] | list[str] = ("*",),
+        columns: tuple[str] | list[str] = ("*",),
         conditions: Annotated[dict[str, Any] | None, "Explicit with user_id, user_email, select_max_of_key, specific_where"] = None,
         select_max_of_key: Annotated[str, "Explicit with user_id, user_email, conditions, specific_where"] = "",
         specific_where: Annotated[str, "Explicit with user_id, user_email, select_max_of_key, conditions"] = "",
-        order_by: Annotated[tuple[str, Literal[0, 1]] | None, "Explicit with expect_single_answer=True"] = None
+        order_by: Annotated[tuple[str, Literal[0, 1]] | None, "Explicit with type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER"] = None
     ) -> SingleSuccess | MultipleSuccess | GenericFailure:
     """
     retrieves a user from the table users
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
+        type_of_answer (db.ANSWER_TYPE): whether to expect a single user or multiple users; defaults to db.ANSWER_TYPE.SINGLE_ANSWER
         user_id (int | None): id of the user to be retrieved
         user_email (Email | None): email of the user to be retrieved
         user_name (str | None): username of the user to be retrieved
         user_uuid (str | None): uuid of the user to be retrieved
-        keywords (tuple[str] | list[str]): list of fields to be retrieved, defaults to ["*"]
+        columns (tuple[str] | list[str]): list of fields to be retrieved, defaults to ["*"]
         conditions (dict | None): additional conditions for the query
-        expect_single_answer (bool): whether to expect a single user or multiple users
+        type_of_answer (bool): whether to expect a single user or multiple users
         select_max_of_key (str): if set, will select the max of this key
         specific_where (str): if set, will add this specific where clause
         order_by (tuple): if set, will order the results by this tuple
     Returns:
         dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": user} otherwise
     """
-    keywords = list(keywords)
+    columns = list(keywords)
     if conditions is None:
         conditions = {}
-    # check, whether explicitly of expect_single_answer and order_by is met
-    if expect_single_answer and order_by is not None:
-        return {"success": False, "error": "Either expect_single_answer=True or order_by can be set."}
+    # check, whether explicitly of type_of_answer and order_by is met
+    if type_of_answer and order_by is not None:
+        return {"success": False, "error": "Either type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER or order_by can be set."}
 
     # check, whether a where statement is set for sql query
     if user_id is None and user_email is None and user_name is None and user_uuid is None and conditions == {} and specific_where == "":
@@ -270,11 +232,10 @@ def get_user(
     if order_by is not None:
         value["order_by"] = order_by
 
-    result = db.read_table(
-        cursor=cursor,
-        table_name="users",
-        keywords=keywords,
-        expect_single_answer=expect_single_answer,
+    result = db.select(
+        table="users",
+        columns=columns,
+        type_of_answer=type_of_answer,
         conditions=conditions,
         select_max_of_key=select_max_of_key,
         specific_where=specific_where,
@@ -288,12 +249,11 @@ def get_user(
         
     return result
 
-def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> MultipleTupleSuccess | GenericFailure:
+def get_invited_friends(user_id: int, stueble_id: int) -> MultipleTupleSuccess | GenericFailure:
     """
     retrieves all friends that were invited by a specific user to a specific stueble party
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int): id of the user who invited friends
         stueble_id (int): id of the specific stueble party
     Returns:
@@ -316,7 +276,6 @@ def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> Multip
 
     # check how many friends were invited by the user to a specific stueble party
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         variables=[user_id, stueble_id]
@@ -338,7 +297,6 @@ def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> Multip
         LIMIT 1), 'remove')
         """
         result = db.custom_call(
-            cursor=cursor,
             query=query,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
             variables=[user_id, stueble_id]
@@ -353,31 +311,29 @@ def get_invited_friends(cursor: cursor, user_id: int, stueble_id: int) -> Multip
 
     return result
 
-def create_verification_code(cursor: cursor, user_id: int | None, additional_data: dict[str, Any] | None = None) -> SingleSuccessCleaned | GenericFailure:
+def create_verification_code(user_id: int | None, additional_data: dict[str, Any] | None = None) -> SingleSuccessCleaned | GenericFailure:
     """
     creates a password reset code for a specific user
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int | None): id of the user; if None, then code is a verification code for email
         additional_data (dict | None): additional data to be stored in the table; can be None
     Returns:
         dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
     """
 
-    arguments = {}
+    values = {}
     if user_id is not None:
-        arguments["user_id"] = user_id
+        values["user_id"] = user_id
     if additional_data is not None:
         additional_data = {k: v.value if isinstance(v, enum.Enum) else v.email if isinstance(v, Email) else v for k, v in additional_data.items()}
-        arguments["additional_data"] = json.dumps(additional_data)
-    if arguments == {}:
-        arguments = None
+        values["additional_data"] = json.dumps(additional_data)
+    if values == {}:
+        values = None
 
-    result = db.insert_table(
-        cursor=cursor,
-        table_name="verification_codes",
-        arguments=arguments,
+    result = db.insert(
+        table="verification_codes",
+        values=values,
         returning_column="reset_code")
 
     if result["success"] is False:
@@ -387,12 +343,11 @@ def create_verification_code(cursor: cursor, user_id: int | None, additional_dat
         return {"success": False, "error": "error occurred"}
     return clean_single_data(result)
 
-def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: bool = False, expiration_minutes: int | None=None) -> SingleSuccessCleaned | MultipleSuccess | GenericFailure:
+def confirm_verification_code(reset_code: str, additional_data: bool = False, expiration_minutes: int | None=None) -> SingleSuccessCleaned | MultipleSuccess | GenericFailure:
     """
     confirms a password reset code for a specific user
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         reset_code (str): reset code of the user
         additional_data (bool): whether to return additional data
         expiration_minutes (int | None): if set, the code is only valid for this many minutes
@@ -411,11 +366,10 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
     else:
         arguments["specific_where"] = f"reset_code = %s AND created_at >= NOW() - ((SELECT value::int FROM configurations WHERE key = 'reset_code_expiration_minutes') * INTERVAL '1 minute') AND used = FALSE"
         arguments["variables"] = (reset_code,)
-    result = db.read_table(
-        cursor=cursor,
-        table_name="verification_codes",
-        keywords=keywords,
-        expect_single_answer=True,
+    result = db.select(
+        table="verification_codes",
+        columns=keywords,
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         **arguments
     )
 
@@ -425,21 +379,20 @@ def confirm_verification_code(cursor: cursor, reset_code: str, additional_data: 
         return {"success": False, "error": "Reset code doesn't exist."}
     
     if result["success"] is True:
-        result_insert = db.update_table(cursor=cursor, table_name="verification_codes",
-                                 arguments={"used": True}, conditions={"reset_code": reset_code})
+        result_insert = db.update(table="verification_codes",
+                                 columns={"used": True}, conditions={"reset_code": reset_code})
         if result_insert["success"] is False:
             return error_to_failure(result_insert)
 
     return result
 
-def add_verification_method(cursor: cursor, method: VerificationMethod,
+def add_verification_method(method: VerificationMethod,
                             user_id: Annotated[str | None, "Explicit with user_uuid"]=None,
                             user_uuid: Annotated[str | None, "Explicit with user_id"]=None) -> GenericSuccess | GenericFailure:
     """
     adds a verification method for a specific user
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         method (VerificationMethod): verification method to be added
         user_id (int | None): id of the user
         user_uuid (str | None): uuid of the user
@@ -450,16 +403,15 @@ def add_verification_method(cursor: cursor, method: VerificationMethod,
     if (user_id is None and user_uuid is None) or (user_id is not None and user_uuid is not None):
         return {"success": False, "error": "Either user_id or user_uuid must be set."}
 
-    arguments = {"method": method.value}
+    values = {"method": method.value}
     if user_id is not None:
-        arguments["id"] = user_id
+        values["id"] = user_id
     else:
-        arguments["user_uuid"] = user_uuid
+        values["user_uuid"] = user_uuid
 
-    result = db.insert_table(
-        cursor=cursor,
-        table_name="user_verification_methods",
-        arguments=arguments,
+    result = db.insert(
+        table="user_verification_methods",
+        values=values,
         returning_column="id")
 
     if result["success"] is False:
@@ -470,14 +422,12 @@ def add_verification_method(cursor: cursor, method: VerificationMethod,
 
     return {"success": True}
 
-def get_users(cursor: cursor,
-              user_uuids: list[str],
+def get_users(user_uuids: list[str],
               keywords: list[str] | tuple[str] = ("id",)) -> MultipleSuccess | GenericFailure:
     """
     retrieves users from the table users
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_uuids (list[str | int]): list of user uuids
         keywords (tuple[str] | list[str]): list of fields to be retrieved, defaults to ["*"]
     Returns:
@@ -488,7 +438,6 @@ def get_users(cursor: cursor,
 
     query = f"SELECT {', '.join(keywords)} FROM users WHERE user_uuid IN ({', '.join(['%s' for _ in range(len(user_uuids))])})"
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         variables=tuple(user_uuids))
@@ -499,12 +448,11 @@ def get_users(cursor: cursor,
         return {"success": False, "error": "Not all users found."}
     return result
 
-def check_user_guest_list(cursor: cursor, user_id: int) -> SingleSuccess | GenericFailure:
+def check_user_guest_list(user_id: int) -> SingleSuccess | GenericFailure:
     """
     checks, whether the user is on the guest list for the latest stueble
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int): id of the user
     """
 
@@ -527,7 +475,6 @@ def check_user_guest_list(cursor: cursor, user_id: int) -> SingleSuccess | Gener
 )) != 'remove'"""
 
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         variables=[user_id])
@@ -538,12 +485,11 @@ def check_user_guest_list(cursor: cursor, user_id: int) -> SingleSuccess | Gener
         return {"success": False, "error": "User or stueble doesn't exist."}
     return clean_single_data(result)
 
-def check_user_present(cursor: cursor, user_id: int) -> SingleSuccessCleaned | GenericFailure:
+def check_user_present(user_id: int) -> SingleSuccessCleaned | GenericFailure:
     """
     checks, whether the user is currently present at the latest stueble
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int): id of the user
     """
 
@@ -562,7 +508,6 @@ def check_user_present(cursor: cursor, user_id: int) -> SingleSuccessCleaned | G
             'remove') = 'arrive' AS is_registered"""
 
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         variables=[user_id])

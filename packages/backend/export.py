@@ -4,7 +4,7 @@ from typing import Any
 def export_csv(result: list[dict[str, Any]]):
     """
     Export the given result as a JSON string.
-    Parameters:
+    Args:
         result (list[dict]): The data to be exported.
     Returns:
         dict: A dictionary containing the success status and the JSON string or an error message.

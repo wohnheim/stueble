@@ -1,18 +1,10 @@
 from datetime import datetime, timedelta
 from typing import Literal, TypedDict, cast, overload
 
-from psycopg2.extensions import cursor
 import pytz
 
 from backend.data_types import UserRole
-from backend.sql_connection import database as db
-from backend.sql_connection.common_types import (
-    GenericFailure,
-    GenericSuccess,
-    SingleSuccess,
-    SingleSuccessCleaned,
-    error_to_failure,
-)
+from backend.database import database as db
 from backend.sql_connection.ultimate_functions import clean_single_data
 
 class CreateSessionSuccess(TypedDict):
@@ -35,19 +27,18 @@ class CheckSessionIdSuccess(TypedDict):
     success: Literal[True]
     data: bool
 
-def create_session(cursor: cursor, user_id: int) -> CreateSessionSuccess | GenericFailure:
+def create_session(user_id: int) -> CreateSessionSuccess | GenericFailure:
     """
     creates a session for a user in the table sessions
 
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int): id of the user
     Returns:
         dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occured
     """
 
     # load the configuration variable for session expiration time in days from table configurations
-    expiration_time = db.read_table(cursor=cursor, keywords=["value"], table_name="configurations", conditions={"key": "session_expiration_days"}, expect_single_answer=True)
+    expiration_time = db.select(columns=["value"], table="configurations", conditions={"key": "session_expiration_days"}, type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
     if expiration_time["success"] is False:
         return error_to_failure(expiration_time)
     elif expiration_time["data"] is None:
@@ -62,10 +53,9 @@ def create_session(cursor: cursor, user_id: int) -> CreateSessionSuccess | Gener
     expiration_date = expiration_date.replace(hour=5, minute=30, second=0, microsecond=0)  # set expiration time to 5:30am
 
     # set the expiration_date
-    result = db.insert_table(
-        cursor=cursor,
-        table_name="sessions",
-        arguments={"user_id": user_id, "expiration_date": expiration_date},
+    result = db.insert(
+        table="sessions",
+        values={"user_id": user_id, "expiration_date": expiration_date},
         returning_column="session_id")
 
     if result["success"] is False:
@@ -75,21 +65,19 @@ def create_session(cursor: cursor, user_id: int) -> CreateSessionSuccess | Gener
     else:
         return {"success": True, "data": list(result["data"]) + [expiration_date]}
 
-def get_session(cursor: cursor, session_id: str) -> GetSessionSuccess | GenericFailure:
+def get_session(session_id: str) -> GetSessionSuccess | GenericFailure:
     """
     gets the session of a user from the table sessions
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         session_id (str): id of the session
     Returns:
         dict: {"success": bool, "data": (session_id, expiration_date)}, {"success": False, "error": e} if error occurred
     """
 
-    result = db.read_table(
-        cursor=cursor,
-        keywords=["session_id", "expiration_date"],
-        table_name="sessions",
-        expect_single_answer=True,
+    result = db.select(
+        columns=["session_id", "expiration_date"],
+        table="sessions",
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         specific_where="session_id = %s AND expiration_date > NOW()",
         variables=[session_id]
         )
@@ -100,19 +88,17 @@ def get_session(cursor: cursor, session_id: str) -> GetSessionSuccess | GenericF
 
     return cast(GetSessionSuccess, cast(object, result))
 
-def remove_session(cursor: cursor, session_id: str) -> GenericSuccess | GenericFailure:
+def remove_session(session_id: str) -> GenericSuccess | GenericFailure:
     """
     removes a session from the table sessions
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         session_id (str): id of the user
     Returns:
         dict: {"success": bool, "data": data}, {"success": False, "error": e} if error occurred
     """
 
-    result = db.remove_table(
-        cursor=cursor,
-        table_name="sessions",
+    result = db.delete(
+        table="sessions",
         conditions={"session_id": session_id},
         returning_column="session_id")
     if result["success"] is False:
@@ -122,19 +108,18 @@ def remove_session(cursor: cursor, session_id: str) -> GenericSuccess | GenericF
     return result
 
 @overload
-def get_user(cursor: cursor, session_id: str, keywords: None = None) -> GetUserSuccess | GenericFailure: ...
+def get_user(session_id: str, keywords: None = None) -> GetUserSuccess | GenericFailure: ...
 
 @overload
-def get_user(cursor: cursor, session_id: str, keywords: tuple[Literal["id"], Literal["user_role"], Literal["user_uuid"], Literal["room"], Literal["residence"],
+def get_user(session_id: str, keywords: tuple[Literal["id"], Literal["user_role"], Literal["user_uuid"], Literal["room"], Literal["residence"],
              Literal["first_name"], Literal["last_name"], Literal["email"], Literal["user_name"]]) -> GetUserSuccessFull | GenericFailure: ...
 @overload
-def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str]) -> SingleSuccess | SingleSuccessCleaned | GenericFailure: ...
+def get_user(session_id: str, keywords: tuple[str] | list[str]) -> SingleSuccess | SingleSuccessCleaned | GenericFailure: ...
 
-def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str] | None = None) -> SingleSuccess | SingleSuccessCleaned | GenericFailure:
+def get_user(session_id: str, keywords: tuple[str] | list[str] | None = None) -> SingleSuccess | SingleSuccessCleaned | GenericFailure:
     """
     gets the user role of a user from the table users via the sessions table
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         session_id (str): id of the user
         keywords (tuple[str] | list[str]): list of keywords to be returned
     Returns:
@@ -150,11 +135,10 @@ def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str] |
         if not all(map(lambda k: k in allowed_keywords, keywords)):
             return { "success": False, "error": "invalid keywords specified"}
 
-    result = db.read_table(
-        cursor=cursor,
-        keywords=["u." + i for i in keywords],
-        table_name="sessions s JOIN users u ON s.user_id = u.id",
-        expect_single_answer=True,
+    result = db.select(
+        columns=["u." + i for i in keywords],
+        table="sessions s JOIN users u ON s.user_id = u.id",
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         conditions={"s.session_id": session_id})
 
     if result["success"] is False:
@@ -166,19 +150,17 @@ def get_user(cursor: cursor, session_id: str, keywords: tuple[str] | list[str] |
 
     return result
 
-def remove_user_sessions(cursor: cursor, user_id: int) -> SingleSuccess | GenericSuccess | GenericFailure:
+def remove_user_sessions(user_id: int) -> SingleSuccess | GenericSuccess | GenericFailure:
     """
     removes all sessions of a user from the table sessions
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int): id of the user
     Returns:
         dict: {"success": bool, "data": data}, {"success": False, "error": e} if error occurred
     """
 
-    result = db.remove_table(
-        cursor=cursor,
-        table_name="sessions",
+    result = db.delete(
+        table="sessions",
         conditions={"user_id": user_id},
         returning_column="session_id")
 
@@ -189,19 +171,17 @@ def remove_user_sessions(cursor: cursor, user_id: int) -> SingleSuccess | Generi
 
     return result
 
-def check_session_id(cursor: cursor, session_id: int) -> CheckSessionIdSuccess | GenericFailure:
+def check_session_id(session_id: int) -> CheckSessionIdSuccess | GenericFailure:
     """
     checks, whether a session_id is valid
 
-    Parameters:
-        cursor: cursor for the db connection
+    Args:
         session_id: id of the session
     """
 
-    result = db.read_table(cursor=cursor, 
-                           table_name="sessions", 
-                           conditions={"id": session_id}, 
-                           expect_single_answer=True)
+    result = db.select(table="sessions",
+                       conditions={"id": session_id},
+                       type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
     if result["success"] is False:
         return error_to_failure(result)
     if result["data"] is None:
@@ -209,23 +189,21 @@ def check_session_id(cursor: cursor, session_id: int) -> CheckSessionIdSuccess |
 
     return {"success": True, "data": True}
 
-def get_session_ids(cursor: cursor, user_id: int, uuid: bool = False) -> SingleSuccess | GenericFailure:
+def get_session_ids(user_id: int, uuid: bool = False) -> SingleSuccess | GenericFailure:
     """
     gets all session ids of a user from the table sessions
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         user_id (int): id of the user
         uuid (bool): whether to return the session_id (uuid) or the internal id
     Returns:
         dict: {"success": bool, "data": session_ids}, {"success": False, "error": e} if error occurred
     """
 
-    result = db.read_table(
-        cursor=cursor,
-        keywords=["id"] if uuid is False else ["session_id"],
-        table_name="sessions",
+    result = db.select(
+        table="sessions",
+        columns=["id"] if uuid is False else ["session_id"],
         conditions={"user_id": user_id}, 
-        expect_single_answer=False
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER
     )
 
     if result["success"] is False:

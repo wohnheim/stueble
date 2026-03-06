@@ -16,7 +16,8 @@ from enum import Enum
 
 from backend.sql_connection.common_functions import check_permissions, get_motto
 from backend.data_types import *
-from backend.sql_connection import events, sessions, database as db, users, motto
+from backend.sql_connection import events, sessions, users, motto
+from backend.database import database as db
 from backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -47,7 +48,7 @@ def update_hosts_tutors(hosts: list[str], method: Literal["add", "remove"]):
     """
     Update the list of hosts
 
-    Parameters:
+    Args:
         hosts (list): list of host session ids
         method (str): "add" to add hosts and tutors, "remove" to remove hosts and tutors
     """
@@ -76,7 +77,7 @@ def get_websocket_by_sid(sid: str):
     """
     Get the websocket connection by session id (SID)
 
-    Parameters:
+    Args:
         sid (str): the session id (a uuid) from the cookies
     """
     return sid_to_websocket.get(sid, None)
@@ -85,7 +86,7 @@ def parse_cookies(headers):
     """
     Parse cookies from websocket headers
 
-    Parameters:
+    Args:
         headers: the headers from the websocket connection
     """
     cookies: dict[str, str] = {}
@@ -129,7 +130,7 @@ def add_to_message_log(func):
     """
     gives each message a unique id and therefore allows tracking, which websocket has already received the message
 
-    Parameters:
+    Args:
         func: the function to wrap
     Returns:
         wrapper: the wrapped function
@@ -192,7 +193,7 @@ async def send(websocket, event: str, data: dict | bool, **kwargs):
     """
     sends an event to a websocket
 
-    Parameters:
+    Args:
         websocket: the websocket connection
         event (str): the event to send
         data (dict | bool): the data to send
@@ -213,7 +214,7 @@ async def broadcast(event, data, room: None | Room | list=None, skip_sid=None, *
     """
     broadcasts an event to a room
 le_
-    Parameters:
+    Args:
         event (str): the event to broadcast
         data (dict): the data to send
         skip_sid (str): the session id to skip (optional)
@@ -251,7 +252,7 @@ async def handle_ws(websocket):
     """
     handles a websocket connection
 
-    Parameters:
+    Args:
         websocket: the websocket connection
     """
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
@@ -264,7 +265,7 @@ async def handle_ws(websocket):
     
     # get connection and cursor
     conn, cursor = get_conn_cursor()
-    result = sessions.get_session(cursor=cursor, session_id=session_id)
+    result = sessions.get_session(session_id=session_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         await send(websocket=websocket, event="status", data={"code": "401",
@@ -367,10 +368,10 @@ async def handle_ws(websocket):
         conn, cursor = get_conn_cursor()
 
         # get all valid session_ids
-        result = db.read_table(cursor=cursor, 
-                               table_name="sessions", 
-                               keywords=["session_id"],
-                               expect_single_answer=False)
+        result = db.select(
+                               table="sessions",
+                               columns=["session_id"],
+                               type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
         close_conn_cursor(conn, cursor)
         if result["success"] is False:
             # remove after debugging
@@ -388,7 +389,7 @@ async def acknowledgement(websocket, res_id: str | int):
     """
     handle acknowledgement
 
-    Parameters:
+    Args:
         websocket (websocket): websocket connection
         res_id (str | int): response id of the message called message_id in backend
     """
@@ -425,7 +426,7 @@ async def connect(websocket):
     """
     handle a new websocket connection
 
-    Parameters:
+    Args:
         websocket: the websocket connection
     """
 
@@ -447,7 +448,7 @@ async def connect(websocket):
     conn, cursor = get_conn_cursor()
 
     # check permissions
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False and result["error"] == "no matching session and user found":
@@ -493,7 +494,7 @@ async def disconnect(websocket):
     """
     handle a websocket disconnection
 
-    Parameters:
+    Args:
         websocket: the websocket connection
     """
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
@@ -517,7 +518,7 @@ async def ping(websocket, req_id):
     """
     handle a ping from the client
 
-    Parameters:
+    Args:
         websocket: websocket connection
         req_id (str): the request id from the client
     """
@@ -529,7 +530,7 @@ async def heartbeat(websocket):
     """
     handle a heartbeat from the client
 
-    Parameters:
+    Args:
         websocket: websocket connection
     """
 
@@ -540,7 +541,7 @@ async def request_motto(websocket, msg, req_id):
     """
     request a motto from the server
 
-    Parameters:
+    Args:
         websocket: websocket connection
         msg (dict): the message from the client
         req_id (str): the request id from the client
@@ -611,7 +612,7 @@ async def verify_guest(websocket, msg):
     conn, cursor = get_conn_cursor()
 
     # check permissions
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="error", data=
@@ -625,7 +626,7 @@ async def verify_guest(websocket, msg):
              "message": "invalid permissions, need role host or above"})
         return
 
-    result = users.add_verification_method(cursor=cursor, user_uuid=user_uuid, method=verification_method)
+    result = users.add_verification_method(user_uuid=user_uuid, method=verification_method)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         await send(websocket=websocket, event="error", data=
@@ -642,7 +643,7 @@ async def request_qrcode(websocket, msg, req_id):
     """
     get a new qr-code for a guest
 
-    Parameters:
+    Args:
         websocket: websocket connection
         msg (dict): the message from the client
         req_id (str): the request id from the client
@@ -656,7 +657,7 @@ async def request_qrcode(websocket, msg, req_id):
 
     conn, cursor = get_conn_cursor()
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_uuid", "user_role"])
+    result = sessions.get_user(session_id=session_id, columns=["id", "user_uuid", "user_role"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="status", data={"code": "401",
@@ -667,8 +668,7 @@ async def request_qrcode(websocket, msg, req_id):
     user_uuid = result["data"][1]
     extern = result["data"][2] == "extern"
 
-    result = events.check_guest(cursor=cursor,
-                                user_id=user_id,
+    result = events.check_guest(user_id=user_id,
                                 stueble_id=stueble_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False and result["error"] == "no stueble party found":
@@ -715,7 +715,7 @@ async def request_public_key(websocket, req_id):
     """
     sends the public key
 
-    Parameters:
+    Args:
         websocket: websocket connection
         req_id (str): the request id from the client
     """
@@ -753,7 +753,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     """
     broadcasts a user
 
-    Parameters:
+    Args:
         session_id (str | int): the session id of the user whose status changed
         date (date): the stueble id of the stueble party
         registered (bool): whether the user is registered or not
@@ -763,7 +763,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     # get conn, cursor
     conn, cursor = get_conn_cursor()
 
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_role"])
+    result = sessions.get_user(session_id=session_id, columns=["id", "user_role"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         return result
@@ -771,12 +771,11 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     user_role = result["data"][1]
     user_role = UserRole(user_role)
 
-    result = db.read_table(
-        cursor=cursor,
-        table_name="sessions",
+    result = db.select(
+        table="sessions",
         conditions={"user_id": user_id},
-        keywords=["session_id"],
-        expect_single_answer=False)
+        columns=["session_id"],
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -787,21 +786,21 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     # stueble_id = None
     invited_guests = None
     if date is None:
-        result = get_motto(cursor=cursor, date=None)
+        result = get_motto(date=None)
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             return result
         date = result["data"]["date"]
         stueble_id = result["data"]["stueble_id"]
     else:
-        result = motto.get_info(cursor=cursor, date=date)
+        result = motto.get_info(date=date)
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             return result
         stueble_id = result["data"][0]
         # stueble_id = result["data"]["stueble_id"]
     if registered is None or present is None:
-        result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
+        result = users.check_user_guest_list(user_id=user_id)
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             return result
@@ -809,7 +808,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
             registered = False
             present = False
         else:
-            result = users.check_user_present(cursor=cursor, user_id=user_id)
+            result = users.check_user_present(user_id=user_id)
             if result["success"] is False:
                 close_conn_cursor(conn, cursor)
                 return result
@@ -817,7 +816,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
             present = result["data"]
     # if person is registered, check for invited guests
     if registered is True or user_role >= UserRole.TUTOR:
-        result = users.get_invited_friends(cursor, user_id=user_id, stueble_id=stueble_id)
+        result = users.get_invited_friends(user_id=user_id, stueble_id=stueble_id)
         close_conn_cursor(conn, cursor)
         if result["success"] is False:
             return result
@@ -845,18 +844,16 @@ async def status(user_id: Annotated[str | int, "Explicit with user_uuid"] = None
     """
     sends the capabilities and authorized to the user
     Authorized not specified
-    Parameters:
+    Args:
         user_id (str | int): the user id of the user
         user_uuid (str | int): the user uuid of the user
     """
 
     if (user_id is not None and user_uuid is not None) or (user_id is None and user_uuid is None):
         return {"success": False, "error": "either user_id or user_uuid must be specified"}
-    conn, cursor = get_conn_cursor()
 
-    result = users.get_user(cursor=cursor, user_id=user_id, user_uuid=user_uuid, keywords=["id", "user_role"], expect_single_answer=True)
+    result = users.get_user(user_id=user_id, user_uuid=user_uuid, columns=["id", "user_role"], expect_single_answer=True)
     if result["success"] is False:
-        close_conn_cursor(conn, cursor)
         return result
 
     capabilities = [i.value for i in get_leq_roles(result["data"][1]) if i.value in ["user", "host", "tutor", "admin"]]
@@ -864,8 +861,7 @@ async def status(user_id: Annotated[str | int, "Explicit with user_uuid"] = None
     data = {"code": "200",
             "capabilities": capabilities}
     
-    result = sessions.get_session_ids(cursor=cursor, user_id=user_id)
-    close_conn_cursor(conn, cursor)
+    result = sessions.get_session_ids(user_id=user_id)
     if result["success"] is False:
         return result
     session_ids = result["data"]

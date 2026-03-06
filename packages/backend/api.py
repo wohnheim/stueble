@@ -12,13 +12,13 @@ from backend.data_types import *
 from backend.google_functions import email as mail
 from backend.sql_connection import (
     configs,
-    database as db,
     events,
     guest_events,
     motto,
     sessions,
     users,
 )
+from backend.database import database as db
 from backend.mail_assets import templates
 from backend.sql_connection.common_functions import check_permissions
 from backend.sql_connection.conn_cursor_functions import *
@@ -92,7 +92,7 @@ def login():
     conn, cursor = get_conn_cursor()
 
     # get user data from table
-    result = users.get_user(cursor=cursor, keywords=["id", "password_hash", "user_role"], user_email=user_email, user_name=user_name)
+    result = users.get_user(columns=["id", "password_hash", "user_role"], user_email=user_email, user_name=user_name)
 
     # return error
     if result["success"] is False:
@@ -132,7 +132,7 @@ def login():
         return response
 
     # create a new session
-    result = sessions.create_session(cursor=cursor, user_id=user[0])
+    result = sessions.create_session(user_id=user[0])
 
     close_conn_cursor(conn, cursor) # close conn, cursor
     if result["success"] is False:
@@ -231,7 +231,7 @@ def signup_data():
     check_info = user_info.copy()
     del check_info["password"]
     # check whether user data is unique
-    result = validate_user_data(cursor=cursor, **check_info)
+    result = validate_user_data(**check_info)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -252,7 +252,7 @@ def signup_data():
     else:
         additional_data["method"] = "create"
 
-    result = users.create_verification_code(cursor=cursor, user_id=None, additional_data=additional_data)
+    result = users.create_verification_code(user_id=None, additional_data=additional_data)
 
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
@@ -300,7 +300,7 @@ def verify_signup():
     conn, cursor = get_conn_cursor()
 
     # verify token
-    result = users.confirm_verification_code(cursor=cursor, reset_code=token, additional_data=True, expiration_minutes=30)
+    result = users.confirm_verification_code(reset_code=token, additional_data=True, expiration_minutes=30)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -324,12 +324,10 @@ def verify_signup():
         user_data["password_hash"] = user_info["password_hash"]
         user_data["user_name"] = user_info["user_name"]
         result = users.update_user(
-            cursor=cursor,
             user_email=user_info["email"],
             **user_data)
     else:
         result = users.add_user(
-            cursor=cursor,
             returning_column="id",
             **user_info)
     # if server error occurred, return error
@@ -344,7 +342,7 @@ def verify_signup():
     user_id = result["data"]
 
     # create a new session
-    result = sessions.create_session(cursor=cursor, user_id=user_id)
+    result = sessions.create_session(user_id=user_id)
 
     close_conn_cursor(conn, cursor)  # close conn, cursor
     if result["success"] is False:
@@ -385,7 +383,7 @@ def logout():
     conn, cursor = get_conn_cursor()
 
     # remove session from table
-    result = sessions.remove_session(cursor=cursor, session_id=session_id)
+    result = sessions.remove_session(session_id=session_id)
 
     close_conn_cursor(conn, cursor)
 
@@ -419,7 +417,7 @@ def TEST_DELETE_PLEASE_REMOVE():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_role"])
+    result = sessions.get_user(session_id=session_id, columns=["id", "user_role"])
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -432,7 +430,7 @@ def TEST_DELETE_PLEASE_REMOVE():
     # set user_id
     user_id = result["data"][0]
 
-    result = db.remove_table(cursor=cursor, table_name="users", conditions={"id": user_id})
+    result = db.delete(table="users", conditions={"id": user_id})
     if result["success"] is False:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result["error"])}),
@@ -462,7 +460,7 @@ def delete():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=["id", "user_role"])
+    result = sessions.get_user(session_id=session_id, columns=["id", "user_role"])
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -484,7 +482,7 @@ def delete():
     user_id = result["data"][0]
 
     # remove user from table
-    result = users.remove_user(cursor=cursor, user_id=user_id)
+    result = users.remove_user(user_id=user_id)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -494,7 +492,7 @@ def delete():
         return response
 
     # remove session from table
-    result = sessions.remove_session(cursor=cursor, session_id=session_id)
+    result = sessions.remove_session(session_id=session_id)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -504,7 +502,7 @@ def delete():
         return response
 
     # remove from guest_list
-    result = events.remove_guest(cursor=cursor, user_id=user_id, stueble_id=-1)
+    result = events.remove_guest(user_id=user_id, stueble_id=-1)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -554,7 +552,7 @@ def reset_password_mail():
     conn, cursor = get_conn_cursor()
 
     # check whether user with email exists
-    result = users.get_user(cursor=cursor, keywords=["id", "first_name", "last_name", "email", "password_hash"], user_email=user_email, user_name=user_name)
+    result = users.get_user(columns=["id", "first_name", "last_name", "email", "password_hash"], user_email=user_email, user_name=user_name)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -578,7 +576,7 @@ def reset_password_mail():
 
     email = Email(email=email)
 
-    result = users.create_verification_code(cursor=cursor, user_id=user_id)
+    result = users.create_verification_code(user_id=user_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -630,7 +628,7 @@ def confirm_code():
     conn, cursor = get_conn_cursor()
 
     # check whether reset token exists
-    result = users.confirm_verification_code(cursor=cursor, reset_code=reset_token)
+    result = users.confirm_verification_code(reset_code=reset_token)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -645,7 +643,7 @@ def confirm_code():
     hashed_password = hp.hash_pwd(new_password)
 
     # set new password
-    result = users.update_user(cursor=cursor, user_id=user_id, password_hash=hashed_password)
+    result = users.update_user(user_id=user_id, password_hash=hashed_password)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -655,7 +653,7 @@ def confirm_code():
         return response
 
     # remove all existing sessions of the user
-    result = sessions.remove_user_sessions(cursor=cursor, user_id=user_id)
+    result = sessions.remove_user_sessions(user_id=user_id)
     if result["success"] is False:
         if result["error"] != "no sessions found":
             close_conn_cursor(conn, cursor)
@@ -666,7 +664,7 @@ def confirm_code():
             return response
 
     # create a new session
-    result = sessions.create_session(cursor=cursor, user_id=user_id)
+    result = sessions.create_session(user_id=user_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -709,7 +707,7 @@ def change_user_data():
     conn, cursor = get_conn_cursor()
 
     # check permissions
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+    result = check_permissions(session_id=session_id, required_role=UserRole.USER)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -764,7 +762,7 @@ def change_user_data():
         data["user_name"] = username.lower()
 
     # get user id from session id
-    result = users.update_user(cursor=cursor, session_id=session_id,
+    result = users.update_user(session_id=session_id,
                                user_id=user_id, **data)
     close_conn_cursor(conn, cursor)
     if result["success"] is False and ("user_name" in data.keys()):
@@ -810,7 +808,7 @@ def guests():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -866,7 +864,7 @@ def guest_change():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -887,10 +885,9 @@ def guest_change():
     # get user data
     keywords = ["first_name", "last_name", "room", "residence", "verified", "user_role", "id"]
     data = users.get_user(
-        cursor=cursor,
         user_uuid=user_uuid,
-        keywords=keywords,
-        expect_single_answer=True)
+        columns=keywords,
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
 
     if data["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -906,8 +903,7 @@ def guest_change():
     if event_type == EventType.ARRIVE:
         # verify guest if not verified yet
         if data["data"][4] is False:
-            result = users.update_user(cursor=cursor,
-                                       user_uuid_key=user_uuid, 
+            result = users.update_user(user_uuid_key=user_uuid, 
                                        verified=True)
             if result["success"] is False:
                 close_conn_cursor(conn, cursor)
@@ -918,7 +914,7 @@ def guest_change():
                 return response
 
     # change guest status to arrive / leave
-    result = guest_events.change_guest(cursor=cursor, user_uuid=user_uuid, event_type=event_type)
+    result = guest_events.change_guest(user_uuid=user_uuid, event_type=event_type)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         error = {"code": 500, "message": str(result["error"])}
@@ -953,7 +949,7 @@ def guest_change():
 
     message = user_data
 
-    result = sessions.get_session_ids(cursor=cursor, user_id=guest_user_id, uuid=True)
+    result = sessions.get_session_ids(user_id=guest_user_id, uuid=True)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -1026,7 +1022,7 @@ def attend_stueble():
 
 
     # check permissions, since only hosts can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=required_role)
+    result = check_permissions(session_id=session_id, required_role=required_role)
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -1047,7 +1043,7 @@ def attend_stueble():
         user_id = result["data"]["user_id"]
         user_uuid = result["data"]["user_uuid"]
     else:
-        result = users.get_user(cursor=cursor, user_uuid=user_uuid, keywords=["id", "user_uuid"], expect_single_answer=True)
+        result = users.get_user(user_uuid=user_uuid, columns=["id", "user_uuid"], type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             response = Response(
@@ -1059,7 +1055,7 @@ def attend_stueble():
         user_uuid = result["data"][1]
 
     # get all sessions of user
-    result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=True)
+    result = sessions.get_session_ids(user_id=user_id, uuid=True)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1069,7 +1065,7 @@ def attend_stueble():
         return response
     guest_session_ids = result["data"]
 
-    result = motto.get_info(cursor=cursor, date=date)
+    result = motto.get_info(date=date)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1082,12 +1078,10 @@ def attend_stueble():
 
     if request.method == "PUT":
         result = events.add_guest(
-            cursor=cursor,
             user_id=user_id,
             stueble_id=stueble_id)
     else:
         result = events.remove_guest(
-            cursor=cursor,
             user_id=user_id,
             stueble_id=stueble_id)
 
@@ -1124,10 +1118,9 @@ def attend_stueble():
         # get user data
         keywords = ["first_name", "last_name", "room", "residence", "verified"]
         result = users.get_user(
-            cursor=cursor,
             user_id=user_id,
-            keywords=keywords,
-            expect_single_answer=True)
+            columns=keywords,
+            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
 
         close_conn_cursor(conn, cursor)
         if result["success"] is False:
@@ -1199,7 +1192,7 @@ def invitee():
         conn, cursor = get_conn_cursor()
 
         # check permissions, since only users can add guests
-        result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.USER)
+        result = check_permissions(session_id=session_id, required_role=UserRole.USER)
 
         if result["success"] is False:
             # close_conn_cursor(conn, cursor)
@@ -1223,7 +1216,7 @@ def invitee():
         last_name = result["data"]["last_name"]
 
         if user_role < UserRole.HOST:
-            result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
+            result = users.check_user_guest_list(user_id=user_id)
             if result["success"] is False:
                 # close_conn_cursor(conn, cursor)
                 response = Response(
@@ -1240,7 +1233,7 @@ def invitee():
                 return response
 
             # check, whether user is present
-            result = users.check_user_present(cursor=cursor, user_id=user_id)
+            result = users.check_user_present(user_id=user_id)
             if result["success"] is False:
                 close_conn_cursor(conn, cursor)
                 return response
@@ -1249,7 +1242,7 @@ def invitee():
             present = False
 
         # get all sessions for user
-        result = sessions.get_session_ids(cursor=cursor, user_id=user_id, uuid=True)
+        result = sessions.get_session_ids(user_id=user_id, uuid=True)
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             response = Response(
@@ -1259,7 +1252,7 @@ def invitee():
             return response
         guest_session_ids = result["data"]
 
-        result = motto.get_info(cursor=cursor, date=date)
+        result = motto.get_info(date=date)
         if result["success"] is False:
             # close_conn_cursor(conn, cursor)
             response = Response(
@@ -1276,7 +1269,6 @@ def invitee():
         if request.method == "PUT":
             # add user to table
             result = users.add_user(
-                cursor=cursor,
                 user_role=UserRole.EXTERN,
                 first_name=invitee_first_name,
                 last_name=invitee_last_name,
@@ -1285,10 +1277,9 @@ def invitee():
         else:
             # get user to remove
             result = users.get_user(
-                cursor=cursor,
-                keywords=["id", "user_uuid"],
+                columns=["id", "user_uuid"],
                 conditions={"first_name": invitee_first_name, "last_name": invitee_last_name, "user_role": UserRole.EXTERN.value},
-                expect_single_answer=False)
+                type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
         if result["success"] is False:
             # close_conn_cursor(conn, cursor)
@@ -1315,8 +1306,7 @@ def invitee():
                 SELECT user_id FROM events
                 WHERE user_id = %s AND stueble_id = %s AND event_type = 'add' AND invited_by = %s
                 ORDER BY submitted DESC LIMIT 1"""
-                result = db.custom_call(cursor=cursor,
-                                        query=query,
+                result = db.custom_call(query=query,
                                         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
                                         variables=[i[0], stueble_id, user_id])
                 if result["success"] is False:
@@ -1330,10 +1320,9 @@ def invitee():
                     continue
                 possible_invitee_id = result["data"][0][0]
 
-                result = users.get_user(cursor=cursor,
-                                        user_id=possible_invitee_id,
-                                        keywords=["user_uuid"],
-                                        expect_single_answer=True)
+                result = users.get_user(user_id=possible_invitee_id,
+                                        columns=["user_uuid"],
+                                        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
                 if result["success"] is False:
                     # close_conn_cursor(conn, cursor)
                     response = Response(
@@ -1372,13 +1361,11 @@ def invitee():
 
         if request.method == "PUT":
             result = events.add_guest(
-                cursor=cursor,
                 user_id=invitee_id,
                 stueble_id=stueble_id,
                 invited_by=user_id)
         else:
             result = events.remove_guest(
-                cursor=cursor,
                 user_id=invitee_id,
                 stueble_id=stueble_id)
 
@@ -1390,7 +1377,7 @@ def invitee():
                 status_code = status_code.split("\n")[0]
                 status_code = int(status_code)
             if request.method == "PUT":
-                result = db.remove_table(cursor=cursor, table_name="users", conditions={"id": created_invitee_id})
+                result = db.delete(table="users", conditions={"id": created_invitee_id})
                 # close_conn_cursor(conn, cursor)
                 if result["success"] is False:
                     response = Response(
@@ -1427,10 +1414,9 @@ def invitee():
         # get user data
         keywords = ["first_name", "last_name", "room", "residence", "verified"]
         result = users.get_user(
-            cursor=cursor,
             user_id=invitee_id,
-            keywords=keywords,
-            expect_single_answer=True)
+            columns=keywords,
+            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
 
         # close_conn_cursor(conn, cursor)
         if result["success"] is False:
@@ -1512,7 +1498,7 @@ def user():
     conn, cursor = get_conn_cursor()
 
     # get user id from session id
-    result = sessions.get_user(cursor=cursor, session_id=session_id, keywords=("id", "user_role", "user_uuid", "room", "residence", "first_name", "last_name", "email", "user_name"))
+    result = sessions.get_user(session_id=session_id, columns=("id", "user_role", "user_uuid", "room", "residence", "first_name", "last_name", "email", "user_name"))
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1557,7 +1543,7 @@ def verify_user():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only tutors or above can change user role
-    result = check_permissions(cursor=cursor, session_id=session_id,
+    result = check_permissions(session_id=session_id,
                                required_role=UserRole.USER)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -1575,8 +1561,7 @@ def verify_user():
         return response
     user_id = result["data"]["user_id"]
 
-    result = users.update_user(cursor=cursor,
-                               user_id=user_id,
+    result = users.update_user(user_id=user_id,
                                verified=True)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -1587,7 +1572,7 @@ def verify_user():
         return response
 
     keywords = ["user_uuid", "first_name", "last_name", "user_role"]
-    result = users.get_user(cursor=cursor, user_id=user_id, keywords=keywords)
+    result = users.get_user(user_id=user_id, columns=keywords)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1597,7 +1582,7 @@ def verify_user():
         return response
     user_info = {key: value for key, value in zip(keywords, result["data"])}
 
-    result = users.check_user_present(cursor=cursor, user_id=user_id)
+    result = users.check_user_present(user_id=user_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -1656,7 +1641,7 @@ def change_user_role():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only tutors or above can change user role
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN if new_role == UserRole.TUTOR else UserRole.TUTOR)
+    result = check_permissions(session_id=session_id, required_role=UserRole.ADMIN if new_role == UserRole.TUTOR else UserRole.TUTOR)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1673,7 +1658,6 @@ def change_user_role():
         return response
 
     result = users.update_user(
-        cursor=cursor,
         user_uuid_key=user_uuid,
         user_role=UserRole(new_role))
 
@@ -1692,7 +1676,7 @@ def change_user_role():
             "capabilities": capabilities,
             "authorized": True}
 
-    result = sessions.get_session_ids(cursor=cursor, user_id=user_id)
+    result = sessions.get_session_ids(user_id=user_id)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1708,7 +1692,7 @@ def change_user_role():
 
     # check if user is on guest list
 
-    result = users.check_user_guest_list(cursor=cursor, user_id=user_id)
+    result = users.check_user_guest_list(user_id=user_id)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1719,7 +1703,7 @@ def change_user_role():
 
     if result["data"] is True:
         keywords = ["user_uuid", "first_name", "last_name", "user_role"]
-        result = users.get_user(cursor=cursor, user_id=user_id, keywords=keywords)
+        result = users.get_user(user_id=user_id, columns=keywords)
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             response = Response(
@@ -1729,7 +1713,7 @@ def change_user_role():
             return response
         user_info = {key: value for key, value in zip(keywords, result["data"])}
 
-        result = users.check_user_present(cursor=cursor, user_id=user_id)
+        result = users.check_user_present(user_id=user_id)
         close_conn_cursor(conn, cursor)
         if result["success"] is False:
             response = Response(
@@ -1777,7 +1761,7 @@ def search_intern():
     # get connection and cursor
     conn, cursor = get_conn_cursor()
 
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1823,47 +1807,43 @@ def search_intern():
     # search user_name
     if "username" in data:
         conditions = {"user_name": data["username"]}
-        result = db.read_table(
-            cursor=cursor,
-            table_name="users",
-            keywords=keywords,
+        result = db.select(
+            table="users",
+            columns=keywords,
             conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=False) # originally True but since it is handled as list, False is specified
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER) # originally True but since it is handled as list, False is specified
 
     # search user_uuid
     elif "id" in data:
         conditions = {"user_uuid":data["id"]}
-        result = db.read_table(
-            cursor=cursor,
-            table_name="users",
-            keywords=keywords,
+        result = db.select(
+            table="users",
+            columns=keywords,
             conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=False) # originally True but since it is handled as list, False is specified
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER) # originally True but since it is handled as list, False is specified
 
     # search email
     elif "email" in data:
         conditions = {"email": data["email"]}
         negated_conditions = {"user_role": "extern"}
-        result = db.read_table(
-            cursor=cursor,
-            table_name="users",
-            keywords=keywords,
+        result = db.select(
+            table="users",
+            columns=keywords,
             conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=False) # originally True but since it is handled as list, False is specified
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER) # originally True but since it is handled as list, False is specified
 
     # search room AND residence
     elif "room" in data and "residence" in data:
         conditions = {key: value for key, value in data.items() if key in ["room", "residence"]}
-        result = db.read_table(
-            cursor=cursor,
-            table_name="users",
-            keywords=keywords,
+        result = db.select(
+            table="users",
+            columns=keywords,
             conditions=conditions,
             negated_conditions=negated_conditions,
-            expect_single_answer=False) # originally True but since it is handled as list, False is specified
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER) # originally True but since it is handled as list, False is specified
 
     # search first_name and / or last_name as well as room or residence
     else:
@@ -1878,8 +1858,7 @@ def search_intern():
         AND user_role != 'extern'
         """
         variables = [f"{value}%" if key in ["first_name", "last_name"] else value for key, value in data.items()]
-        result = db.custom_call(cursor=cursor,
-                                query=query,
+        result = db.custom_call(query=query,
                                 type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
                                 variables=variables)
 
@@ -1953,7 +1932,7 @@ def create_stueble():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts or above can change the motto
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=user_role)
+    result = check_permissions(session_id=session_id, required_role=user_role)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -1971,8 +1950,7 @@ def create_stueble():
     actual_user_role = result["data"]["user_role"]
     actual_user_role = UserRole(actual_user_role)
 
-    result = motto.update_stueble(cursor=cursor,
-                                date=date,
+    result = motto.update_stueble(date=date,
                                 motto=stueble_motto,
                                 description=description,
                                 shared_apartment=shared_apartment)
@@ -1986,8 +1964,7 @@ def create_stueble():
                     status=403,
                     mimetype="application/json")
                 return response
-            result = motto.create_stueble(cursor=cursor,
-                                    date=date,
+            result = motto.create_stueble(date=date,
                                     motto=stueble_motto,
                                     description=description,
                                     shared_apartment=shared_apartment)
@@ -2043,7 +2020,7 @@ def update_tutors():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only admins can change user role
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN)
+    result = check_permissions(session_id=session_id, required_role=UserRole.ADMIN)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2060,7 +2037,7 @@ def update_tutors():
         return response
 
     # get information about users
-    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role", "user_uuid"])
+    result = users.get_users(user_uuids=user_uuids, columns=["user_uuid", "first_name", "last_name", "residence", "user_role", "user_uuid"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2127,8 +2104,7 @@ def update_tutors():
         WHERE user_uuid IN %s
         RETURNING id
     """
-    result = db.custom_call(cursor=cursor,
-                            query=query,
+    result = db.custom_call(query=query,
                             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
                             variables=[new_role.value, tuple(i["id"] for i in tutors_data)])
 
@@ -2143,7 +2119,7 @@ def update_tutors():
     # NOTE: unneccessary due to trigger
     user_ids = result["data"]
     query = """DELETE FROM hosts WHERE user_id IN %s"""
-    result = db.custom_call(cursor=cursor, query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
+    result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2154,7 +2130,6 @@ def update_tutors():
 
     query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         variables=tuple(user_ids))
@@ -2221,7 +2196,7 @@ def update_hosts():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only tutors or above can change user role
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.TUTOR)
+    result = check_permissions(session_id=session_id, required_role=UserRole.TUTOR)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2237,7 +2212,7 @@ def update_hosts():
             mimetype="application/json")
         return response
 
-    result = motto.get_motto(cursor=cursor, date=date)
+    result = motto.get_motto(date=date)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2256,7 +2231,7 @@ def update_hosts():
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
 
-    result = users.get_users(cursor=cursor, user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role"])
+    result = users.get_users(user_uuids=user_uuids, columns=["user_uuid", "first_name", "last_name", "residence", "user_role"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2274,7 +2249,7 @@ def update_hosts():
             mimetype="application/json")
         return response
 
-    result = motto.update_hosts(cursor=cursor, stueble_id=stueble_id, method="add" if request.method == "PUT" else "remove", user_uuids=user_uuids)
+    result = motto.update_hosts(stueble_id=stueble_id, method="add" if request.method == "PUT" else "remove", user_uuids=user_uuids)
 
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
@@ -2288,7 +2263,7 @@ def update_hosts():
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
     if request.method == "DELETE":
-        result = db.custom_call(cursor=cursor, query="UPDATE users SET user_role = 'user' WHERE id IN %s AND user_role = 'host'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
+        result = db.custom_call(query="UPDATE users SET user_role = 'user' WHERE id IN %s AND user_role = 'host'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             response = Response(
@@ -2297,7 +2272,7 @@ def update_hosts():
                 mimetype="application/json")
             return response
     else:
-        result = db.custom_call(cursor=cursor, query="UPDATE users SET user_role = 'host' WHERE id IN %s AND user_role = 'user'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
+        result = db.custom_call(query="UPDATE users SET user_role = 'host' WHERE id IN %s AND user_role = 'user'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
         if result["success"] is False:
             close_conn_cursor(conn, cursor)
             response = Response(
@@ -2308,7 +2283,6 @@ def update_hosts():
 
     query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
     result = db.custom_call(
-        cursor=cursor,
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         variables=tuple(user_ids)
@@ -2371,7 +2345,7 @@ def get_hosts_tutors():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts or above can change user role
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2389,8 +2363,7 @@ def get_hosts_tutors():
 
     if request.path == "/tutors":
         query = """SELECT user_uuid, first_name, last_name, residence FROM users WHERE user_role = 'tutor'"""
-        result = db.custom_call(cursor=cursor,
-                                query=query,
+        result = db.custom_call(query=query,
                                 type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
         close_conn_cursor(conn, cursor)
         if result["success"] is False:
@@ -2406,7 +2379,7 @@ def get_hosts_tutors():
             mimetype="application/json")
         return response
 
-    result = motto.get_motto(cursor=cursor, date=date)
+    result = motto.get_motto(date=date)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2422,7 +2395,7 @@ def get_hosts_tutors():
             mimetype="application/json")
         return response
     stueble_id = result["data"][2]
-    result = motto.get_hosts(cursor=cursor, stueble_id=stueble_id)
+    result = motto.get_hosts(stueble_id=stueble_id)
     close_conn_cursor(conn, cursor)
     if result["success"] is False:
         response = Response(
@@ -2466,7 +2439,7 @@ def force_add_guest():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only hosts and above can add guests
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.HOST)
+    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2483,7 +2456,7 @@ def force_add_guest():
         return response
 
     # get user_id from user_uuid
-    result = users.get_user(cursor=cursor, user_uuid=user_uuid, keywords=["id"])
+    result = users.get_user(user_uuid=user_uuid, columns=["id"])
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2495,8 +2468,7 @@ def force_add_guest():
     query = """SET additional.skip_triggers = 'on';
 INSERT INTO events (user_id, stueble_id, event_type) VALUES (%s, %s, %s), (%s, %s, %s);  -- Triggers will be skipped
 RESET additional.skip_triggers;"""
-    result = db.custom_call(cursor=cursor,
-                            query=query,
+    result = db.custom_call(query=query,
                             type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
                             variables=[user_id, 1, 'add', user_id, 1, 'arrive'])
     close_conn_cursor(conn, cursor)
@@ -2532,7 +2504,7 @@ def config():
     conn, cursor = get_conn_cursor()
 
     # check permissions, since only admins can change config values
-    result = check_permissions(cursor=cursor, session_id=session_id, required_role=UserRole.ADMIN)
+    result = check_permissions(session_id=session_id, required_role=UserRole.ADMIN)
     if result["success"] is False:
         close_conn_cursor(conn, cursor)
         response = Response(
@@ -2562,8 +2534,7 @@ def config():
         {case_statements}
         END
         WHERE key IN %s"""
-        result = db.custom_call(cursor=cursor,
-                                query=query,
+        result = db.custom_call(query=query,
                                 type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
                                 variables=params)
         if result["success"] is False:
@@ -2577,7 +2548,7 @@ def config():
         # send websocket message to all admins
         # asyncio.run(ws.broadcast(event="configUpdate", data=data, room=ws.Room.ADMINS, skip_sid=session_id))
     # Method GET & POST
-    result = configs.get_all_configurations(cursor=cursor)
+    result = configs.get_all_configurations()
     close_conn_cursor(conn, cursor)
 
     if result["success"] is False:

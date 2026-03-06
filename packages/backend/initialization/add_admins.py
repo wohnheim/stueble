@@ -1,4 +1,4 @@
-from backend.sql_connection import database as db
+from backend.database import database as db
 from backend import hash_pwd
 
 pwd_hes = input("Bitte gib ein Passwort für das Administratorenkonto ein: ")
@@ -12,20 +12,17 @@ if not pwd_hes:
 conn, cursor = db.connect()
 password_hes = hash_pwd.hash_pwd(pwd_hes)
 # password_hirte = hash_pwd.hash_pwd(pwd_hirte)
-result = db.insert_table(
-    cursor=cursor,
-    table_name="users",
-    arguments={"user_role":"admin",  "room": 0, "residence": "altbau", "first_name": "Super", "last_name": "Admin", "email": "tutorenhes@gmail.com", "user_name": "admin", "password_hash": password_hes},
+result = db.insert(
+    table="users",
+    values={"user_role":"admin",  "room": 0, "residence": "altbau", "first_name": "Super", "last_name": "Admin", "email": "tutorenhes@gmail.com", "user_name": "admin", "password_hash": password_hes},
     returning_column="id")
 if result["success"] is False:
     raise result["error"]
 
 """
-result = db.insert_table(
-    connection=conn,
-    cursor=cursor,
-    table_name="users",
-    arguments={"user_role":"admin",  "room": 0, "residence": "hirte", "first_name": "Hirte", "last_name": "Admin", "email": "tutorenhirte@gmail.com", "user_name": "admin hirte", "password_hash": password_hirte},
+result = db.insert(
+    table="users",
+    values={"user_role":"admin",  "room": 0, "residence": "hirte", "first_name": "Hirte", "last_name": "Admin", "email": "tutorenhirte@gmail.com", "user_name": "admin hirte", "password_hash": password_hirte},
     returning_column="id")
 
 if result["success"] is False:

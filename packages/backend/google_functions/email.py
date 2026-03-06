@@ -21,7 +21,7 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 def send_mail(recipient: Email, subject: str, body: str, html: bool=False, images: Annotated[tuple[dict[str, str | Path | io.BytesIO]] | None, "Only possible if html is True"] = None):
     """
     Sends an email message.
-    Parameters:
+    Args:
         recipient (Email): The recipient's email address.
         subject (str): The subject of the email.
         body (str): The body content of the email.
@@ -34,9 +34,11 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
     msg["From"] = EMAIL_ADDRESS
     msg["To"] = recipient.email
     if not html:
-        msg.set_content(body)
+        msg.set_content(body) # type: ignore
+
     else:
-        msg.attach(MIMEText(body, "html"))
+        msg.attach(MIMEText(body, "html")) # type: ignore
+
     if html is True and images is not None:
         for info in images:
             name = info["name"]
@@ -46,11 +48,13 @@ def send_mail(recipient: Email, subject: str, body: str, html: bool=False, image
                     img_mime = MIMEImage(f.read())
             else:
                 img_mime = MIMEImage(value.read(), _subtype="png")
-            img_mime.add_header('Content-ID', name)
+            img_mime.add_header('Content-ID', name) # type: ignore
+
             # hardcore hardcoding to png
             img_mime.add_header('Content-Disposition', 'inline', filename="image.png")
-            msg.attach(img_mime)
+            msg.attach(img_mime) # type: ignore
+
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD) # type: ignore
         smtp.send_message(msg)
     return {"success": True}

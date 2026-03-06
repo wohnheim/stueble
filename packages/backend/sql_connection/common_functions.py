@@ -1,10 +1,9 @@
 import datetime
 from typing import Literal, TypedDict
 
-from psycopg2.extensions import cursor
-
 from backend.data_types import UserRole
-from backend.sql_connection import database as db, motto, sessions
+from backend.database import database as db
+from backend.sql_connection import sessions
 from backend.sql_connection.common_types import GenericFailure, error_to_failure
 from backend.sql_connection.conn_cursor_functions import (
     close_conn_cursor,
@@ -29,11 +28,10 @@ class GetMottoSuccess(TypedDict):
     success: Literal[True]
     data: GetMottoData
 
-def check_permissions(cursor: cursor, session_id: str | None, required_role: UserRole) -> PermissionCheckSuccess | GenericFailure:
+def check_permissions(session_id: str | None, required_role: UserRole) -> PermissionCheckSuccess | GenericFailure:
     """
     checks whether the user with the given session_id has the required role
-    Parameters:
-        cursor: cursor for the connection
+    Args:
         session_id (str): session id of the user
         required_role (UserRole): required role of the user
     Returns:
@@ -44,7 +42,7 @@ def check_permissions(cursor: cursor, session_id: str | None, required_role: Use
         return {"success": False, "error": "The session id must be specified"}
 
     # get the user_id, user_role by session_id
-    result = sessions.get_user(cursor=cursor, session_id=session_id)
+    result = sessions.get_user(session_id=session_id)
 
     # if error occurred, return error
     if (result["success"] is False):
@@ -64,7 +62,7 @@ def get_motto(cursor: cursor | None=None, date: datetime.date | None = None) -> 
     """
     returns the motto for the next stueble party
 
-    Parameters:
+    Args:
         cursor (cursor | None): cursor for the connection, if None a new connection will be created
         date (str | None): the date of the motto
     """
@@ -75,14 +73,11 @@ def get_motto(cursor: cursor | None=None, date: datetime.date | None = None) -> 
         # get connection and cursor
         conn, cursor = get_conn_cursor()
     arguments = {"conditions": {"date_of_time": date}} if date is not None else {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
-    result = db.read_table(
-        cursor=cursor,
-        table_name="stueble_motto",
-        keywords=["motto", "date_of_time", "description", "id"],
-        expect_single_answer=True,
-        **arguments)
-    if init_cursor is True:
-        close_conn_cursor(conn, cursor) # close conn, cursor
+    result = db.select(
+        table="stueble_motto",
+        columns=["motto", "date_of_time", "description", "id"],
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+        **arguments) # type: ignore
     if result["success"] is False:
         return error_to_failure(result)
     if result["data"] is None:

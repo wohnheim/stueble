@@ -4,9 +4,7 @@ import os
 from typing import Any, Literal, TypedDict, cast
 
 import bcrypt
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from backend.sql_connection.common_types import GenericFailure
@@ -26,7 +24,7 @@ def create_signature(message: str | dict[str, Any]) -> CreateSignatureSuccess | 
     """
     Create a digital signature for a given message using Ed25519 private key.
 
-    Parameters:
+    Args:
         cursor: Database cursor to read the private key.
         message (str | dict): The message to be signed.
     Returns:
