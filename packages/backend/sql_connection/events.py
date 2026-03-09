@@ -1,27 +1,9 @@
-from datetime import datetime
-from typing import Literal, TypedDict, cast
-from psycopg2.extensions import cursor
-
 from backend.database import database as db
-from backend.sql_connection.common_types import (
-    GenericFailure,
-    error_to_failure,
-)
 from backend.sql_connection.ultimate_functions import clean_single_data
+from backend.datatypes.funcres import FuncRes, Message, Status
 
-class AddGuestSuccess(TypedDict):
-    success: Literal[True]
-    data: int
 
-class RemoveGuestSuccess(TypedDict):
-    success: Literal[True]
-    data: datetime
-
-class CheckGuestSuccess(TypedDict):
-    success: Literal[True]
-    data: bool
-
-def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> AddGuestSuccess | GenericFailure:
+def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> FuncRes:
     """
     adds a guest to the table events with event_type "add"
 
@@ -30,7 +12,7 @@ def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> A
         stueble_id (int): id of the stueble party
         invited_by (int | None): id of the invited user
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
+        FuncRes: Return object with success status and data containing the timestamp of the event if successful, error message if error occurred
     """
 
     values = {"user_id": user_id, "stueble_id": stueble_id, "event_type": "add"}
@@ -42,14 +24,35 @@ def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> A
         values=values,
         returning_column="NOW()")
 
-    if result["success"] is False:
-        return error_to_failure(result)
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Add Guest Error",
+                            type="error",
+                            category="Add Guest",
+                            code=500)
+        )
     # maybe shouldn't be possible, but still left in
-    if result["data"] is None:
-        return {"success": False, "error": "error occurred"}
-    return cast(AddGuestSuccess, clean_single_data(result))
+    if result.data is None:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Add Guest Error",
+                            type="error",
+                            category="Add Guest",
+                            code=500)
+        )
+    return FuncRes(
+        data=clean_single_data(result),
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Add Guest Success",
+                        type="success",
+                        category="Add Guest",
+                        code=200)
+    )
 
-def remove_guest(user_id: int, stueble_id: int) -> RemoveGuestSuccess | GenericFailure:
+def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
     """
     adds a guest to the table events with event_type "remove" effectively removing them from the guest list
 
@@ -57,7 +60,7 @@ def remove_guest(user_id: int, stueble_id: int) -> RemoveGuestSuccess | GenericF
         user_id (int): id of the user
         stueble_id (int): id of the stueble party, if -1 then removal from all added stueble parties
     Returns:
-        dict: {"success": bool} by default, {"success": True, "data": timestamp} if returning is True, {"success": False, "error": e} if error occurred
+        FuncRes: Return object with success status and data containing the timestamp of the event if successful, error message if error occurred
     """
     if stueble_id == -1:
         # get all stueble ids where the user is currently added
@@ -83,23 +86,58 @@ def remove_guest(user_id: int, stueble_id: int) -> RemoveGuestSuccess | GenericF
             variables=[user_id]
         )
 
-        if result["success"] is False:
-            return error_to_failure(result)
-        return result
+        if result.is_error:
+            return FuncRes(
+                error=str(result.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Add Guest Error",
+                                type="error",
+                                category="Add Guest",
+                                code=500)
+            )
+        return FuncRes(
+            data=result.data,
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Remove Guest Success",
+                            type="success",
+                            category="Remove Guest",
+                            code=200)
+        )
     else:
         result = db.insert(
             table="events",
             values={"user_id": user_id, "stueble_id": stueble_id, "event_type": "remove"},
             returning_column="NOW()")
         # maybe shouldn't be possible, but still left in
-        if result["success"] is False:
-            return error_to_failure(result)
-        if result["success"] is True and result["data"] is None:
-            return {"success": False, "error": "error occurred"}
-        return cast(RemoveGuestSuccess, clean_single_data(result))
+        if result.is_error:
+            return FuncRes(
+                error=str(result.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Remove Guest Error",
+                                type="error",
+                                category="Remove Guest",
+                                code=500)
+            )
+        if result.is_success and result.data is None:
+            return FuncRes(
+                error=str(result.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Remove Guest Error",
+                                type="error",
+                                category="Remove Guest",
+                                code=500)
+            )
+        return FuncRes(
+            data=clean_single_data(result),
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Remove Guest Success",
+                            type="success",
+                            category="Remove Guest",
+                            code=200)
+        )
 
 # use users.check_user_guest_list for automatic stueble_id handling
-def check_guest(user_id: int, stueble_id: int | None = None) -> CheckGuestSuccess | GenericFailure:
+def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
     """
     checks if a user is currently a guest at a stueble party
 
@@ -107,7 +145,7 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> CheckGuestSucces
         user_id (int): id of the user
         stueble_id (int | None): id of the stueble party
     Returns:
-        dict: {"success": bool, "data": bool} if successful, {"success": False, "error": e} if error occurred
+        FuncRes: Return object with success status and data containing a boolean indicating if the user is a guest if successful, error message if error occurred
     """
 
     # TODO: add 6 o'clock handling
@@ -117,11 +155,25 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> CheckGuestSucces
             query=query,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
         )
-        if result["success"] is False:
-            return error_to_failure(result)
-        if result["data"] is None:
-            return {"success": False, "error": "no stueble party_user found"}
-        stueble_id = result["data"][0]
+        if result.is_error:
+            return FuncRes(
+                error=str(result.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Check Guest Error",
+                                type="error",
+                                category="Check Guest",
+                                code=500)
+            )
+        if result.data is None:
+            return FuncRes(
+                error="no stueble party_user found",
+                status=Status.FULL_ERROR,
+                message=Message(name="Check Guest Error",
+                                type="error",
+                                category="Check Guest",
+                                code=500)
+            )
+        stueble_id = result.data[0]
 
 
     query = f"""
@@ -140,10 +192,30 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> CheckGuestSucces
         variables=[user_id, stueble_id]
     )
 
-    if result["success"] is False:
-        return error_to_failure(result)
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Check Guest Error",
+                            type="error",
+                            category="Check Guest",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="user not on guest_list",
+            status=Status.FULL_ERROR,
+            message=Message(name="Check Guest Error",
+                            type="error",
+                            category="Check Guest",
+                            code=500)
+        )
 
-    if result["data"] is None:
-        return {"success": False, "error": "user not on guest_list"}
-
-    return cast(CheckGuestSuccess, clean_single_data(result))
+    return FuncRes(
+        data=clean_single_data(result),
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Check Guest Success",
+                        type="success",
+                        category="Check Guest",
+                        code=200)
+    )

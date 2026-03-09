@@ -1,28 +1,17 @@
-from typing import Any, Literal, TypedDict
-
+from typing import Any
 
 from backend.database import database as db
-from backend.sql_connection.common_types import (
-    GenericFailure,
-    MultipleSuccess,
-    SingleSuccess,
-    SingleSuccessCleaned,
-    error_to_failure,
-    is_single_success,
-)
 from backend.sql_connection.ultimate_functions import clean_single_data
+from backend.datatypes.funcres import FuncRes, Status, Message
 
-class ChangeConfigurationMultipleSuccess(TypedDict):
-    success: Literal[True]
-    data: str
 
-def get_configuration(key: str) -> SingleSuccessCleaned | GenericFailure:
+def get_configuration(key: str) -> FuncRes:
     """
     gets a configuration value from the table configurations
     Args:
         key (str): key of the configuration
     Returns:
-        dict: {"success": bool, "data": value}, {"success": False, "error": e} if error occurred
+        FuncRes: Return object with success status and data or error message
     """
 
     result = db.select(
@@ -31,28 +20,63 @@ def get_configuration(key: str) -> SingleSuccessCleaned | GenericFailure:
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         conditions={"key": key})
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    if is_single_success(result) and result["data"] is None:
-        return {"success": False, "error": f"no configuration for {key} found"}
-    return clean_single_data(result)
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Configuration Error",
+                            type="error",
+                            category="Get Configuration",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error=f"no configuration for {key} found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Configuration Error",
+                            type="error",
+                            category="Get Configuration",
+                            code=404)
+        )
+    return FuncRes(
+            data=clean_single_data(result),
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Get Configuration Success",
+                            type="success",
+                            category="Get Configuration",
+                            code=200)
+    )
 
-def get_all_configurations() -> MultipleSuccess | GenericFailure:
+def get_all_configurations() -> FuncRes:
     """
     gets all configuration values from the table configurations
     Returns:
-        dict: {"success": bool, "data": value}, {"success": False, "error": e} if error occurred
+        FuncRes: Return object with success status and data or error message
     """
     result = db.select(
         columns=["key", "value"],
         table="configurations",
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    return {"success": True, "data": {i[0]: i[1] for i in result["data"]}}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Get All Configuration Error",
+                            type="error",
+                            category="Get All Configuration",
+                            code=500)
+        )
+    return FuncRes(
+            data={i[0]: i[1] for i in result.data},
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Get Configuration Success",
+                            type="success",
+                            category="Get Configuration",
+                            code=200)
+    )
 
-def change_configuration(key: str, value: Any) -> SingleSuccess | GenericFailure:
+def change_configuration(key: str, value: Any) -> FuncRes:
     """
     changes a configuration value from the table configurations
     Args:
@@ -66,13 +90,34 @@ def change_configuration(key: str, value: Any) -> SingleSuccess | GenericFailure
         returning_column="key"
     )
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": f"no configuration for {key} found"}
-    return result
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Change Configuration Error",
+                            type="error",
+                            category="Change Configuration",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error=f"no configuration for {key} found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Change Configuration Error",
+                            type="error",
+                            category="Change Configuration",
+                            code=404)
+        )
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+            message=Message(name="Change Configuration Success",
+                            type="success",
+                            category="Change Configuration",
+                            code=200)
+    )
 
-def change_multiple_configurations(configurations: dict[str, Any]) -> ChangeConfigurationMultipleSuccess | GenericFailure:
+def change_multiple_configurations(configurations: dict[str, Any]) -> FuncRes:
     """
     changes multiple configuration values from the table configurations
     Args:
@@ -80,6 +125,13 @@ def change_multiple_configurations(configurations: dict[str, Any]) -> ChangeConf
     """
     for key, value in configurations.items():
         result = change_configuration(key, value)
-        if result["success"] is False:
+        if result.is_error:
             return result
-    return {"success": True, "data": f"changed {len(configurations)} values"}
+    return FuncRes(
+        data=f"changed {len(configurations)} values",
+        status=Status.FULL_SUCCESS,
+            message=Message(name="Change Multiple Configuration Success",
+                            type="success",
+                            category="Change Multiple Configuration",
+                            code=200)
+    )

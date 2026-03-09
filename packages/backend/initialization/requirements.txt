@@ -1,5 +1,5 @@
 flask
-psycopg2-binary
+# psycopg2-binary
 bcrypt
 pytz
 pyzbar
@@ -19,6 +19,7 @@ jwcrypto
 websockets
 waitress
 dotenv
+psycopg
 
 h11
 pip

@@ -267,13 +267,13 @@ async def handle_ws(websocket):
     conn, cursor = get_conn_cursor()
     result = sessions.get_session(session_id=session_id)
     close_conn_cursor(conn, cursor)
-    if result["success"] is False:
+    if result.is_error:
         await send(websocket=websocket, event="status", data={"code": "401",
                                                               "capabilities": [],
                                                               "authorized": False})
         return
     
-    _, expiration_date = result["data"]
+    _, expiration_date = result.data
     websockets_info[id(websocket)] = {"expiration_date": expiration_date, "session_id": session_id}
 
     sid_to_websocket[session_id] = websocket
@@ -287,7 +287,7 @@ async def handle_ws(websocket):
 
     # send stueble_status
     result = await stueble_status(session_id=session_id)
-    if result["success"] is False:
+    if result.is_error:
         await send(websocket=websocket, event="error", data={"code": "500",
             "message": "Couldn't send stueble_status"})
 
@@ -373,12 +373,12 @@ async def handle_ws(websocket):
                                columns=["session_id"],
                                type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
         close_conn_cursor(conn, cursor)
-        if result["success"] is False:
+        if result.is_error:
             # remove after debugging
             print("ERROR OCCURRED")
         # TODO: only remove invalid session_ids from message_log, when acknowledgement received
-        if result["success"] is True:
-            allowed_session_ids = result["data"]
+        if result.is_success:
+            allowed_session_ids = result.data
             for key, value in message_log.items():
                 if any(i not in allowed_session_ids for i in value["session_ids"]):
                     message_log[key]["session_ids"] = [i for i in value["session_ids"] if i in allowed_session_ids]
@@ -451,31 +451,31 @@ async def connect(websocket):
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
 
     close_conn_cursor(conn, cursor)
-    if result["success"] is False and result["error"] == "no matching session and user found":
+    if result.is_error and result.error == "no matching session and user found":
         await send(websocket=websocket, event="status", data= {"code": "200",
                           "capabilities": [],
                           "authorized": False})
         return True
 
-    if result["success"] is False:
+    if result.is_error:
         await send(websocket=websocket, event="error", data= {
                      "code": "500",
-                     "message": str(result["error"]), 
+                     "message": str(result.error), 
                      "authorized": False,
                      "capabilities": []})
         return False
 
-    capabilities = [i.value for i in get_leq_roles(result["data"]["user_role"]) if i.value in ["user", "host", "tutor", "admin"]]
+    capabilities = [i.value for i in get_leq_roles(result.data["user_role"]) if i.value in ["user", "host", "tutor", "admin"]]
 
-    if result["data"]["allowed"] is False:
+    if result.data["allowed"] is False:
         await send(websocket=websocket, event="status", data= {
                      "code": "200",
                      "capabilities": capabilities,
                      "authorized": True})
         return True
 
-    if result["data"]["allowed"] is True:
-        user_role = result["data"]["user_role"]
+    if result.data["allowed"] is True:
+        user_role = result.data["user_role"]
         user_role = UserRole(user_role)
 
         host_upwards_room.add(websocket)
@@ -552,12 +552,12 @@ async def request_motto(websocket, msg, req_id):
         date = None
 
     result = get_motto(date=date)
-    if result["success"] is False:
+    if result.is_error:
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500",
-             "message": str(result["error"])})
+             "message": str(result.error)})
         return
-    motto = {"motto": result["data"]["motto"], "description": result["data"]["description"], "date": result["data"]["date"].isoformat()}
+    motto = {"motto": result.data["motto"], "description": result.data["description"], "date": result["data"]["date"].isoformat()}
     await send(websocket=websocket, event="motto", reqId=req_id, data=motto)
     return
 
@@ -613,13 +613,13 @@ async def verify_guest(websocket, msg):
 
     # check permissions
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
-    if result["success"] is False:
+    if result.is_error:
         close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="error", data=
             {"code": "401",
-             "message": str(result["error"])})
+             "message": str(result.error)})
         return
-    if result["data"]["allowed"] is False:
+    if result.data["allowed"] is False:
         close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="error", data=
             {"code": "403",
@@ -628,10 +628,10 @@ async def verify_guest(websocket, msg):
 
     result = users.add_verification_method(user_uuid=user_uuid, method=verification_method)
     close_conn_cursor(conn, cursor)
-    if result["success"] is False:
+    if result.is_error:
         await send(websocket=websocket, event="error", data=
             {"code": "500",
-             "message": str(result["error"])})
+             "message": str(result.error)})
         return
 
     await send(websocket=websocket, event="guestVerification", data={})
@@ -658,36 +658,36 @@ async def request_qrcode(websocket, msg, req_id):
     conn, cursor = get_conn_cursor()
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     result = sessions.get_user(session_id=session_id, columns=["id", "user_uuid", "user_role"])
-    if result["success"] is False:
+    if result.is_error:
         close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="status", data={"code": "401",
                                                               "capabilities": [],
                                                               "authorized": False})
         return
-    user_id = result["data"][0]
-    user_uuid = result["data"][1]
-    extern = result["data"][2] == "extern"
+    user_id = result.data[0]
+    user_uuid = result.data[1]
+    extern = result.data[2] == "extern"
 
     result = events.check_guest(user_id=user_id,
                                 stueble_id=stueble_id)
     close_conn_cursor(conn, cursor)
-    if result["success"] is False and result["error"] == "no stueble party found":
+    if result.is_error and result.error == "no stueble party found":
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "404",
-             "message": result["error"]})
+             "message": result.error})
         return
-    elif result["success"] is False and result["error"] == "user not on guest_list":
+    elif result.is_error and result.error == "user not on guest_list":
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "403",
              "message": "Guest not on guest list"})
         return
-    elif result["success"] is False:
+    elif result.is_error:
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500",
-             "message": str(result["error"])})
+             "message": str(result.error)})
         return
 
-    if result["data"] is False:
+    if result.data is False:
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "403",
              "message": "Guest not on guest list"})
@@ -764,11 +764,11 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     conn, cursor = get_conn_cursor()
 
     result = sessions.get_user(session_id=session_id, columns=["id", "user_role"])
-    if result["success"] is False:
+    if result.is_error:
         close_conn_cursor(conn, cursor)
         return result
-    user_id = result["data"][0]
-    user_role = result["data"][1]
+    user_id = result.data[0]
+    user_role = result.data[1]
     user_role = UserRole(user_role)
 
     result = db.select(
@@ -777,50 +777,50 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         columns=["session_id"],
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
-    if result["success"] is False:
+    if result.is_error:
         close_conn_cursor(conn, cursor)
         return result
 
-    session_ids = [i[0] for i in result["data"]]
+    session_ids = [i[0] for i in result.data]
     # unneccessary but for style of coding
     # stueble_id = None
     invited_guests = None
     if date is None:
         result = get_motto(date=None)
-        if result["success"] is False:
+        if result.is_error:
             close_conn_cursor(conn, cursor)
             return result
-        date = result["data"]["date"]
-        stueble_id = result["data"]["stueble_id"]
+        date = result.data["date"]
+        stueble_id = result.data["stueble_id"]
     else:
         result = motto.get_info(date=date)
-        if result["success"] is False:
+        if result.is_error:
             close_conn_cursor(conn, cursor)
             return result
-        stueble_id = result["data"][0]
-        # stueble_id = result["data"]["stueble_id"]
+        stueble_id = result.data[0]
+        # stueble_id = result.data["stueble_id"]
     if registered is None or present is None:
         result = users.check_user_guest_list(user_id=user_id)
-        if result["success"] is False:
+        if result.is_error:
             close_conn_cursor(conn, cursor)
             return result
-        if result["data"] is False:
+        if result.data is False:
             registered = False
             present = False
         else:
             result = users.check_user_present(user_id=user_id)
-            if result["success"] is False:
+            if result.is_error:
                 close_conn_cursor(conn, cursor)
                 return result
             registered = True
-            present = result["data"]
+            present = result.data
     # if person is registered, check for invited guests
     if registered is True or user_role >= UserRole.TUTOR:
         result = users.get_invited_friends(user_id=user_id, stueble_id=stueble_id)
         close_conn_cursor(conn, cursor)
-        if result["success"] is False:
+        if result.is_error:
             return result
-        invited_guests = result["data"]
+        invited_guests = result.data
         invited_guests = [{snake_to_camel_case(key) if key != "user_uuid" else "id": value for key, value in guest.items()} for guest in invited_guests]
     else:
         close_conn_cursor(conn, cursor)
@@ -853,18 +853,18 @@ async def status(user_id: Annotated[str | int, "Explicit with user_uuid"] = None
         return {"success": False, "error": "either user_id or user_uuid must be specified"}
 
     result = users.get_user(user_id=user_id, user_uuid=user_uuid, columns=["id", "user_role"], expect_single_answer=True)
-    if result["success"] is False:
+    if result.is_error:
         return result
 
-    capabilities = [i.value for i in get_leq_roles(result["data"][1]) if i.value in ["user", "host", "tutor", "admin"]]
+    capabilities = [i.value for i in get_leq_roles(result.data[1]) if i.value in ["user", "host", "tutor", "admin"]]
 
     data = {"code": "200",
             "capabilities": capabilities}
     
     result = sessions.get_session_ids(user_id=user_id)
-    if result["success"] is False:
+    if result.is_error:
         return result
-    session_ids = result["data"]
+    session_ids = result.data
     for sid in session_ids:
         websocket = get_websocket_by_sid(sid=sid)
         if websocket is not None:

@@ -1,49 +1,34 @@
-from datetime import datetime
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated
 import uuid
 
-
-from backend.data_types import EventType
-from backend.data_types import FrontendUserRole
 from backend.database import database as db
-from backend.sql_connection.common_types import GenericFailure, SingleSuccess, error_to_failure
+from backend.datatypes.funcres import FuncRes, Status, Message
+from backend.datatypes.stueble_types import EventType, FrontendUserRole
 
-class GuestListPresentData(TypedDict):
-    first_name: str
-    last_name: str
-    user_role: FrontendUserRole
-
-class GuestListPresentSuccess(TypedDict):
-    success: Literal[True]
-    data: list[GuestListPresentData]
-
-class GuestListEvent(TypedDict):
-    status: str
-    time: datetime
-
-class GuestListData(TypedDict):
-    first_name: str
-    last_name: str
-    user_role: FrontendUserRole
-    events: list[GuestListEvent]
-
-class GuestListSuccess(TypedDict):
-    success: Literal[True]
-    data: list[GuestListData]
 
 def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "Explicit with user_id"] = None,
-                 user_id: Annotated[int | None, "Explicit with user_uuid"] = None) -> SingleSuccess | GenericFailure:
+                 user_id: Annotated[int | None, "Explicit with user_uuid"] = None) -> FuncRes:
     """
     add or remove a guest to the guest_list of present people in events for a stueble party \n
     used when a guest arrives / leaves
+    
     Args:
         event_type (EventType): type of event
         user_uuid: uuid of guest
         user_id: id of guest
+    Returns:
+        FuncRes: Return object with success status and data containing the timestamp of the event if successful, error message if error occurred
     """
 
     if (user_uuid is not None and user_id is not None) or (user_uuid is None and user_id is None):
-        return {"success": False, "error": "either user_uuid or user_id must be specified"}
+        return FuncRes(
+            error="either user_uuid or user_id must be specified, but not both",
+            status=Status.FULL_ERROR,
+            message=Message(name="Change Guest Error",
+                            type="error",
+                            category="Change Guest",
+                            code=400)
+        )
     
     if user_id is None:
         # get user id from uuid
@@ -53,12 +38,25 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
             conditions={"user_uuid": str(user_uuid)})
 
-        if result["success"] is False:
-            return error_to_failure(result)
-        if result["data"] is None:
-            return {"success": False, "error": "no user found"}
-
-        user_id = result["data"][0]
+        if result.is_error:
+            return FuncRes(
+                error=str(result.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Change Guest Error",
+                                type="error",
+                                category="Change Guest",
+                                code=500)
+            )
+        if result.data is None:
+            return FuncRes(
+            error="no user found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Change Guest Error",
+                            type="error",
+                            category="Change Guest",
+                            code=400)
+        )
+        user_id = result.data[0]
 
     # get stueble_id
     result = db.select(
@@ -67,12 +65,26 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         specific_where="date_of_time = CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = (CURRENT_DATE - INTERVAL '1 day' ))")
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": "no stueble party found for today or yesterday"}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Change Guest Error",
+                            type="error",
+                            category="Change Guest",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="no stueble party found for today or yesterday",
+            status=Status.FULL_ERROR,
+            message=Message(name="Change Guest Error",
+                            type="error",
+                            category="Change Guest",
+                            code=500)
+        )
 
-    stueble_id = result["data"][0]
+    stueble_id = result.data[0]
 
     # add user to events
     result = db.insert(
@@ -80,18 +92,42 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
         values={"user_id": user_id, "event_type": event_type.value, "stueble_id": stueble_id},
         returning_column="id")
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": "error occurred"}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Change Guest Error",
+                            type="error",
+                            category="Change Guest",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="failed to add event",
+            status=Status.FULL_ERROR,
+            message=Message(name="Change Guest Error",
+                            type="error",
+                            category="Change Guest",
+                            code=500)
+        )
 
-    return result
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Change Guest Success",
+                        type="success",
+                        category="Change Guest",
+                        code=200)
+    )
 
-def guest_list_present(stueble_id: int | None = None) -> GuestListPresentSuccess | GenericFailure:
+def guest_list_present(stueble_id: int | None = None) -> FuncRes:
     """
     returns list of all guests that are currently present
+
     Args:
         stueble_id (int | None): id for a specific stueble party, if None the current stueble party is used
+    Returns:
+        FuncRes: success: True if guest list was retrieved successfully, False otherwise, data: list of guests with first name, last name and user role
     """
 
     parameters = {}
@@ -120,21 +156,37 @@ def guest_list_present(stueble_id: int | None = None) -> GuestListPresentSuccess
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         **parameters)
-    if result["success"] is False:
-        return error_to_failure(result)
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Guest List Present Error",
+                            type="error",
+                            category="Guest List Present",
+                            code=500)
+        )
 
-    data = result["data"]
+    data = result.data
 
-    return {
-        "success": True, 
-        "data": [{"first_name": i[0], "last_name": i[1], "user_role": FrontendUserRole.EXTERN if i[2] == "extern" else FrontendUserRole.INTERN} for i in data]
-    }
+    return FuncRes(
+        data=[{"first_name": i[0], "last_name": i[1], "user_role": FrontendUserRole.EXTERN if i[2] == "extern" else FrontendUserRole.INTERN} for i in data],
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Guest List Present Success",
+                        type="success",
+                        category="Guest List Present",
+                        code=200)
 
-def guest_list(stueble_id: int | None = None) -> GuestListSuccess | GenericFailure:
+    )
+
+
+def guest_list(stueble_id: int | None = None) -> FuncRes:
     """
     returns list of all guests that have been at the party
+
     Args:
         stueble_id (int | None): id for a specific stueble party, if None the current stueble party is used
+    Returns:
+        FuncRes: success: True if guest list was retrieved successfully, False otherwise, data: list of guests with first name, last name, user role, room number and residence for interns and invited by for externs
     """
 
     parameters = {}
@@ -184,12 +236,19 @@ WHERE rn = 1
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         **parameters)
 
-    if result["success"] is False:
-        return error_to_failure(result)
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Guest List Error",
+                            type="error",
+                            category="Guest List",
+                            code=500)
+        )
 
     infos = []
 
-    for guest in result["data"]:
+    for guest in result.data:
         data_pack = {"firstName": guest[0],
                      "lastName": guest[1],
                      "extern": guest[2],
@@ -203,4 +262,11 @@ WHERE rn = 1
             data_pack["invitedBy"] = guest[8]
         infos.append(data_pack)
 
-    return {"success": True, "data": infos}
+    return FuncRes(
+        data=infos,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Guest List Success",
+                        type="success",
+                        category="Guest List",
+                        code=200)
+    )
