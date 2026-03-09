@@ -1,50 +1,45 @@
 from datetime import datetime, timedelta
-from typing import Literal, TypedDict, cast, overload
+from typing import Literal, overload
 
 import pytz
 
-from backend.data_types import UserRole
 from backend.database import database as db
+from backend.datatypes.funcres import FuncRes, Status, Message
 from backend.sql_connection.ultimate_functions import clean_single_data
 
-class CreateSessionSuccess(TypedDict):
-    success: Literal[True]
-    data: list[str]
 
-class GetSessionSuccess(TypedDict):
-    success: Literal[True]
-    data: tuple[str, datetime]
-
-class GetUserSuccess(TypedDict):
-    success: Literal[True]
-    data: tuple[int, UserRole, str]
-
-class GetUserSuccessFull(TypedDict):
-    success: Literal[True]
-    data: tuple[int, UserRole, str, int, str, str, str, str, str]
-
-class CheckSessionIdSuccess(TypedDict):
-    success: Literal[True]
-    data: bool
-
-def create_session(user_id: int) -> CreateSessionSuccess | GenericFailure:
+def create_session(user_id: int) -> FuncRes:
     """
     creates a session for a user in the table sessions
 
     Args:
         user_id (int): id of the user
     Returns:
-        dict: {"success": bool, "data": id}, {"success": False, "error": e} if error occured
+        FuncRes: Return object containing user id or error
     """
 
     # load the configuration variable for session expiration time in days from table configurations
     expiration_time = db.select(columns=["value"], table="configurations", conditions={"key": "session_expiration_days"}, type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
-    if expiration_time["success"] is False:
-        return error_to_failure(expiration_time)
-    elif expiration_time["data"] is None:
-        return {"success": False, "error": "Invalid result data"}
+    if expiration_time.is_error:
+        return FuncRes(
+            error=str(expiration_date.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Session Error",
+                            type="error",
+                            category="Create Session",
+                            code=500)
+        )
+    elif expiration_time.data is None:
+        return FuncRes(
+            error="Invalid result data",
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Session Error",
+                            type="error",
+                            category="Create Session",
+                            code=500)
+        )
 
-    expiration_time = int(expiration_time["data"][0])
+    expiration_time = int(expiration_time.data[0])
 
     # calculate expiration date
     tz = pytz.timezone("Europe/Berlin")
@@ -58,20 +53,41 @@ def create_session(user_id: int) -> CreateSessionSuccess | GenericFailure:
         values={"user_id": user_id, "expiration_date": expiration_date},
         returning_column="session_id")
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": "error occurred"}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Session Error",
+                            type="error",
+                            category="Create Session",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="error occurred",
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Session Error",
+                            type="error",
+                            category="Create Session",
+                            code=500)
+        )
     else:
-        return {"success": True, "data": list(result["data"]) + [expiration_date]}
+        return FuncRes(
+            data=list(result.data) + [expiration_date],
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Create Session Success",
+                            type="success",
+                            category="Create Session",
+                            code=200)
+        )
 
-def get_session(session_id: str) -> GetSessionSuccess | GenericFailure:
+def get_session(session_id: str) -> FuncRes:
     """
     gets the session of a user from the table sessions
     Args:
         session_id (str): id of the session
     Returns:
-        dict: {"success": bool, "data": (session_id, expiration_date)}, {"success": False, "error": e} if error occurred
+        FuncRes: Return object containing (session_id, expiration_date) or error
     """
 
     result = db.select(
@@ -81,49 +97,90 @@ def get_session(session_id: str) -> GetSessionSuccess | GenericFailure:
         specific_where="session_id = %s AND expiration_date > NOW()",
         variables=[session_id]
         )
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": "no session found"}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Session Error",
+                            type="error",
+                            category="Get Session",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="no session found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Session Error",
+                            type="error",
+                            category="Get Session",
+                            code=500)
+        )
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Get Session Success",
+                        type="success",
+                        category="Get Session",
+                        code=200)
+    )
 
-    return cast(GetSessionSuccess, cast(object, result))
-
-def remove_session(session_id: str) -> GenericSuccess | GenericFailure:
+def remove_session(session_id: str) -> FuncRes:
     """
     removes a session from the table sessions
     Args:
         session_id (str): id of the user
     Returns:
-        dict: {"success": bool, "data": data}, {"success": False, "error": e} if error occurred
+        FuncRes: Return object containing deleted session_id or error
     """
 
     result = db.delete(
         table="sessions",
         conditions={"session_id": session_id},
         returning_column="session_id")
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": "no session found"}
-    return result
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Remove Session Error",
+                            type="error",
+                            category="Remove Session",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="no session found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Remove Session Error",
+                            type="error",
+                            category="Remove Session",
+                            code=500)
+        )
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Remove Session Success",
+                        type="success",
+                        category="Remove Session",
+                        code=200)
+    )
 
 @overload
-def get_user(session_id: str, keywords: None = None) -> GetUserSuccess | GenericFailure: ...
+def get_user(session_id: str, keywords: None = None) -> FuncRes: ...
 
 @overload
 def get_user(session_id: str, keywords: tuple[Literal["id"], Literal["user_role"], Literal["user_uuid"], Literal["room"], Literal["residence"],
-             Literal["first_name"], Literal["last_name"], Literal["email"], Literal["user_name"]]) -> GetUserSuccessFull | GenericFailure: ...
+             Literal["first_name"], Literal["last_name"], Literal["email"], Literal["user_name"]]) -> FuncRes: ...
 @overload
-def get_user(session_id: str, keywords: tuple[str] | list[str]) -> SingleSuccess | SingleSuccessCleaned | GenericFailure: ...
+def get_user(session_id: str, keywords: tuple[str] | list[str]) -> FuncRes: ...
 
-def get_user(session_id: str, keywords: tuple[str] | list[str] | None = None) -> SingleSuccess | SingleSuccessCleaned | GenericFailure:
+def get_user(session_id: str, keywords: tuple[str] | list[str] | None = None) -> FuncRes:
     """
     gets the user role of a user from the table users via the sessions table
     Args:
         session_id (str): id of the user
         keywords (tuple[str] | list[str]): list of keywords to be returned
     Returns:
-        dict: {"success": bool, "data": user_role}, {"success": False, "error": e} if error occurred
+        FuncRes: Return object containing user data or error
     """
 
     allowed_keywords = ["id", "user_role", "user_uuid", "room", "residence", "first_name", "last_name", "email", "user_name"]
@@ -133,7 +190,14 @@ def get_user(session_id: str, keywords: tuple[str] | list[str] | None = None) ->
     else:
         keywords = list(keywords)
         if not all(map(lambda k: k in allowed_keywords, keywords)):
-            return { "success": False, "error": "invalid keywords specified"}
+            return FuncRes(
+                error="invalid keywords specified",
+                status=Status.FULL_ERROR,
+                message=Message(name="Get User Error",
+                                type="error",
+                                category="Get User",
+                                code=400)
+            )
 
     result = db.select(
         columns=["u." + i for i in keywords],
@@ -141,22 +205,50 @@ def get_user(session_id: str, keywords: tuple[str] | list[str] | None = None) ->
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         conditions={"s.session_id": session_id})
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": "no matching session and user found"}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Get User Error",
+                            type="error",
+                            category="Get User",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="no matching session and user found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Get User Error",
+                            type="error",
+                            category="Get User",
+                            code=404)
+        )
     elif len(keywords) == 1:
-        return clean_single_data(result)
+        return FuncRes(
+            data=clean_single_data(result),
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Get User Success",
+                            type="success",
+                            category="Get User",
+                            code=200)
+        )
 
-    return result
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Get User Success",
+                        type="success",
+                        category="Get User",
+                        code=200)
+    )
 
-def remove_user_sessions(user_id: int) -> SingleSuccess | GenericSuccess | GenericFailure:
+def remove_user_sessions(user_id: int) -> FuncRes:
     """
     removes all sessions of a user from the table sessions
     Args:
         user_id (int): id of the user
     Returns:
-        dict: {"success": bool, "data": data}, {"success": False, "error": e} if error occurred
+        FuncRes: Return object containing user id of deleted user or error
     """
 
     result = db.delete(
@@ -164,39 +256,83 @@ def remove_user_sessions(user_id: int) -> SingleSuccess | GenericSuccess | Gener
         conditions={"user_id": user_id},
         returning_column="session_id")
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": "no sessions found"}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Remove User Sessions Error",
+                            type="error",
+                            category="Remove User Sessions",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="no sessions found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Remove User Sessions Error",
+                            type="error",
+                            category="Remove User Sessions",
+                            code=404)
+        )
 
-    return result
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Remove User Sessions Success",
+                        type="success",
+                        category="Remove User Sessions",
+                        code=200)
+    )
 
-def check_session_id(session_id: int) -> CheckSessionIdSuccess | GenericFailure:
+def check_session_id(session_id: int) -> FuncRes:
     """
     checks, whether a session_id is valid
 
     Args:
         session_id: id of the session
+    Returns:
+        FuncRes: Return object containing boolean whether session_id is valid or error
     """
 
     result = db.select(table="sessions",
                        conditions={"id": session_id},
                        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": True, "data": False}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Check Session Id Error",
+                            type="error",
+                            category="Check Session Id",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            data=False,
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Check Session Id Success",
+                            type="success",
+                            category="Check Session Id",
+                            code=200)
+        )
 
-    return {"success": True, "data": True}
+    return FuncRes(
+        data=True,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Check Session Id Success",
+                        type="success",
+                        category="Check Session Id",
+                        code=200)
+    )
 
-def get_session_ids(user_id: int, uuid: bool = False) -> SingleSuccess | GenericFailure:
+def get_session_ids(user_id: int, uuid: bool = False) -> FuncRes:
     """
     gets all session ids of a user from the table sessions
     Args:
         user_id (int): id of the user
         uuid (bool): whether to return the session_id (uuid) or the internal id
     Returns:
-        dict: {"success": bool, "data": session_ids}, {"success": False, "error": e} if error occurred
+        FuncRes: Return object containing list of session ids or error
     """
 
     result = db.select(
@@ -206,9 +342,30 @@ def get_session_ids(user_id: int, uuid: bool = False) -> SingleSuccess | Generic
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER
     )
 
-    if result["success"] is False:
-        return error_to_failure(result)
-    if result["data"] is None:
-        return {"success": False, "error": "no sessions found"}
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Session IDs Error",
+                            type="error",
+                            category="Get Session IDs",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="no sessions found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Session IDs Error",
+                            type="error",
+                            category="Get Session IDs",
+                            code=404)
+        )
 
-    return {"success": True, "data": [row[0] for row in result["data"]]}
+    return FuncRes(
+        data=[row[0] for row in result.data],
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Get Session IDs Success",
+                        type="success",
+                        category="Get Session IDs",
+                        code=200)
+    )

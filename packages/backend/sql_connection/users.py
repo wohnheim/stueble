@@ -68,13 +68,13 @@ def add_user(user_role: UserRole,
         values=arguments,
         returning_column=returning_column)
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
     if is_single_success(result):
         if not ", " in returning_column:
             result = clean_single_data(result)
 
-        if result["data"] is None:
+        if result.data is None:
             return {"success": False, "error": "Insert of user failed"}
         return cast(AddRemoveUserSuccess, result)
     return result
@@ -108,14 +108,14 @@ def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email
     result = db.update(table="users",
                        columns={"password_hash": None}, conditions=conditions, returning_column="id, user_role")
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
-    if result["data"] is None:
+    if result.data is None:
         return {"success": False, "error": "User doesn't exist."}
-    if result["data"][1] == UserRole.EXTERN.value:
+    if result.data[1] == UserRole.EXTERN.value:
         return {"success": False, "error": "User role is extern."}
 
-    return {"success": True, "data": int(result["data"][0])}
+    return {"success": True, "data": int(result.data[0])}
 
 def update_user(
         user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
@@ -158,9 +158,9 @@ def update_user(
     result = db.update(table="users", columns=kwargs,
                              conditions=conditions, returning_column="id")
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
-    if result["data"] is None:
+    if result.data is None:
         return {"success": False, "error": "User doesn't exist."}
 
     return cast(AddRemoveUserSuccess, clean_single_data(result))
@@ -241,10 +241,10 @@ def get_user(
         specific_where=specific_where,
         **value)
 
-    if result["success"] is False:
+    if result.is_error:
         return result
 
-    if result["data"] is None or (isinstance(result["data"], list) and len(result["data"]) == 0):
+    if result.data is None or (isinstance(result.data, list) and len(result["data"]) == 0):
         return {"success": False, "error": "No matching user found"}
         
     return result
@@ -281,10 +281,10 @@ def get_invited_friends(user_id: int, stueble_id: int) -> MultipleTupleSuccess |
         variables=[user_id, stueble_id]
     )
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
 
-    if result["success"] is True and len(result["data"]) == 0:
+    if result.is_success and len(result.data) == 0:
         # if no friends were invited, check if user is registered for the specific stueble
         query = """
         SELECT 'add' =
@@ -301,13 +301,13 @@ def get_invited_friends(user_id: int, stueble_id: int) -> MultipleTupleSuccess |
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
             variables=[user_id, stueble_id]
         )
-        if result["success"] is False:
+        if result.is_error:
             return error_to_failure(result)
-        if result["success"] is True and result["data"] is None:
+        if result.is_success and result.data is None:
             return {"success": False, "error": "User has to be in stueble in order to invite friends."}
         return {"success": True, "data": []}
 
-    result["data"] = [{key: value for key, value in zip(arguments, guest)} for guest in result["data"]]
+    result.data = [{key: value for key, value in zip(arguments, guest)} for guest in result.data]
 
     return result
 
@@ -336,10 +336,10 @@ def create_verification_code(user_id: int | None, additional_data: dict[str, Any
         values=values,
         returning_column="reset_code")
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
     # maybe shouldn't be possible, but still left in
-    if result["success"] and result["data"] is None:
+    if result["success"] and result.data is None:
         return {"success": False, "error": "error occurred"}
     return clean_single_data(result)
 
@@ -373,12 +373,12 @@ def confirm_verification_code(reset_code: str, additional_data: bool = False, ex
         **arguments
     )
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
-    if result["data"] is None:
+    if result.data is None:
         return {"success": False, "error": "Reset code doesn't exist."}
     
-    if result["success"] is True:
+    if result.is_success:
         result_insert = db.update(table="verification_codes",
                                  columns={"used": True}, conditions={"reset_code": reset_code})
         if result_insert["success"] is False:
@@ -414,10 +414,10 @@ def add_verification_method(method: VerificationMethod,
         values=values,
         returning_column="id")
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
 
-    if result["data"] is None:
+    if result.data is None:
         return {"success": False, "error": "error occurred"}
 
     return {"success": True}
@@ -442,9 +442,9 @@ def get_users(user_uuids: list[str],
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         variables=tuple(user_uuids))
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
-    if len(result["data"]) != len(user_uuids):
+    if len(result.data) != len(user_uuids):
         return {"success": False, "error": "Not all users found."}
     return result
 
@@ -479,9 +479,9 @@ def check_user_guest_list(user_id: int) -> SingleSuccess | GenericFailure:
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         variables=[user_id])
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
-    if result["data"] is None:
+    if result.data is None:
         return {"success": False, "error": "User or stueble doesn't exist."}
     return clean_single_data(result)
 
@@ -512,8 +512,8 @@ def check_user_present(user_id: int) -> SingleSuccessCleaned | GenericFailure:
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         variables=[user_id])
 
-    if result["success"] is False:
+    if result.is_error:
         return error_to_failure(result)
-    if result["data"] is None:
+    if result.data is None:
         return {"success": False, "error": "User or stueble doesn't exist."}
     return clean_single_data(result)

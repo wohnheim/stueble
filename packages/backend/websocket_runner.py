@@ -45,12 +45,12 @@ def listen_to_db(connection: connection, cursor: cursor):
             user_id = data["user_id"]
             stueble_id = data["stueble_id"]
             result = users.get_user(user_id=user_id, columns=["first_name", "last_name", "user_uuid"])
-            if result["success"] is False:
+            if result.is_error:
                 # TODO catch this, e.g. by sending an error message to api.py
                 warnings.warn(f"Could not get user with id {user_id}")
                 continue
             # NOTE only use user_uuid for the guest_list not publicly available for hosts etc.
-            first_name, last_name, user_uuid = result["data"]
+            first_name, last_name, user_uuid = result.data
             removed_user_data = {"first_name": first_name,
                     "last_name": last_name,
                     "user_uuid": user_uuid,
