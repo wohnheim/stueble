@@ -1,13 +1,13 @@
 from typing import Any
 
 
-def export_csv(result: list[dict[str, Any]]):
+def export_csv(result: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Export the given result as a JSON string.
     Args:
         result (list[dict]): The data to be exported.
     Returns:
-        dict: A dictionary containing the success status and the JSON string or an error message.
+        dict[str, Any] A dictionary containing the success status and the JSON string or an error message.
     """
     if any(", " in key for key in result[0].keys()):
         return {"success": False, "message": "Keys can't contain ', '."}

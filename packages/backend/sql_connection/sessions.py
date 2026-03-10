@@ -22,7 +22,7 @@ def create_session(user_id: int) -> FuncRes:
     expiration_time = db.select(columns=["value"], table="configurations", conditions={"key": "session_expiration_days"}, type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
     if expiration_time.is_error:
         return FuncRes(
-            error=str(expiration_date.error),
+            error=str(expiration_time.error),
             status=Status.FULL_ERROR,
             message=Message(name="Create Session Error",
                             type="error",
@@ -113,7 +113,7 @@ def get_session(session_id: str) -> FuncRes:
             message=Message(name="Get Session Error",
                             type="error",
                             category="Get Session",
-                            code=500)
+                            code=404)
         )
     return FuncRes(
         data=result.data,
@@ -153,7 +153,7 @@ def remove_session(session_id: str) -> FuncRes:
             message=Message(name="Remove Session Error",
                             type="error",
                             category="Remove Session",
-                            code=500)
+                            code=404)
         )
     return FuncRes(
         data=result.data,

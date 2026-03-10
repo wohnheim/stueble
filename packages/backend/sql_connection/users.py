@@ -1,24 +1,12 @@
 import enum
 import json
-from typing import Annotated, Any, Literal, TypedDict, cast, overload
+from typing import Annotated, Any, Literal
 
-from backend.data_types import Email, Residence, UserRole, VerificationMethod
+from backend.datatypes.stueble_types import Email, Residence, UserRole, VerificationMethod
 from backend.database import database as db
-from backend.sql_connection.common_types import (
-    GenericFailure,
-    GenericSuccess,
-    MultipleSuccess,
-    MultipleTupleSuccess,
-    SingleSuccess,
-    SingleSuccessCleaned,
-    error_to_failure,
-    is_single_success,
-)
+from backend.datatypes.funcres import FuncRes, Status, Message
 from backend.sql_connection.ultimate_functions import clean_single_data
 
-class AddRemoveUserSuccess(TypedDict):
-    success: Literal[True]
-    data: int
 
 def add_user(user_role: UserRole,
              first_name: str,
@@ -28,7 +16,7 @@ def add_user(user_role: UserRole,
              residence: Residence | None = None,
              email: Email | None = None,
              password_hash: str | None = None,
-             user_name: str | None = None) -> AddRemoveUserSuccess | GenericSuccess | GenericFailure:
+             user_name: str | None = None) -> FuncRes:
     """
     adds a user to the table users
 
@@ -36,26 +24,38 @@ def add_user(user_role: UserRole,
         user_role (UserRole): available roles for the user
         first_name (str): first name of the user
         last_name (str): last name of the user
-        returning (str): which column to return
+        returning_column (str | None): which column to return
         room (str | int | None): room of the user
         residence (Residence | None): residence of the user
         email (Email | None): email of the user
         password_hash (str | None): password hash of the user
         user_name (str | None): username of the user
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
+        FuncRes: id if returning is True and successful, error otherwise
     """
     values_set = any(i is None for i in [room, residence, email, password_hash, user_name, first_name, last_name])
     values_not_set = any(i is not None for i in [room, residence, email, password_hash, user_name])
 
     if (values_set and user_role != UserRole.EXTERN) or (user_role == UserRole.EXTERN and values_not_set):
         if user_role != UserRole.EXTERN:
-            return {"success": False, "error": "For user_role other than extern, room, residence, email, password_hash and user_name must be set. For user_role extern, these values must not be specified."}
+            return FuncRes(error="For user_role other than extern, room, residence, email, password_hash and user_name must be set. For user_role extern, these values must not be specified.",
+                            status=Status.FULL_ERROR,
+                            message=Message(name="Add User Error",
+                                            type="error",
+                                            category="Add User",
+                                            code=400)
+            )
 
     arguments = {"user_role": user_role.value, "first_name": first_name, "last_name": last_name}
     if user_role != UserRole.EXTERN:
         if room is not None and str(room).isdigit() is False:
-            return {"success": False, "error": "Room must be an integer, provided as str | int."}
+            return FuncRes(error="Room must be an integer, provided as str | int.",
+                            status=Status.FULL_ERROR,
+                            message=Message(name="Add User Error",
+                                            type="error",
+                                            category="Add User",
+                                            code=400)
+            )
 
         if room is not None: arguments["room"] = str(room)
         if residence is not None: arguments["residence"] = residence.value
@@ -69,20 +69,46 @@ def add_user(user_role: UserRole,
         returning_column=returning_column)
 
     if result.is_error:
-        return error_to_failure(result)
-    if is_single_success(result):
-        if not ", " in returning_column:
-            result = clean_single_data(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Add User Error",
+                            type="error",
+                            category="Add User",
+                            code=500)
+        )
+    if result.data is None:
+            return FuncRes(error="Insert of user failed",
+                            status=Status.FULL_ERROR,
+                            message=Message(name="Add User Error",
+                                            type="error",
+                                            category="Add User",
+                                            code=500)
+            )
+    if returning_column is not None and ", " not in returning_column:
+            result = FuncRes(
+                data=clean_single_data(result.data),
+                status=Status.FULL_SUCCESS,
+                message=Message(name="Add User Success",
+                                type="success",
+                                category="Add User",
+                                code=200)
+            )
 
-        if result.data is None:
-            return {"success": False, "error": "Insert of user failed"}
-        return cast(AddRemoveUserSuccess, result)
-    return result
+        
+    return FuncRes(
+        data=result,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Add User Success",
+                        type="success",
+                        category="Add User",
+                        code=200)
+    )
 
 
 def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name"] = None,
                 user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name"] = None,
-                user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name"] = None) -> AddRemoveUserSuccess | GenericFailure:
+                user_name: Annotated[str | None, "set EITHER user_id OR user_email OR user_name"] = None) -> FuncRes:
     """
     removes a user from the table users \n
     actually not the whole user but just their password will be set to NULL
@@ -92,10 +118,16 @@ def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email
         user_email (Email | None): email of the user to be removed
         user_name (str | None): username of the user to be removed
     Returns:
-        dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": id} otherwise
+        FuncRes: id if successful, error otherwise
     """
     if user_id is None and user_email is None and user_name is None:
-        return {"success": False, "error": "Either user_id or user_email or user_name must be set."}
+        return FuncRes(error="Either user_id or user_email or user_name must be set.",
+                        status=Status.FULL_ERROR,
+                        message=Message(name="Remove User Error",
+                                        type="error",
+                                        category="Remove User",
+                                        code=400)
+        )
 
     conditions: dict[str, str | int] = {}
     if user_id is not None:
@@ -109,20 +141,46 @@ def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email
                        columns={"password_hash": None}, conditions=conditions, returning_column="id, user_role")
 
     if result.is_error:
-        return error_to_failure(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Remove User Error",
+                            type="error",
+                            category="Remove User",
+                            code=500)
+        )
     if result.data is None:
-        return {"success": False, "error": "User doesn't exist."}
+        return FuncRes(error="User doesn't exist.",
+                        status=Status.FULL_ERROR,
+                        message=Message(name="Remove User Error",
+                                        type="error",
+                                        category="Remove User",
+                                        code=404)
+        )
     if result.data[1] == UserRole.EXTERN.value:
-        return {"success": False, "error": "User role is extern."}
+        return FuncRes(error="User role is extern.",
+                        status=Status.FULL_ERROR,
+                        message=Message(name="Remove User Error",
+                                        type="error",
+                                        category="Remove User",
+                                        code=400)
+        )
 
-    return {"success": True, "data": int(result.data[0])}
+    return FuncRes(
+        data=int(result.data[0]),
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Remove User Success",
+                        type="success",
+                        category="Remove User",
+                        code=200)
+    )
 
 def update_user(
         user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_email: Annotated[Email | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_name_key: Annotated[str | None, "set EITHER user_id OR user_email OR user_name OR user_uuid"] = None,
         user_uuid_key: Annotated[str | None, "Explicit with user_id, user_email OR user_name OR user_uuid"] = None,
-        **kwargs) -> AddRemoveUserSuccess | GenericFailure:
+        **kwargs) -> FuncRes:
     """
     updates a user in the table users
 
@@ -133,17 +191,29 @@ def update_user(
         user_uuid (str | None): uuid of the user to be updated
         **kwargs: fields to update
     Returns:
-        dict: {"success": False, "error": e} if unsuccessful, {"success": True, "data": id} otherwise
+        FuncRes: id if successful, error otherwise
     """
 
     # TODO: disallow unallowed fields in db
     allowed_fields = ["user_role", "first_name", "last_name", "email", "password_hash", "user_name", "verified"]
     for k in kwargs.keys():
         if k not in allowed_fields:
-            return {"success": False, "error": f"Field {k} is not allowed to be updated."}
+            return FuncRes(error=f"Field {k} is not allowed to be updated.",
+                            status=Status.FULL_ERROR,
+                            message=Message(name="Update User Error",
+                                            type="error",
+                                            category="Update User",
+                                            code=400)
+            )
 
     if all(i is None for i in [user_id, user_email, user_name_key, user_uuid_key]):
-        return {"success": False, "error": "Either user_id or user_email or user_name or user_uuid must be set."}
+        return FuncRes(error="Either user_id or user_email or user_name or user_uuid must be set.",
+                        status=Status.FULL_ERROR,
+                        message=Message(name="Update User Error",
+                                        type="error",
+                                        category="Update User",
+                                        code=400)
+        )
 
     conditions = {}
     if user_id is not None:
@@ -159,11 +229,31 @@ def update_user(
                              conditions=conditions, returning_column="id")
 
     if result.is_error:
-        return error_to_failure(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Update User Error",
+                            type="error",
+                            category="Update User",
+                            code=500)
+        )
     if result.data is None:
-        return {"success": False, "error": "User doesn't exist."}
+        return FuncRes(error="User doesn't exist.",
+                        status=Status.FULL_ERROR,
+                        message=Message(name="Update User Error",
+                                        type="error",
+                                        category="Update User",
+                                        code=404)
+        )
 
-    return cast(AddRemoveUserSuccess, clean_single_data(result))
+    return FuncRes(
+        data=clean_single_data(result.data),
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Update User Success",
+                        type="success",
+                        category="Update User",
+                        code=200)
+        )
 
 
 def get_user(
@@ -177,7 +267,7 @@ def get_user(
         select_max_of_key: Annotated[str, "Explicit with user_id, user_email, conditions, specific_where"] = "",
         specific_where: Annotated[str, "Explicit with user_id, user_email, select_max_of_key, conditions"] = "",
         order_by: Annotated[tuple[str, Literal[0, 1]] | None, "Explicit with type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER"] = None
-    ) -> SingleSuccess | MultipleSuccess | GenericFailure:
+    ) -> FuncRes:
     """
     retrieves a user from the table users
 
@@ -194,18 +284,31 @@ def get_user(
         specific_where (str): if set, will add this specific where clause
         order_by (tuple): if set, will order the results by this tuple
     Returns:
-        dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": user} otherwise
+        FuncRes: user data if successful, error otherwise
     """
-    columns = list(keywords)
+    columns = list(columns)
     if conditions is None:
         conditions = {}
     # check, whether explicitly of type_of_answer and order_by is met
     if type_of_answer and order_by is not None:
-        return {"success": False, "error": "Either type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER or order_by can be set."}
+        return FuncRes(error="Either type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER or order_by can be set.",
+                        status=Status.FULL_ERROR,
+                        message=Message(name="Get User Error",
+                                        type="error",
+                                        category="Get User",
+                                        code=400)
+        )
 
     # check, whether a where statement is set for sql query
     if user_id is None and user_email is None and user_name is None and user_uuid is None and conditions == {} and specific_where == "":
-        return {"success": False, "error": "Either user_id, user_email, user_name, user_uuid, conditions or specific_where must be set."}
+        return FuncRes(
+            error="At least one of user_id, user_email, user_name, user_uuid, conditions or specific_where must be set.",
+            status=Status.FULL_ERROR,
+            message=Message(name="Get User Error",
+                            type="error",
+                            category="Get User",
+                            code=400)
+        )           
     conditions_counter = 0
     if user_id is not None: conditions_counter += 1
     if user_email is not None: conditions_counter += 1
@@ -215,10 +318,14 @@ def get_user(
     if specific_where != "": conditions_counter += 1
     if conditions != {}: conditions_counter += 1
     if conditions_counter > 1:
-        return {
-            "success": False,
-            "error": "user_id, user_email, user_uuid, user_name, select_max_of_key, specific_where and conditions are explicit. Therefore just one of them can be set."
-        }
+        return FuncRes(
+            error="Only one of user_id, user_email, user_name, user_uuid, conditions, select_max_of_key or specific_where can be set.",
+            status=Status.FULL_ERROR,
+            message=Message(name="Get User Error",
+                            type="error",
+                            category="Get User",
+                            code=400)
+        )
 
     if user_id is not None:
         conditions["id"] = user_id
@@ -242,14 +349,35 @@ def get_user(
         **value)
 
     if result.is_error:
-        return result
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Get User Error",
+                            type="error",
+                            category="Get User",
+                            code=500)
+        )
 
-    if result.data is None or (isinstance(result.data, list) and len(result["data"]) == 0):
-        return {"success": False, "error": "No matching user found"}
+    if result.data is None or (isinstance(result.data, list) and len(result.data) == 0):
+        return FuncRes(
+            error="No matching user found",
+            status=Status.FULL_ERROR,
+            message=Message(name="Get User Error",
+                            type="error",
+                            category="Get User",
+                            code=404)
+        )
         
-    return result
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Get User Success",
+                        type="success",
+                        category="Get User",
+                        code=200)
+    )
 
-def get_invited_friends(user_id: int, stueble_id: int) -> MultipleTupleSuccess | GenericFailure:
+def get_invited_friends(user_id: int, stueble_id: int) -> FuncRes:
     """
     retrieves all friends that were invited by a specific user to a specific stueble party
 
@@ -257,8 +385,9 @@ def get_invited_friends(user_id: int, stueble_id: int) -> MultipleTupleSuccess |
         user_id (int): id of the user who invited friends
         stueble_id (int): id of the specific stueble party
     Returns:
-        dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": friends} otherwise
+        FuncRes: friends if successful, error otherwise
     """
+    
     arguments = ["first_name", "last_name", "user_uuid"]
     query = f"""
     SELECT {', '.join(['u.' + i for i in arguments])}
@@ -282,7 +411,14 @@ def get_invited_friends(user_id: int, stueble_id: int) -> MultipleTupleSuccess |
     )
 
     if result.is_error:
-        return error_to_failure(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Invited Friends Error",
+                            type="error",
+                            category="Get Invited Friends",
+                            code=500)
+        )
 
     if result.is_success and len(result.data) == 0:
         # if no friends were invited, check if user is registered for the specific stueble
@@ -302,16 +438,42 @@ def get_invited_friends(user_id: int, stueble_id: int) -> MultipleTupleSuccess |
             variables=[user_id, stueble_id]
         )
         if result.is_error:
-            return error_to_failure(result)
+            return FuncRes(
+                error=str(result.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Invited Friends Error",
+                                type="error",
+                                category="Get Invited Friends",
+                                code=500)
+            )
         if result.is_success and result.data is None:
-            return {"success": False, "error": "User has to be in stueble in order to invite friends."}
-        return {"success": True, "data": []}
+            return FuncRes(
+                error="User has to be in stueble in order to invite friends.",
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Invited Friends Error",
+                                type="error",
+                                category="Get Invited Friends",
+                                code=404)
+            )
+        return FuncRes(
+            data=[],
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Get Invited Friends Success",
+                            type="success",
+                            category="Get Invited Friends",
+                            code=200)
+        )
 
-    result.data = [{key: value for key, value in zip(arguments, guest)} for guest in result.data]
+    return FuncRes(
+        data=[{key: value for key, value in zip(arguments, guest)} for guest in result.data],
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Get Invited Friends Success",
+                        type="success",
+                        category="Get Invited Friends",
+                        code=200)
+    )
 
-    return result
-
-def create_verification_code(user_id: int | None, additional_data: dict[str, Any] | None = None) -> SingleSuccessCleaned | GenericFailure:
+def create_verification_code(user_id: int | None, additional_data: dict[str, Any] | None = None) -> FuncRes:
     """
     creates a password reset code for a specific user
 
@@ -319,7 +481,7 @@ def create_verification_code(user_id: int | None, additional_data: dict[str, Any
         user_id (int | None): id of the user; if None, then code is a verification code for email
         additional_data (dict | None): additional data to be stored in the table; can be None
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occurred
+        FuncRes: id if successful, error otherwise
     """
 
     values = {}
@@ -337,13 +499,34 @@ def create_verification_code(user_id: int | None, additional_data: dict[str, Any
         returning_column="reset_code")
 
     if result.is_error:
-        return error_to_failure(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Verification Code Error",
+                            type="error",
+                            category="Create Verification Code",
+                            code=500)
+        )
     # maybe shouldn't be possible, but still left in
-    if result["success"] and result.data is None:
-        return {"success": False, "error": "error occurred"}
-    return clean_single_data(result)
+    if result.data is None:
+        return FuncRes(
+            error="error occured",
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Verification Code Error",
+                            type="error",
+                            category="Create Verification Code",
+                            code=500)
+        )
+    return FuncRes(
+        data=clean_single_data(result.data),
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Create Verification Code Success",
+                        type="success",
+                        category="Create Verification Code",
+                        code=200)
+    )
 
-def confirm_verification_code(reset_code: str, additional_data: bool = False, expiration_minutes: int | None=None) -> SingleSuccessCleaned | MultipleSuccess | GenericFailure:
+def confirm_verification_code(reset_code: str, additional_data: bool = False, expiration_minutes: int | None=None) -> FuncRes:
     """
     confirms a password reset code for a specific user
 
@@ -352,12 +535,12 @@ def confirm_verification_code(reset_code: str, additional_data: bool = False, ex
         additional_data (bool): whether to return additional data
         expiration_minutes (int | None): if set, the code is only valid for this many minutes
     Returns:
-        dict: {"success": bool} by default, {"success": bool, "data": id} if returning is True, {"success": False, "error": e} if error occured
+        FuncRes: id if successful, error otherwise
     """
 
-    keywords = ["user_id"]
+    columns = ["user_id"]
     if additional_data:
-        keywords.append("additional_data")
+        columns.append("additional_data")
 
     arguments = {}
     if expiration_minutes is not None:
@@ -368,27 +551,55 @@ def confirm_verification_code(reset_code: str, additional_data: bool = False, ex
         arguments["variables"] = (reset_code,)
     result = db.select(
         table="verification_codes",
-        columns=keywords,
+        columns=columns,
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         **arguments
     )
 
     if result.is_error:
-        return error_to_failure(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Confirm Verification Code Error",
+                            type="error",
+                            category="Confirm Verification Code",
+                            code=500)
+        )
     if result.data is None:
-        return {"success": False, "error": "Reset code doesn't exist."}
-    
+        return FuncRes(
+            error="Reset code doesn't exist.",
+            status=Status.FULL_ERROR,
+            message=Message(name="Confirm Verification Code Error",
+                            type="error",
+                            category="Confirm Verification Code",
+                            code=404)
+        )
+
     if result.is_success:
         result_insert = db.update(table="verification_codes",
                                  columns={"used": True}, conditions={"reset_code": reset_code})
-        if result_insert["success"] is False:
-            return error_to_failure(result_insert)
+        if result_insert.is_error:
+            return FuncRes(
+                error=str(result_insert.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Confirm Verification Code Error",
+                                type="error",
+                                category="Confirm Verification Code",
+                                code=500)
+            )
 
-    return result
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Confirm Verification Code Success",
+                        type="success",
+                        category="Confirm Verification Code",
+                        code=200)
+    )
 
 def add_verification_method(method: VerificationMethod,
                             user_id: Annotated[str | None, "Explicit with user_uuid"]=None,
-                            user_uuid: Annotated[str | None, "Explicit with user_id"]=None) -> GenericSuccess | GenericFailure:
+                            user_uuid: Annotated[str | None, "Explicit with user_id"]=None) -> FuncRes:
     """
     adds a verification method for a specific user
 
@@ -397,11 +608,18 @@ def add_verification_method(method: VerificationMethod,
         user_id (int | None): id of the user
         user_uuid (str | None): uuid of the user
     Returns:
-        dict: {"success": bool} by default, {"success": False, "error": e} if error occurred
+        FuncRes: id if successful, error otherwise
     """
 
     if (user_id is None and user_uuid is None) or (user_id is not None and user_uuid is not None):
-        return {"success": False, "error": "Either user_id or user_uuid must be set."}
+        return FuncRes(
+            error="Either user_id or user_uuid must be set, but not both.",
+            status=Status.FULL_ERROR,
+            message=Message(name="Add Verification Method Error",
+                            type="error",
+                            category="Add Verification Method",
+                            code=400)
+        )
 
     values = {"method": method.value}
     if user_id is not None:
@@ -415,15 +633,35 @@ def add_verification_method(method: VerificationMethod,
         returning_column="id")
 
     if result.is_error:
-        return error_to_failure(result)
-
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Add Verification Method Error",
+                            type="error",
+                            category="Add Verification Method",
+                            code=500)
+        )
     if result.data is None:
-        return {"success": False, "error": "error occurred"}
+        return FuncRes(
+            error="Error occurred while adding verification method.",
+            status=Status.FULL_ERROR,
+            message=Message(name="Add Verification Method Error",
+                            type="error",
+                            category="Add Verification Method",
+                            code=500)
+        )
 
-    return {"success": True}
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Add Verification Method Success",
+                        type="success",
+                        category="Add Verification Method",
+                        code=200)
+    )
 
 def get_users(user_uuids: list[str],
-              keywords: list[str] | tuple[str] = ("id",)) -> MultipleSuccess | GenericFailure:
+              keywords: list[str] | tuple[str] = ("id",)) -> FuncRes:
     """
     retrieves users from the table users
 
@@ -431,7 +669,7 @@ def get_users(user_uuids: list[str],
         user_uuids (list[str | int]): list of user uuids
         keywords (tuple[str] | list[str]): list of fields to be retrieved, defaults to ["*"]
     Returns:
-        dict: {"success": False, "error": e} if unsuccessful, {"success": bool, "data": users} otherwise
+        FuncRes: users if successful, error otherwise
     """
     keywords = list(keywords)
     # users_list = [(i, "email") if isinstance(i, str) and "@" in i else (i, "user_name") for i in information]
@@ -443,17 +681,40 @@ def get_users(user_uuids: list[str],
         variables=tuple(user_uuids))
 
     if result.is_error:
-        return error_to_failure(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Users Error",
+                            type="error",
+                            category="Get Users",
+                            code=500)
+        )
     if len(result.data) != len(user_uuids):
-        return {"success": False, "error": "Not all users found."}
-    return result
+        return FuncRes(
+            error="Not all users found.",
+            status=Status.FULL_ERROR,
+            message=Message(name="Get Users Error",
+                            type="error",
+                            category="Get Users",
+                            code=404)
+        )
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Get Users Success",
+                        type="success",
+                        category="Get Users",
+                        code=200)
+    )
 
-def check_user_guest_list(user_id: int) -> SingleSuccess | GenericFailure:
+def check_user_guest_list(user_id: int) -> FuncRes:
     """
     checks, whether the user is on the guest list for the latest stueble
 
     Args:
         user_id (int): id of the user
+    Returns:
+        FuncRes: whether the user is on the guest list if successful, error otherwise
     """
 
     query = """SELECT (COALESCE(
@@ -480,17 +741,40 @@ def check_user_guest_list(user_id: int) -> SingleSuccess | GenericFailure:
         variables=[user_id])
 
     if result.is_error:
-        return error_to_failure(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Check User Guest List Error",
+                            type="error",
+                            category="Check User Guest List",
+                            code=500)
+        )
     if result.data is None:
-        return {"success": False, "error": "User or stueble doesn't exist."}
-    return clean_single_data(result)
+        return FuncRes(
+            error="User or stueble doesn't exist.",
+            status=Status.FULL_ERROR,
+            message=Message(name="Check User Guest List Error",
+                            type="error",
+                            category="Check User Guest List",
+                            code=404)
+        )
+    return FuncRes(
+        data=result.data,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Check User Guest List Success",
+                        type="success",
+                        category="Check User Guest List",
+                        code=200)
+    )
 
-def check_user_present(user_id: int) -> SingleSuccessCleaned | GenericFailure:
+def check_user_present(user_id: int) -> FuncRes:
     """
     checks, whether the user is currently present at the latest stueble
 
     Args:
         user_id (int): id of the user
+    Returns:
+        FuncRes: whether the user is currently present if successful, error otherwise
     """
 
     query = """SELECT COALESCE(
@@ -513,7 +797,28 @@ def check_user_present(user_id: int) -> SingleSuccessCleaned | GenericFailure:
         variables=[user_id])
 
     if result.is_error:
-        return error_to_failure(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Check User Present Error",
+                            type="error",
+                            category="Check User Present",
+                            code=500)
+        )
     if result.data is None:
-        return {"success": False, "error": "User or stueble doesn't exist."}
-    return clean_single_data(result)
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Check User Present Error",
+                            type="error",
+                            category="Check User Present",
+                            code=404)
+        )
+    return FuncRes(
+        data=clean_single_data(result.data),
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Check User Present Success",
+                        type="success",
+                        category="Check User Present",
+                        code=200)
+    )

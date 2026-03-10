@@ -216,7 +216,7 @@ def connect(**kwargs):
         user=USER, password=PASSWORD, host=HOST, port=PORT, dbname=DBNAME
     ).cursor()
 
-def fetch(query: sql.Composable, type_of_answer: ANSWER_TYPE, variables: list[Any] | tuple[Any] | None = None, commit: bool = False) -> TupleRow | list[list[TupleRow]] | None | Exception:
+def fetch(query: sql.Composable, type_of_answer: ANSWER_TYPE, variables: list[Any] | tuple[Any,...] | None = None, commit: bool = False) -> TupleRow | list[list[TupleRow]] | None | Exception:
     """
     fetches one record from the database based on the provided query and variables
 
@@ -522,7 +522,7 @@ def delete(
 def custom_call(
     query: str,
     type_of_answer: ANSWER_TYPE,
-    variables: list[Any] | tuple[Any] | None = None,
+    variables: list[Any] | tuple[Any,...] | None = None,
 ) -> Result[Any, Exception]:
     """
     send a custom query to the database
@@ -530,7 +530,7 @@ def custom_call(
     Args:
         query (str):
         type_of_answer (ANSWER_TYPE): what answer to expect
-        variables (list | None): list of variables that should be passed into the query
+        variables (list | tuple | None): list of variables that should be passed into the query
     Returns:
         Result: result object with data or error
     """

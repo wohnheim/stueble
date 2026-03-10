@@ -11,10 +11,25 @@ from backend.datatypes.funcres import FuncRes, Status, Message
 
 
 def hash_pwd(password: str) -> str:
+    """
+    Hashes a password
+    Args:
+        password (str): the password to hash
+    Returns:
+        str: the hashed password
+    """
     hashed_pwd = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
     return hashed_pwd.decode()
 
 def match_pwd(password: str, hashed: str) -> bool:
+    """
+    Compares a raw and a hashed password
+    Args:
+        password (str): the password to compare
+        hashed (str): the hashed password to compare
+    Returns:
+        str: whether the passwords match
+    """
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 def create_signature(message: str | dict[str, Any]) -> FuncRes:
@@ -56,4 +71,3 @@ def create_signature(message: str | dict[str, Any]) -> FuncRes:
                         category="Create Signature",
                         code=200)
     )
-    return {"success": True, "data": base64.b64encode(signature).decode()}

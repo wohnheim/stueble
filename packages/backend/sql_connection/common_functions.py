@@ -1,6 +1,6 @@
 import datetime
 
-from backend.data_types import UserRole
+from backend.datatypes.stueble_types import UserRole
 from backend.database import database as db
 from backend.sql_connection import sessions
 from backend.datatypes.funcres import FuncRes, Status, Message
@@ -96,7 +96,7 @@ def get_motto(date: datetime.date | None = None) -> FuncRes:
             message=Message(name="Get Motto Error",
                             type="error",
                             category="Get Motto",
-                            code=500)
+                            code=404)
         )
     return FuncRes(
         data={"motto": result.data[0], "date": result.data[1], "description": result.data[2], "stueble_id": result.data[3]},

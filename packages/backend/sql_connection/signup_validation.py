@@ -23,9 +23,7 @@ def validate_user_data(user_role: UserRole,
         user_name (str): Username of the user, cannot be empty or None.
 
     Returns:
-        dict: A dictionary with keys 'success' (bool), 'error' (str, optional), and 'status' (int).
-              'success' is True if all validations pass, otherwise False with an appropriate error message.
-              'status' is 200 for success, 400 for client errors, and 500 for server errors.
+        FuncRes: Return object containing status (True if validation passes, False otherwise), error message if any, and status code (200 for success, 400 for client errors, 500 for server errors).
     """
     if not isinstance(user_role, UserRole) or (user_role.value == "admin"):
         return FuncRes(
@@ -85,7 +83,15 @@ def validate_user_data(user_role: UserRole,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
     if result.is_error:
-        return {**error_to_failure(result), "status": 500}
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Validate User Data Error",
+                            type="error",
+                            category="Validate User Data",
+                            code=500,
+                            details={"status": 500})
+        )
 
     email_list = [row[0] for row in result.data]
     user_name_list = [row[1] for row in result.data]
@@ -99,16 +105,64 @@ def validate_user_data(user_role: UserRole,
             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
         
         if result.is_error:
-            return {**error_to_failure(result), "status": 500}
+            return FuncRes(
+                error=str(result.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Validate User Data Error",
+                                type="error",
+                                category="Validate User Data",
+                                code=500,
+                                details={"status": 500})
+            )
         
         if len(result.data) == 0:
-            return {"success": True, "status": 200, "warning": "An account was already created, but deleted."}
+            return FuncRes(
+                error="An account was already created, but deleted.",
+                status=Status.FULL_ERROR,
+                message=Message(name="Validate User Data Error",
+                                type="error",
+                                category="Validate User Data",
+                                code=200,
+                                details={"status": 200})
+            )
 
         if (room, residence.value) in room_residence_list:
-            return {"success": False, "error": "For this apartment an account already exists.", "status": 400}
+            return FuncRes(
+                error="For this apartment an account already exists.",
+                status=Status.FULL_ERROR,
+                message=Message(name="Validate User Data Error",
+                                type="error",
+                                category="Validate User Data",
+                                code=400,
+                                details={"status": 400})
+            )
         if email.email in email_list:
-            return {"success": False, "error": "For this email an account already exists.", "status": 400}
+            return FuncRes(
+                error="For this email an account already exists.",
+                status=Status.FULL_ERROR,
+                message=Message(name="Validate User Data Error",
+                                type="error",
+                                category="Validate User Data",
+                                code=400,
+                                details={"status": 400})
+            )
         if user_name in user_name_list:
-            return {"success": False, "error": "Username already exists.", "status": 400}
+            return FuncRes(
+                error="Username already exists.",
+                status=Status.FULL_ERROR,
+                message=Message(name="Validate User Data Error",
+                                type="error",
+                                category="Validate User Data",
+                                code=400,
+                                details={"status": 400})
+            )
 
-    return {"success": True, "status": 200, "warning": None}
+    return FuncRes(
+        error=None,
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Validate User Data Error",
+                        type="success",
+                        category="Validate User Data",
+                        code=200,
+                        details={"status": 200, "warning": None})
+    )

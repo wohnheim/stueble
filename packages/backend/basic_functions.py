@@ -1,6 +1,6 @@
 import re
 
-def snake_to_camel_case(snake_case: str):
+def snake_to_camel_case(snake_case: str) -> str:
     """
     turns snake_case into camelCase
     Args:
@@ -15,7 +15,7 @@ def snake_to_camel_case(snake_case: str):
 
 
 
-def camel_to_snake_case(camel_case: str):
+def camel_to_snake_case(camel_case: str) -> str:
     """
     turns camelCase into snake_case
     Args:

@@ -51,7 +51,7 @@ def get_motto(date: date | None = None) -> FuncRes:
             message=Message(name="Get Motto Error",
                             type="error",
                             category="Get Motto",
-                            code=500)
+                            code=404)
         )
 
     return FuncRes(
@@ -101,7 +101,7 @@ def get_info(date: date | None=None) -> FuncRes:
             message=Message(name="Get Info Error",
                             type="error",
                             category="Get Info",
-                            code=500)
+                            code=404)
         )
     
     return FuncRes(
@@ -241,7 +241,7 @@ def update_stueble(date: date | None, **kwargs) -> FuncRes:
             message=Message(name="Update Stueble Error",
                             type="error",
                             category="Update Stueble",
-                            code=500)
+                            code=404)
         )
     return FuncRes(
             data=clean_single_data(result),
