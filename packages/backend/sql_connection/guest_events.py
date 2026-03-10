@@ -54,7 +54,7 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
             message=Message(name="Change Guest Error",
                             type="error",
                             category="Change Guest",
-                            code=400)
+                            code=404)
         )
         user_id = result.data[0]
 
@@ -81,7 +81,7 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
             message=Message(name="Change Guest Error",
                             type="error",
                             category="Change Guest",
-                            code=500)
+                            code=404)
         )
 
     stueble_id = result.data[0]

@@ -2,7 +2,7 @@ import qrcode
 from PIL import Image, ImageDraw
 import io
 
-def generate(code: str, size: int | None=None, rounded_edges: int | None=None):
+def generate(code: str, size: int | None=None, rounded_edges: int | None=None) -> io.BytesIO:
     """
     Generate a QR code image from the given string.
     Args:

@@ -36,7 +36,7 @@ def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> F
     # maybe shouldn't be possible, but still left in
     if result.data is None:
         return FuncRes(
-            error=str(result.error),
+            error="no data returned",
             status=Status.FULL_ERROR,
             message=Message(name="Add Guest Error",
                             type="error",
@@ -118,9 +118,9 @@ def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
                                 category="Remove Guest",
                                 code=500)
             )
-        if result.is_success and result.data is None:
+        if result.data is None:
             return FuncRes(
-                error=str(result.error),
+                error="no data returned",
                 status=Status.FULL_ERROR,
                 message=Message(name="Remove Guest Error",
                                 type="error",
@@ -171,7 +171,7 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
                 message=Message(name="Check Guest Error",
                                 type="error",
                                 category="Check Guest",
-                                code=500)
+                                code=404)
             )
         stueble_id = result.data[0]
 
@@ -208,7 +208,7 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
             message=Message(name="Check Guest Error",
                             type="error",
                             category="Check Guest",
-                            code=500)
+                            code=404)
         )
 
     return FuncRes(
