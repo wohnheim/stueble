@@ -14,7 +14,6 @@ from waitress import serve
 
 from backend import api
 from backend import websocket
-from backend.sql_connection.conn_cursor_functions import *
 import backend.websocket_runner as ws_runner  # to ensure DB listener is set up
 
 HOST = os.getenv("HOST") or "127.0.0.1"

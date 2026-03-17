@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from psycopg2 import DatabaseError
 from psycopg import Cursor
@@ -316,10 +316,10 @@ def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: An
         user_ids = [i[0] for i in result.data]
 
     if method == "add":
-        rows = [(user_id, stueble_id) for user_id in user_ids]
+        rows = [(user_id, stueble_id) for user_id in user_ids] # type: ignore
         query = """INSERT INTO hosts (user_id, stueble_id) VALUES %s"""
     else:
-        rows = [tuple((user_id, stueble_id) for user_id in user_ids)]
+        rows = [tuple((user_id, stueble_id) for user_id in user_ids)] # type: ignore
         query = """DELETE FROM hosts WHERE (user_id, stueble_id) IN %s"""
     try:
         execute_values(cursor, query, rows)
