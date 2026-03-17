@@ -28,3 +28,6 @@ pg_data/
 
 # Nix
 result
+
+# Python
+**/venv/
