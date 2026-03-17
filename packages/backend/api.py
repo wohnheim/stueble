@@ -8,7 +8,7 @@ import json
 from flask import Flask, Response, request
 
 from backend import hash_pwd as hp, websocket as ws, qr_code as qr
-from backend.data_types import *
+from backend.datatypes.stueble_types import *
 from backend.google_functions import email as mail
 from backend.sql_connection import (
     configs,
@@ -88,15 +88,11 @@ def login():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # get user data from table
     result = users.get_user(columns=["id", "password_hash", "user_role"], user_email=user_email, user_name=user_name)
 
     # return error
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -104,7 +100,6 @@ def login():
         return response
 
     if result.data is None:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": "Failed to find user"}),
             status=500,
@@ -115,7 +110,6 @@ def login():
     user = result.data
 
     if user[1] is None:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "account was deleted, can be reactivated by signup"}),
             status=401,
@@ -124,7 +118,6 @@ def login():
 
     # if passwords don't match return error
     if not hp.match_pwd(password, user[1]):
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "invalid password"}),
             status=401,
@@ -134,7 +127,6 @@ def login():
     # create a new session
     result = sessions.create_session(user_id=user[0])
 
-    close_conn_cursor(conn, cursor) # close conn, cursor
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -222,9 +214,6 @@ def signup_data():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     user_role = UserRole.USER
     user_info["user_role"] = user_role
     user_info["residence"] = Residence(user_info["residence"])
@@ -233,10 +222,9 @@ def signup_data():
     # check whether user data is unique
     result = validate_user_data(**check_info)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": result["status"], "message": str(result.error)}),
-            status=result["status"],
+            response=json.dumps({"code": result.message.code, "message": str(result.error)}),
+            status=result.message.code,
             mimetype="application/json")
         return response
 
@@ -247,14 +235,13 @@ def signup_data():
 
     additional_data = user_info
 
-    if result["warning"] is not None:
+    if result.user_warning is not None:
         additional_data["method"] = "update"
     else:
         additional_data["method"] = "create"
 
     result = users.create_verification_code(user_id=None, additional_data=additional_data)
 
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -269,7 +256,7 @@ def signup_data():
 
     result = mail.send_mail(recipient=user_info["email"], subject=result["subject"], body=result["body"], images=result["images"], html=True)
 
-    if result.is_error:
+    if result.is_error: # NOTE: until now not possible, since no event, that returns result.error, exists
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -296,13 +283,9 @@ def verify_signup():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # verify token
     result = users.confirm_verification_code(reset_code=token, additional_data=True, expiration_minutes=30)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -324,15 +307,14 @@ def verify_signup():
         user_data["password_hash"] = user_info["password_hash"]
         user_data["user_name"] = user_info["user_name"]
         result = users.update_user(
-            user_email=user_info["email"],
+            user_email=user_info["email"], # type: ignore
             **user_data)
     else:
         result = users.add_user(
             returning_column="id",
-            **user_info)
+            **user_info) # type: ignore
     # if server error occurred, return error
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -344,7 +326,6 @@ def verify_signup():
     # create a new session
     result = sessions.create_session(user_id=user_id)
 
-    close_conn_cursor(conn, cursor)  # close conn, cursor
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -379,13 +360,8 @@ def logout():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # remove session from table
     result = sessions.remove_session(session_id=session_id)
-
-    close_conn_cursor(conn, cursor)
 
     # if nothing could be removed, return error
     if result.is_error:
@@ -413,14 +389,10 @@ def TEST_DELETE_PLEASE_REMOVE():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # get user id from session id
     result = sessions.get_user(session_id=session_id, columns=["id", "user_role"])
 
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
@@ -456,14 +428,10 @@ def delete():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # get user id from session id
     result = sessions.get_user(session_id=session_id, columns=["id", "user_role"])
 
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
@@ -471,7 +439,6 @@ def delete():
         return response
 
     if result.data[1] == UserRole.ADMIN.value:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "Admins cannot be deleted"}),
             status=403,
@@ -484,7 +451,6 @@ def delete():
     # remove user from table
     result = users.remove_user(user_id=user_id)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -494,7 +460,6 @@ def delete():
     # remove session from table
     result = sessions.remove_session(session_id=session_id)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -503,7 +468,6 @@ def delete():
 
     # remove from guest_list
     result = events.remove_guest(user_id=user_id, stueble_id=-1)
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -548,15 +512,11 @@ def reset_password_mail():
     else:
         user_name = name
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check whether user with email exists
     result = users.get_user(columns=["id", "first_name", "last_name", "email", "password_hash"], user_email=user_email, user_name=user_name)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 500 if result.error != "No matching user found" else 404, "message": str(result["error"])}),
+            response=json.dumps({"code": 500 if result.error != "No matching user found" else 404, "message": str(result.error)}),
             status=500 if result.error != "No matching user found" else 404,
             mimetype="application/json")
         return response
@@ -567,7 +527,6 @@ def reset_password_mail():
     password_hash = result.data[4]
 
     if password_hash is None or password_hash == "":
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "User was deleted, needs to signup again."}),
             status=400,
@@ -577,7 +536,6 @@ def reset_password_mail():
     email = Email(email=email)
 
     result = users.create_verification_code(user_id=user_id)
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -624,15 +582,11 @@ def confirm_code():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check whether reset token exists
     result = users.confirm_verification_code(reset_code=reset_token)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
-            response=json.dumps({"code": 500 if str(result.error) != "Reset code doesn't exist" else 404, "message": str(result["error"])}),
+            response=json.dumps({"code": 500 if str(result.error) != "Reset code doesn't exist" else 404, "message": str(result.error)}),
             status=500,
             mimetype="application/json")
         return response
@@ -645,7 +599,6 @@ def confirm_code():
     # set new password
     result = users.update_user(user_id=user_id, password_hash=hashed_password)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -656,7 +609,6 @@ def confirm_code():
     result = sessions.remove_user_sessions(user_id=user_id)
     if result.is_error:
         if result.error != "no sessions found":
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
                 status=500,
@@ -665,7 +617,6 @@ def confirm_code():
 
     # create a new session
     result = sessions.create_session(user_id=user_id)
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -703,20 +654,15 @@ def change_user_data():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions
     result = check_permissions(session_id=session_id, required_role=UserRole.USER)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
             status=403,
@@ -729,14 +675,12 @@ def change_user_data():
     if request.path == "/user/change_password":
         new_pwd = data.get("newPassword", None)
         if new_pwd is None:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "The new_password must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
         if new_pwd == "":
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Password cannot be empty"}),
                 status=400,
@@ -746,14 +690,12 @@ def change_user_data():
     elif request.path == "/user/change_username":
         username = data.get("username", None)
         if username is None:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Username must be specified"}),
                 status=400,
                 mimetype="application/json")
             return response
         if username == "":
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "Username cannot be empty"}),
                 status=400,
@@ -764,7 +706,6 @@ def change_user_data():
     # get user id from session id
     result = users.update_user(session_id=session_id,
                                user_id=user_id, **data)
-    close_conn_cursor(conn, cursor)
     if result.is_error and ("user_name" in data.keys()):
         error = result.error
         if f"Key (user_name)=({data['user_name']}) already exists." in error:
@@ -804,20 +745,15 @@ def guests():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only hosts can add guests
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "invalid permissions, need role host or above"}),
             status=401,
@@ -825,8 +761,7 @@ def guests():
         return response
 
     # get guest list
-    result = guest_events.guest_list(cursor=cursor)
-    close_conn_cursor(conn, cursor) # close conn, cursor
+    result = guest_events.guest_list()
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -860,20 +795,15 @@ def guest_change():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only hosts can add guests
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
             status=403,
@@ -889,24 +819,22 @@ def guest_change():
         columns=keywords,
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
 
-    if data["success"] is False:
-        close_conn_cursor(conn, cursor)
+    if data.is_error:
         response = Response(
-            response=json.dumps({"code": 500, "message": str(data["error"])}),
+            response=json.dumps({"code": 500, "message": str(data.error)}),
             status=500,
             mimetype="application/json")
         return response
 
-    guest_user_id = data["data"][-1]
-    data["data"] = data["data"][:-1]
+    guest_user_id = data.data[-1]
+    data._data = data.data[:-1]
 
     if event_type == EventType.ARRIVE:
         # verify guest if not verified yet
-        if data["data"][4] is False:
+        if data.data[4] is False:
             result = users.update_user(user_uuid_key=user_uuid, 
                                        verified=True)
             if result.is_error:
-                close_conn_cursor(conn, cursor)
                 response = Response(
                     response=json.dumps({"code": 500, "message": str(result.error)}),
                     status=500,
@@ -916,7 +844,6 @@ def guest_change():
     # change guest status to arrive / leave
     result = guest_events.change_guest(user_uuid=user_uuid, event_type=event_type)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         error = {"code": 500, "message": str(result.error)}
         if all(i in error["message"] for i in ["Inviter of user", "is not registered for stueble"]):
             error = {"code": 400, "message": "Inviter not registered to stueble any more"}
@@ -932,7 +859,7 @@ def guest_change():
             mimetype="application/json")
         return response
 
-    user_info = {key: value for key, value in zip(keywords, data["data"])}
+    user_info = {key: value for key, value in zip(keywords, data.data)}
     user_info["user_role"] = FrontendUserRole.EXTERN if user_info["user_role"] == "extern" else FrontendUserRole.INTERN
 
     user_data = {
@@ -950,7 +877,6 @@ def guest_change():
     message = user_data
 
     result = sessions.get_session_ids(user_id=guest_user_id, uuid=True)
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -992,20 +918,15 @@ def attend_stueble():
     if user_uuid is not None:
         required_role = UserRole.HOST
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     if date is None:
-        result = motto.get_motto(cursor=cursor)
+        result = motto.get_info()
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
                 status=500,
                 mimetype="application/json")
             return response
         if result.data is None:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 400, "message": "No stueble is happening in the next time"}),
                 status=400,
@@ -1025,14 +946,12 @@ def attend_stueble():
     result = check_permissions(session_id=session_id, required_role=required_role)
 
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
             status=403,
@@ -1045,7 +964,6 @@ def attend_stueble():
     else:
         result = users.get_user(user_uuid=user_uuid, columns=["id", "user_uuid"], type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
                 status=500,
@@ -1057,7 +975,6 @@ def attend_stueble():
     # get all sessions of user
     result = sessions.get_session_ids(user_id=user_id, uuid=True)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -1067,7 +984,6 @@ def attend_stueble():
 
     result = motto.get_info(date=date)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -1086,7 +1002,6 @@ def attend_stueble():
             stueble_id=stueble_id)
 
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         status_code = 500
         error = str(result.error)
         if "; code: " in str(result.error):
@@ -1122,7 +1037,6 @@ def attend_stueble():
             columns=keywords,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
 
-        close_conn_cursor(conn, cursor)
         if result.is_error:
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -1148,7 +1062,7 @@ def attend_stueble():
     action_type = Action_Type("guestAdded" if request.method == "PUT" else "guestRemoved")
 
     # send a websocket message to all hosts that the guest list changed
-    asyncio.run(ws.broadcast(event=action_type.value, data=user_data if request.method == "PUT" else user_uuid, skip_sid=session_id))
+    asyncio.run(ws.broadcast(event=action_type.value, data=user_data if request.method == "PUT" else user_uuid, skip_sid=session_id)) # type: ignore
 
     # send a websocket message to the user
     for sess_id in guest_session_ids:
@@ -1162,320 +1076,299 @@ def invitee():
     """
     invite a friend and share a qr-code
     """
-    try:
-        # load data
-        data = request.get_json()
-        session_id = request.cookies.get("SID", None)
-        date = data.get("date", None)
-        invitee_first_name = data.get("firstName", None)
-        invitee_last_name = data.get("lastName", None)
-        invitee_email = data.get("email", None)
-        if invitee_email is not None:
-            try:
-                invitee_email = Email(invitee_email)
-            except ValueError:
-                response = Response(
-                    response=json.dumps({"code": 400, "message": "Invalid email format"}),
-                    status=400,
-                    mimetype="application/json")
-                return response
-
-        if any(i is None for i in [session_id, invitee_first_name, invitee_last_name, invitee_email]):
+    # load data
+    data = request.get_json()
+    session_id = request.cookies.get("SID", None)
+    date = data.get("date", None)
+    invitee_first_name = data.get("firstName", None)
+    invitee_last_name = data.get("lastName", None)
+    invitee_email = data.get("email", None)
+    if invitee_email is not None:
+        try:
+            invitee_email = Email(invitee_email)
+        except ValueError:
             response = Response(
-                response=json.dumps({"code": 401,
-                    "message": f"session_id, date, invitee_first_name, invitee_last_name, invitee_email must be specified"}),
-                status=401,
+                response=json.dumps({"code": 400, "message": "Invalid email format"}),
+                status=400,
                 mimetype="application/json")
             return response
 
-        # get connection and cursor
-        conn, cursor = get_conn_cursor()
+    if any(i is None for i in [session_id, invitee_first_name, invitee_last_name, invitee_email]):
+        response = Response(
+            response=json.dumps({"code": 401,
+                "message": f"session_id, date, invitee_first_name, invitee_last_name, invitee_email must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
 
-        # check permissions, since only users can add guests
-        result = check_permissions(session_id=session_id, required_role=UserRole.USER)
+    # check permissions, since only users can add guests
+    result = check_permissions(session_id=session_id, required_role=UserRole.USER)
 
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result.error)}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result.data["allowed"] is False:
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    user_role = UserRole(result.data["user_role"])
+
+    user_id = result.data["user_id"]
+    first_name = result.data["first_name"]
+    last_name = result.data["last_name"]
+
+    if user_role < UserRole.HOST:
+        result = users.check_user_guest_list(user_id=user_id)
         if result.is_error:
-            # close_conn_cursor(conn, cursor)
             response = Response(
-                response=json.dumps({"code": 401, "message": str(result.error)}),
-                status=401,
+                response=json.dumps({"code": 500, "message": str(result.error)}),
+                status=500,
                 mimetype="application/json")
             return response
-        if result.data["allowed"] is False:
-            # close_conn_cursor(conn, cursor)
+        if result.data is False:
             response = Response(
-                response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
+                response=json.dumps({"code": 403, "message": "You need to be on the guest list to invite someone"}),
                 status=403,
                 mimetype="application/json")
             return response
 
-        user_role = UserRole(result.data["user_role"])
-
-        user_id = result.data["user_id"]
-        first_name = result.data["first_name"]
-        last_name = result.data["last_name"]
-
-        if user_role < UserRole.HOST:
-            result = users.check_user_guest_list(user_id=user_id)
-            if result.is_error:
-                # close_conn_cursor(conn, cursor)
-                response = Response(
-                    response=json.dumps({"code": 500, "message": str(result.error)}),
+        # check, whether user is present
+        result = users.check_user_present(user_id=user_id)
+        if result.is_error:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result.error)}),
                     status=500,
                     mimetype="application/json")
-                return response
-            if result.data is False:
-                # close_conn_cursor(conn, cursor)
-                response = Response(
-                    response=json.dumps({"code": 403, "message": "You need to be on the guest list to invite someone"}),
-                    status=403,
-                    mimetype="application/json")
-                return response
-
-            # check, whether user is present
-            result = users.check_user_present(user_id=user_id)
-            if result.is_error:
-                close_conn_cursor(conn, cursor)
-                return response
-            present = result.data
-        else:
-            present = False
-
-        # get all sessions for user
-        result = sessions.get_session_ids(user_id=user_id, uuid=True)
-        if result.is_error:
-            close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result.error)}),
-                status=500,
-                mimetype="application/json")
             return response
-        guest_session_ids = result.data
+        present = result.data
+    else:
+        present = False
 
-        result = motto.get_info(date=date)
-        if result.is_error:
-            # close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result.error)}),
-                status=500,
-                mimetype="application/json")
-            return response
-
-        stueble_id = result.data[0]
-        motto_name = result.data[1]
-        stueble_date = result.data[2]
-        stueble_date = stueble_date.strftime("%d.%m.%Y")
-
-        if request.method == "PUT":
-            # add user to table
-            result = users.add_user(
-                user_role=UserRole.EXTERN,
-                first_name=invitee_first_name,
-                last_name=invitee_last_name,
-                returning_column="id, user_uuid") # id, user_uuid on purpose like that
-
-        else:
-            # get user to remove
-            result = users.get_user(
-                columns=["id", "user_uuid"],
-                conditions={"first_name": invitee_first_name, "last_name": invitee_last_name, "user_role": UserRole.EXTERN.value},
-                type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
-
-        if result.is_error:
-            # close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result.error)}),
-                status=500,
-                mimetype="application/json")
-            return response
-        if request.method == "PUT":
-            created_invitee_id = result.data[0]
-
-        if request.method == "DELETE":
-            possible_users = result.data
-            if len(possible_users) == 0:
-                # close_conn_cursor(conn, cursor)
-                response = Response(
-                    response=json.dumps({"code": 404, "message": "No such user found"}),
-                    status=404,
-                    mimetype="application/json")
-                return response
-            users_list = []
-            for i in possible_users:
-                query = """
-                SELECT user_id FROM events
-                WHERE user_id = %s AND stueble_id = %s AND event_type = 'add' AND invited_by = %s
-                ORDER BY submitted DESC LIMIT 1"""
-                result = db.custom_call(query=query,
-                                        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
-                                        variables=[i[0], stueble_id, user_id])
-                if result.is_error:
-                    # close_conn_cursor(conn, cursor)
-                    response = Response(
-                        response=json.dumps({"code": 500, "message": str(result.error)}),
-                        status=500,
-                        mimetype="application/json")
-                    return response
-                if result.data is None:
-                    continue
-                possible_invitee_id = result.data[0][0]
-
-                result = users.get_user(user_id=possible_invitee_id,
-                                        columns=["user_uuid"],
-                                        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
-                if result.is_error:
-                    # close_conn_cursor(conn, cursor)
-                    response = Response(
-                        response=json.dumps({"code": 500, "message": str(result.error)}),
-                        status=500,
-                        mimetype="application/json")
-                    return response
-                if result.data is None:
-                    # close_conn_cursor(conn, cursor)
-                    response = Response(
-                        response=json.dumps({"code": 500, "message": "Data integrity error, user not found"}),
-                        status=500,
-                        mimetype="application/json")
-                    return response
-                possible_invitee_uuid = result.data[0]
-                users_list.append({"invitee_id": possible_invitee_id, "invitee_uuid": possible_invitee_uuid})
-            if len(users_list) == 0:
-                # close_conn_cursor(conn, cursor)
-                response = Response(
-                    response=json.dumps({"code": 401, "message": "No such user found"}),
-                    status=401,
-                    mimetype="application/json")
-                return response
-            if len(users_list) > 1:
-                # close_conn_cursor(conn, cursor)
-                response = Response(
-                    response=json.dumps({"code": 409, "message": "Multiple users found, please contact an admin"}),
-                    status=409,
-                    mimetype="application/json")
-                return response
-            invitee_id = users_list[0]["invitee_id"]
-            invitee_uuid = users_list[0]["invitee_uuid"]
-        else:
-            invitee_id = result.data[0]
-            invitee_uuid = result.data[1]
-
-        if request.method == "PUT":
-            result = events.add_guest(
-                user_id=invitee_id,
-                stueble_id=stueble_id,
-                invited_by=user_id)
-        else:
-            result = events.remove_guest(
-                user_id=invitee_id,
-                stueble_id=stueble_id)
-
-        if result.is_error:
-            status_code = 500
-            error = str(result.error)
-            if "; code: " in str(result.error):
-                error, status_code = str(result.error).split("; code: ")
-                status_code = status_code.split("\n")[0]
-                status_code = int(status_code)
-            if request.method == "PUT":
-                result = db.delete(table="users", conditions={"id": created_invitee_id})
-                # close_conn_cursor(conn, cursor)
-                if result.is_error:
-                    response = Response(
-                        response=json.dumps({"code": 500, "message": str(result.error)}),
-                        status=500,
-                        mimetype="application/json")
-                    return response
-            # close_conn_cursor(conn, cursor)
-            response = Response(
-                response=json.dumps({"code": status_code, "message": error}),
-                status=status_code,
-                mimetype="application/json")
-            return response
-
-        if request.method == "PUT":
-            timestamp = int(datetime.datetime.now().timestamp())
-
-            information = {"id": invitee_uuid, "timestamp": timestamp, "extern": True}
-
-            result = hp.create_signature(message=information)
-            if result.is_error:
-                close_conn_cursor(conn, cursor)
-                response = Response(
-                    response=json.dumps({"code": 500, "message": str(result.error)}),
-                    status=500,
-                    mimetype="application/json")
-                return response
-
-            signature = result.data
-
-            data = {"data":information,
-                    "signature": signature}
-
-        # get user data
-        keywords = ["first_name", "last_name", "room", "residence", "verified"]
-        result = users.get_user(
-            user_id=invitee_id,
-            columns=keywords,
-            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
-
-        # close_conn_cursor(conn, cursor)
-        if result.is_error:
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result.error)}),
-                status=500,
-                mimetype="application/json")
-            return response
-
-        invitee_info = {key: value for key, value in zip(keywords, result.data)}
-        invitee_info["user_role"] = FrontendUserRole.EXTERN
-
-        invitee_data = {
-            "id": invitee_uuid,
-            "present": False,
-            "firstName": invitee_info["first_name"],
-            "lastName": invitee_info["last_name"],
-            "extern": True}
-
-        action_type = Action_Type("guestAdded") if request.method == "PUT" else Action_Type("guestRemoved")
-
-        # send a websocket message to all hosts that the guest list changed
-        asyncio.run(ws.broadcast(event=action_type.value, data=invitee_data)) # don't skip_sid for guestModified
-
-        # send a websocket message to the user
-        for sess_id in guest_session_ids:
-            asyncio.run(ws.stueble_status(session_id=sess_id, date=date, registered=True, present=present))
-
-        if request.method == "DELETE":
-            response = Response(
-                status=204)
-            return response
-
-        if invitee_email is not None:
-            qr_code = qr.generate(json.dumps(data), size=400, rounded_edges=30)
-            result = templates.stueble_guest(invitee_first_name=invitee_first_name,
-                                    invitee_last_name=invitee_last_name,
-                                    first_name=first_name,
-                                    last_name=last_name,
-                                    stueble_date=stueble_date,
-                                    motto_name=motto_name,
-                                    qr_code=qr_code)
-            mail.send_mail(invitee_email, result["subject"], result["body"], html=True, images=result["images"])
-
-        if request.method == "PUT":
-            response = Response(
-                status=204)
-            return response
-
+    # get all sessions for user
+    result = sessions.get_session_ids(user_id=user_id, uuid=True)
+    if result.is_error:
         response = Response(
-            response=json.dumps(data),
-            status=200,
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
             mimetype="application/json")
         return response
-    finally:
-        try:
-            close_conn_cursor(conn, cursor)
-        except:
-            pass
+    guest_session_ids = result.data
+
+    result = motto.get_info(date=date)
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    stueble_id = result.data[0]
+    motto_name = result.data[1]
+    stueble_date = result.data[2]
+    stueble_date = stueble_date.strftime("%d.%m.%Y")
+
+    if request.method == "PUT":
+        # add user to table
+        result = users.add_user(
+            user_role=UserRole.EXTERN,
+            first_name=invitee_first_name,
+            last_name=invitee_last_name,
+            returning_column="id, user_uuid") # id, user_uuid on purpose like that
+
+    else:
+        # get user to remove
+        result = users.get_user(
+            columns=["id", "user_uuid"],
+            conditions={"first_name": invitee_first_name, "last_name": invitee_last_name, "user_role": UserRole.EXTERN.value},
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    if request.method == "PUT":
+        created_invitee_id = result.data[0]
+
+    if request.method == "DELETE":
+        possible_users = result.data
+        if len(possible_users) == 0:
+            response = Response(
+                response=json.dumps({"code": 404, "message": "No such user found"}),
+                status=404,
+                mimetype="application/json")
+            return response
+        users_list = []
+        for i in possible_users:
+            query = """
+            SELECT user_id FROM events
+            WHERE user_id = %s AND stueble_id = %s AND event_type = 'add' AND invited_by = %s
+            ORDER BY submitted DESC LIMIT 1"""
+            result = db.custom_call(query=query,
+                                    type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+                                    variables=[i[0], stueble_id, user_id])
+            if result.is_error:
+                response = Response(
+                    response=json.dumps({"code": 500, "message": str(result.error)}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+            if result.data is None:
+                continue
+            possible_invitee_id = result.data[0][0]
+
+            result = users.get_user(user_id=possible_invitee_id,
+                                    columns=["user_uuid"],
+                                    type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
+            if result.is_error:
+                response = Response(
+                    response=json.dumps({"code": 500, "message": str(result.error)}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+            if result.data is None:
+                response = Response(
+                    response=json.dumps({"code": 500, "message": "Data integrity error, user not found"}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+            possible_invitee_uuid = result.data[0]
+            users_list.append({"invitee_id": possible_invitee_id, "invitee_uuid": possible_invitee_uuid})
+        if len(users_list) == 0:
+            response = Response(
+                response=json.dumps({"code": 401, "message": "No such user found"}),
+                status=401,
+                mimetype="application/json")
+            return response
+        if len(users_list) > 1:
+            response = Response(
+                response=json.dumps({"code": 409, "message": "Multiple users found, please contact an admin"}),
+                status=409,
+                mimetype="application/json")
+            return response
+        invitee_id = users_list[0]["invitee_id"]
+        invitee_uuid = users_list[0]["invitee_uuid"]
+    else:
+        invitee_id = result.data[0]
+        invitee_uuid = result.data[1]
+
+    if request.method == "PUT":
+        result = events.add_guest(
+            user_id=invitee_id,
+            stueble_id=stueble_id,
+            invited_by=user_id)
+    else:
+        result = events.remove_guest(
+            user_id=invitee_id,
+            stueble_id=stueble_id)
+
+    if result.is_error:
+        status_code = 500
+        error = str(result.error)
+        if "; code: " in str(result.error):
+            error, status_code = str(result.error).split("; code: ")
+            status_code = status_code.split("\n")[0]
+            status_code = int(status_code)
+        if request.method == "PUT":
+            result = db.delete(table="users", conditions={"id": created_invitee_id}) # type: ignore
+            if result.is_error:
+                response = Response(
+                    response=json.dumps({"code": 500, "message": str(result.error)}),
+                    status=500,
+                    mimetype="application/json")
+                return response
+        response = Response(
+            response=json.dumps({"code": status_code, "message": error}),
+            status=status_code,
+            mimetype="application/json")
+        return response
+
+    if request.method == "PUT":
+        timestamp = int(datetime.datetime.now().timestamp())
+
+        information = {"id": invitee_uuid, "timestamp": timestamp, "extern": True}
+
+        result = hp.create_signature(message=information)
+        if result.is_error:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(result.error)}),
+                status=500,
+                mimetype="application/json")
+            return response
+
+        signature = result.data
+
+        data = {"data":information,
+                "signature": signature}
+
+    # get user data
+    keywords = ["first_name", "last_name", "room", "residence", "verified"]
+    result = users.get_user(
+        user_id=invitee_id,
+        columns=keywords,
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    invitee_info = {key: value for key, value in zip(keywords, result.data)}
+    invitee_info["user_role"] = FrontendUserRole.EXTERN
+
+    invitee_data = {
+        "id": invitee_uuid,
+        "present": False,
+        "firstName": invitee_info["first_name"],
+        "lastName": invitee_info["last_name"],
+        "extern": True}
+
+    action_type = Action_Type("guestAdded") if request.method == "PUT" else Action_Type("guestRemoved")
+
+    # send a websocket message to all hosts that the guest list changed
+    asyncio.run(ws.broadcast(event=action_type.value, data=invitee_data)) # don't skip_sid for guestModified
+
+    # send a websocket message to the user
+    for sess_id in guest_session_ids:
+        asyncio.run(ws.stueble_status(session_id=sess_id, date=date, registered=True, present=present))
+
+    if request.method == "DELETE":
+        response = Response(
+            status=204)
+        return response
+
+    if invitee_email is not None:
+        qr_code = qr.generate(json.dumps(data), size=400, rounded_edges=30)
+        result = templates.stueble_guest(invitee_first_name=invitee_first_name,
+                                invitee_last_name=invitee_last_name,
+                                first_name=first_name,
+                                last_name=last_name,
+                                stueble_date=stueble_date,
+                                motto_name=motto_name,
+                                qr_code=qr_code)
+        mail.send_mail(invitee_email, result["subject"], result["body"], html=True, images=result["images"])
+
+    if request.method == "PUT":
+        response = Response(
+            status=204)
+        return response
+
+    response = Response(
+        response=json.dumps(data),
+        status=200,
+        mimetype="application/json")
+    return response
+
+
 """
 User management
 """
@@ -1494,13 +1387,9 @@ def user():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # get user id from session id
-    result = sessions.get_user(session_id=session_id, columns=("id", "user_role", "user_uuid", "room", "residence", "first_name", "last_name", "email", "user_name"))
+    result = sessions.get_user(session_id=session_id, keywords=("id", "user_role", "user_uuid", "room", "residence", "first_name", "last_name", "email", "user_name"))
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
@@ -1517,7 +1406,6 @@ def user():
             "id": data[0],
             "username": data[8]}
 
-    close_conn_cursor(conn, cursor)
     response = Response(
         response=json.dumps(user),
         status=200,
@@ -1539,21 +1427,16 @@ def verify_user():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only tutors or above can change user role
     result = check_permissions(session_id=session_id,
                                required_role=UserRole.USER)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
@@ -1564,7 +1447,6 @@ def verify_user():
     result = users.update_user(user_id=user_id,
                                verified=True)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -1574,7 +1456,6 @@ def verify_user():
     keywords = ["user_uuid", "first_name", "last_name", "user_role"]
     result = users.get_user(user_id=user_id, columns=keywords)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -1583,7 +1464,6 @@ def verify_user():
     user_info = {key: value for key, value in zip(keywords, result.data)}
 
     result = users.check_user_present(user_id=user_id)
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -1637,20 +1517,15 @@ def change_user_role():
                 mimetype="application/json")
             return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only tutors or above can change user role
     result = check_permissions(session_id=session_id, required_role=UserRole.ADMIN if new_role == UserRole.TUTOR else UserRole.TUTOR)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
@@ -1662,7 +1537,6 @@ def change_user_role():
         user_role=UserRole(new_role))
 
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -1678,7 +1552,6 @@ def change_user_role():
 
     result = sessions.get_session_ids(user_id=user_id)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -1694,7 +1567,6 @@ def change_user_role():
 
     result = users.check_user_guest_list(user_id=user_id)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -1705,7 +1577,6 @@ def change_user_role():
         keywords = ["user_uuid", "first_name", "last_name", "user_role"]
         result = users.get_user(user_id=user_id, columns=keywords)
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
                 status=500,
@@ -1714,7 +1585,6 @@ def change_user_role():
         user_info = {key: value for key, value in zip(keywords, result.data)}
 
         result = users.check_user_present(user_id=user_id)
-        close_conn_cursor(conn, cursor)
         if result.is_error:
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -1758,19 +1628,14 @@ def search_intern():
 
     # check permissions, since only hosts can see guests
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": "invalid permissions, need at least role host"}),
             status=401,
@@ -1781,7 +1646,6 @@ def search_intern():
     data = request.args.to_dict()
 
     if data is None or not isinstance(data, dict):
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "The data must be a valid json object"}),
             status=400,
@@ -1795,7 +1659,6 @@ def search_intern():
 
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": f"Only the following keys are allowed: {', '.join(allowed_keys)}"}),
             status=400,
@@ -1862,7 +1725,6 @@ def search_intern():
                                 type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
                                 variables=variables)
 
-    close_conn_cursor(conn, cursor) # close conn, cursor
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -1872,7 +1734,7 @@ def search_intern():
 
     # if data is None, set it to empty list
     if result.data is None:
-        result.data = []
+        result._data = list()
 
     users = []
     for entry in result.data:
@@ -1928,20 +1790,15 @@ def create_stueble():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only hosts or above can change the motto
     result = check_permissions(session_id=session_id, required_role=user_role)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": f"invalid permissions, need role {user_role.value} or above"}),
             status=403,
@@ -1958,7 +1815,6 @@ def create_stueble():
     if result.is_error:
         if result.error == "no stueble found":
             if actual_user_role == UserRole.HOST:
-                close_conn_cursor(conn, cursor)
                 response = Response(
                     response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above to create a new stueble"}),
                     status=403,
@@ -1970,21 +1826,18 @@ def create_stueble():
                                     shared_apartment=shared_apartment)
 
             if result.is_error:
-                close_conn_cursor(conn, cursor)
                 response = Response(
                     response=json.dumps({"code": 500, "message": str(result.error)}),
                     status=500,
                     mimetype="application/json")
                 return response
         else:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
                 status=500,
                 mimetype="application/json")
             return response
 
-    close_conn_cursor(conn, cursor)
     response = Response(status=204)
     return response
 
@@ -2016,20 +1869,15 @@ def update_tutors():
             mimetype="application/json")
         return response
 
-    # get conn, cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only admins can change user role
     result = check_permissions(session_id=session_id, required_role=UserRole.ADMIN)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role admin"}),
             status=403,
@@ -2037,9 +1885,8 @@ def update_tutors():
         return response
 
     # get information about users
-    result = users.get_users(user_uuids=user_uuids, columns=["user_uuid", "first_name", "last_name", "residence", "user_role", "user_uuid"])
+    result = users.get_users(user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role", "user_uuid"])
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -2052,7 +1899,6 @@ def update_tutors():
 
     # check, whether all users were found
     if len(tutors_data) != len(user_uuids):
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 404, "message": "Not all users found"}),
             status=404,
@@ -2061,7 +1907,6 @@ def update_tutors():
 
     # if any user is admin, raise error
     if any(i["user_role"] >= UserRole.ADMIN for i in tutors_data):
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "Can only remove tutors or make admins to tutors"}),
             status=403,
@@ -2079,7 +1924,6 @@ def update_tutors():
         tutors_data = [{key: value for key, value in i.items() if key != "user_role"} for i in tutors_data if i["user_role"] == UserRole.TUTOR]
     else:
         if any(i["user_role"] == UserRole.EXTERN for i in tutors_data):
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 403, "message": "Can't promote extern users to tutors"}),
                 status=403,
@@ -2091,7 +1935,6 @@ def update_tutors():
         # remove wrong users from tutor list
         tutors_data = [{key: value for key, value in i.items() if key != "user_role"} for i in tutors_data if i["user_role"] == UserRole.USER or i["user_role"] == UserRole.HOST]
     if len(tutors_data) != len(user_uuids):
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 400, "message": "Some users can't be promoted to tutors"}),
             status=403,
@@ -2109,7 +1952,6 @@ def update_tutors():
                             variables=[new_role.value, tuple(i["id"] for i in tutors_data)])
 
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -2121,7 +1963,6 @@ def update_tutors():
     query = """DELETE FROM hosts WHERE user_id IN %s"""
     result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -2134,7 +1975,6 @@ def update_tutors():
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
         variables=tuple(user_ids))
 
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -2192,36 +2032,29 @@ def update_hosts():
             mimetype="application/json")
         return response
 
-    # get conn, cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only tutors or above can change user role
     result = check_permissions(session_id=session_id, required_role=UserRole.TUTOR)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above"}),
             status=403,
             mimetype="application/json")
         return response
 
-    result = motto.get_motto(date=date)
+    result = motto.get_info(date=date)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
             mimetype="application/json")
         return response
     if result.data is None:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 404, "message": "no stueble party found"}),
             status=404,
@@ -2231,9 +2064,8 @@ def update_hosts():
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
 
-    result = users.get_users(user_uuids=user_uuids, columns=["user_uuid", "first_name", "last_name", "residence", "user_role"])
+    result = users.get_users(user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role"])
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -2242,7 +2074,6 @@ def update_hosts():
     hosts_data = result.data
     hosts_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3]} for i in hosts_data if i[4] == ('user' if request.method == "PUT" else 'host')]
     if len(hosts_data) != len(user_uuids):
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 404, "message": "Tutoren und Admins können nicht zu Hosts gemacht werden"}), # "Not all users found"}),
             status=404,
@@ -2252,7 +2083,6 @@ def update_hosts():
     result = motto.update_hosts(stueble_id=stueble_id, method="add" if request.method == "PUT" else "remove", user_uuids=user_uuids)
 
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -2265,7 +2095,6 @@ def update_hosts():
     if request.method == "DELETE":
         result = db.custom_call(query="UPDATE users SET user_role = 'user' WHERE id IN %s AND user_role = 'host'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
                 status=500,
@@ -2274,7 +2103,6 @@ def update_hosts():
     else:
         result = db.custom_call(query="UPDATE users SET user_role = 'host' WHERE id IN %s AND user_role = 'user'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
                 status=500,
@@ -2288,7 +2116,6 @@ def update_hosts():
         variables=tuple(user_ids)
     )
 
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -2341,20 +2168,15 @@ def get_hosts_tutors():
     except:
         date = None
 
-    # get conn, cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only hosts or above can change user role
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
             status=403,
@@ -2365,7 +2187,6 @@ def get_hosts_tutors():
         query = """SELECT user_uuid, first_name, last_name, residence FROM users WHERE user_role = 'tutor'"""
         result = db.custom_call(query=query,
                                 type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
-        close_conn_cursor(conn, cursor)
         if result.is_error:
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -2379,24 +2200,22 @@ def get_hosts_tutors():
             mimetype="application/json")
         return response
 
-    result = motto.get_motto(date=date)
+    result = motto.get_info(date=date)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
             mimetype="application/json")
         return response
     if result.data is None:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 404, "message": "no stueble party found"}),
             status=404,
             mimetype="application/json")
         return response
     stueble_id = result.data[2]
+
     result = motto.get_hosts(stueble_id=stueble_id)
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -2404,7 +2223,7 @@ def get_hosts_tutors():
             mimetype="application/json")
         return response
 
-    result.data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in result.data]
+    result._data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in result.data]
 
     response = Response(
         response=json.dumps(result.data),
@@ -2435,20 +2254,15 @@ def force_add_guest():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only hosts and above can add guests
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
             status=403,
@@ -2458,7 +2272,6 @@ def force_add_guest():
     # get user_id from user_uuid
     result = users.get_user(user_uuid=user_uuid, columns=["id"])
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
@@ -2471,7 +2284,6 @@ RESET additional.skip_triggers;"""
     result = db.custom_call(query=query,
                             type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
                             variables=[user_id, 1, 'add', user_id, 1, 'arrive'])
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -2500,20 +2312,15 @@ def config():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     # check permissions, since only admins can change config values
     result = check_permissions(session_id=session_id, required_role=UserRole.ADMIN)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 401, "message": str(result.error)}),
             status=401,
             mimetype="application/json")
         return response
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         response = Response(
             response=json.dumps({"code": 403, "message": "invalid permissions, need role admin"}),
             status=403,
@@ -2538,7 +2345,6 @@ def config():
                                 type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
                                 variables=params)
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
                 status=500,
@@ -2549,7 +2355,6 @@ def config():
         # asyncio.run(ws.broadcast(event="configUpdate", data=data, room=ws.Room.ADMINS, skip_sid=session_id))
     # Method GET & POST
     result = configs.get_all_configurations()
-    close_conn_cursor(conn, cursor)
 
     if result.is_error:
         response = Response(
