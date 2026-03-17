@@ -1,5 +1,5 @@
 # TODO: delete this file
-from backend.data_types import Email
+from backend.datatypes.stueble_types import Email
 from backend.google_functions.authentification import authenticate
 import base64
 from email.mime.text import MIMEText

@@ -15,13 +15,12 @@ from functools import wraps
 from enum import Enum
 
 from backend.sql_connection.common_functions import check_permissions, get_motto
-from backend.data_types import *
+from backend.datatypes.stueble_types import *
 from backend.sql_connection import events, sessions, users, motto
 from backend.database import database as db
 from backend import hash_pwd as hp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-from backend.sql_connection.conn_cursor_functions import *
 from backend.basic_functions import *
 
 # load environment variables
@@ -172,7 +171,7 @@ def add_to_message_log(func):
                 room = {args[0]} if len(args) > 0 else None
 
         # retrieve session_ids that receive the message
-        session_ids = [websockets_info.get(i, {}).get("session_id", None) for i in room]
+        session_ids = [websockets_info.get(i, {}).get("session_id", None) for i in room] # type: ignore
         session_ids = [i for i in session_ids if i is not None]
         if "room" in params:
             del params["room"]
@@ -222,9 +221,9 @@ le_
         **kwargs: additional keyword arguments to send
     """
     if room is None or room == Room.HOST_UPWARDS:
-        room = host_upwards_room
+        room = host_upwards_room # type: ignore
     elif room == Room.ADMINS:
-        room = admins_room
+        room = admins_room # type: ignore
     else:
         if isinstance(room, list):
             pass
@@ -233,7 +232,7 @@ le_
 
 
     message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
-    for ws in list(room):
+    for ws in list(room): # type: ignore
         ws_sid = websockets_info.get(id(ws), {}).get("session_id", None)
         if ws_sid != skip_sid and ws_sid is not None:
             try:
@@ -263,10 +262,7 @@ async def handle_ws(websocket):
                                                               "authorized": False})
         return
     
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
     result = sessions.get_session(session_id=session_id)
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         await send(websocket=websocket, event="status", data={"code": "401",
                                                               "capabilities": [],
@@ -364,15 +360,12 @@ async def handle_ws(websocket):
         connections.discard(websocket)
         sid_to_websocket.pop(session_id, None)
 
-        # get connection, cursor
-        conn, cursor = get_conn_cursor()
 
         # get all valid session_ids
         result = db.select(
                                table="sessions",
                                columns=["session_id"],
                                type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
-        close_conn_cursor(conn, cursor)
         if result.is_error:
             # remove after debugging
             print("ERROR OCCURRED")
@@ -444,13 +437,10 @@ async def connect(websocket):
                                                                   "capabilities": [],
                                                                   "authorized": False})
             return
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
 
     # check permissions
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
 
-    close_conn_cursor(conn, cursor)
     if result.is_error and result.error == "no matching session and user found":
         await send(websocket=websocket, event="status", data= {"code": "200",
                           "capabilities": [],
@@ -608,26 +598,21 @@ async def verify_guest(websocket, msg):
 
     verification_method = VerificationMethod(verification_method)
 
-    # get connection, cursor
-    conn, cursor = get_conn_cursor()
 
     # check permissions
     result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="error", data=
             {"code": "401",
              "message": str(result.error)})
         return
     if result.data["allowed"] is False:
-        close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="error", data=
             {"code": "403",
              "message": "invalid permissions, need role host or above"})
         return
 
     result = users.add_verification_method(user_uuid=user_uuid, method=verification_method)
-    close_conn_cursor(conn, cursor)
     if result.is_error:
         await send(websocket=websocket, event="error", data=
             {"code": "500",
@@ -653,13 +638,10 @@ async def request_qrcode(websocket, msg, req_id):
         stueble_id = msg.get("stuebleId", None)
     else:
         stueble_id = None
-    # get connection, cursor
 
-    conn, cursor = get_conn_cursor()
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
     result = sessions.get_user(session_id=session_id, columns=["id", "user_uuid", "user_role"])
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         await send(websocket=websocket, event="status", data={"code": "401",
                                                               "capabilities": [],
                                                               "authorized": False})
@@ -670,7 +652,6 @@ async def request_qrcode(websocket, msg, req_id):
 
     result = events.check_guest(user_id=user_id,
                                 stueble_id=stueble_id)
-    close_conn_cursor(conn, cursor)
     if result.is_error and result.error == "no stueble party found":
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "404",
@@ -760,12 +741,8 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         present (bool): whether the user is present or not
     """
 
-    # get conn, cursor
-    conn, cursor = get_conn_cursor()
-
     result = sessions.get_user(session_id=session_id, columns=["id", "user_role"])
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         return result
     user_id = result.data[0]
     user_role = result.data[1]
@@ -778,7 +755,6 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
     if result.is_error:
-        close_conn_cursor(conn, cursor)
         return result
 
     session_ids = [i[0] for i in result.data]
@@ -788,21 +764,18 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     if date is None:
         result = get_motto(date=None)
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             return result
         date = result.data["date"]
         stueble_id = result.data["stueble_id"]
     else:
         result = motto.get_info(date=date)
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             return result
         stueble_id = result.data[0]
         # stueble_id = result.data["stueble_id"]
     if registered is None or present is None:
         result = users.check_user_guest_list(user_id=user_id)
         if result.is_error:
-            close_conn_cursor(conn, cursor)
             return result
         if result.data is False:
             registered = False
@@ -810,20 +783,17 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         else:
             result = users.check_user_present(user_id=user_id)
             if result.is_error:
-                close_conn_cursor(conn, cursor)
                 return result
             registered = True
             present = result.data
     # if person is registered, check for invited guests
     if registered is True or user_role >= UserRole.TUTOR:
         result = users.get_invited_friends(user_id=user_id, stueble_id=stueble_id)
-        close_conn_cursor(conn, cursor)
         if result.is_error:
             return result
         invited_guests = result.data
         invited_guests = [{snake_to_camel_case(key) if key != "user_uuid" else "id": value for key, value in guest.items()} for guest in invited_guests]
     else:
-        close_conn_cursor(conn, cursor)
 
     date = date.isoformat()
 
