@@ -89,8 +89,7 @@ def validate_user_data(user_role: UserRole,
             message=Message(name="Validate User Data Error",
                             type="error",
                             category="Validate User Data",
-                            code=500,
-                            details={"status": 500})
+                            code=500)
         )
 
     email_list = [row[0] for row in result.data]
@@ -111,10 +110,9 @@ def validate_user_data(user_role: UserRole,
                 message=Message(name="Validate User Data Error",
                                 type="error",
                                 category="Validate User Data",
-                                code=500,
-                                details={"status": 500})
+                                code=500)
             )
-        
+ 
         if len(result.data) == 0:
             return FuncRes(
                 error="An account was already created, but deleted.",
@@ -122,8 +120,8 @@ def validate_user_data(user_role: UserRole,
                 message=Message(name="Validate User Data Error",
                                 type="error",
                                 category="Validate User Data",
-                                code=200,
-                                details={"status": 200})
+                                code=200),
+                user_warning="An account was already created, but deleted."
             )
 
         if (room, residence.value) in room_residence_list:
@@ -133,8 +131,7 @@ def validate_user_data(user_role: UserRole,
                 message=Message(name="Validate User Data Error",
                                 type="error",
                                 category="Validate User Data",
-                                code=400,
-                                details={"status": 400})
+                                code=400)
             )
         if email.email in email_list:
             return FuncRes(
@@ -143,8 +140,7 @@ def validate_user_data(user_role: UserRole,
                 message=Message(name="Validate User Data Error",
                                 type="error",
                                 category="Validate User Data",
-                                code=400,
-                                details={"status": 400})
+                                code=400)
             )
         if user_name in user_name_list:
             return FuncRes(
@@ -153,8 +149,7 @@ def validate_user_data(user_role: UserRole,
                 message=Message(name="Validate User Data Error",
                                 type="error",
                                 category="Validate User Data",
-                                code=400,
-                                details={"status": 400})
+                                code=400)
             )
 
     return FuncRes(
