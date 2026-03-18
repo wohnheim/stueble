@@ -24,13 +24,13 @@ def get_motto(date: date | None = None) -> FuncRes:
 
     if date is not None:
         result = db.select(
-            table="stueble_motto",
+            table="stueble.motto",
             columns=["motto", "date_of_time", "id"],
             conditions={"date_of_time": date},
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
     else:
         result = db.select(
-            table="stueble_motto",
+            table="stueble.motto",
             columns=["motto", "date_of_time", "id"],
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
             specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
@@ -79,7 +79,7 @@ def get_info(date: date | None=None) -> FuncRes:
         arguments = {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
 
     result = db.select(
-        table="stueble_motto",
+        table="stueble.motto",
         columns=["id", "motto", "date_of_time"],
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         **arguments # type: ignore
@@ -116,7 +116,7 @@ def get_info(date: date | None=None) -> FuncRes:
 def create_stueble(date: date  | None, motto: str,
                    shared_apartment: str | None = None, description: str | None = None) -> FuncRes:
     """
-    creates a new entry in the table stueble_motto
+    creates a new entry in the table stueble.motto
 
     Args:
         date (datetime.date | None): date for which the motto is valid
@@ -135,7 +135,7 @@ def create_stueble(date: date  | None, motto: str,
 
     if arguments["date_of_time"] is None:
         del arguments["date_of_time"]
-        query = f"""INSERT INTO stueble_motto (date_of_time, {', '.join(arguments.keys())})
+        query = f"""INSERT INTO stueble.motto (date_of_time, {', '.join(arguments.keys())})
         VALUES (CURRENT_DATE + (10 - EXTRACT(DOW FROM CURRENT_DATE)) %% 7 * INTERVAL '1 day', {', '.join('%s' for _ in range(len(arguments)))})
         RETURNING id"""
         result = db.custom_call(
@@ -145,7 +145,7 @@ def create_stueble(date: date  | None, motto: str,
         )
     else:
         result = db.insert(
-            table="stueble_motto",
+            table="stueble.motto",
             values=arguments,
             returning_column="id"
         )
@@ -179,7 +179,7 @@ def create_stueble(date: date  | None, motto: str,
 
 def update_stueble(date: date | None, **kwargs) -> FuncRes:
     """
-    updates an entry in the table stueble_motto
+    updates an entry in the table stueble.motto
 
     Args:
         date (datetime.date): date for which the motto is valid
@@ -213,12 +213,12 @@ def update_stueble(date: date | None, **kwargs) -> FuncRes:
     specific_where = ""
 
     if (date is None):
-        specific_where = """id = (SELECT id FROM stueble_motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1) ORDER BY date_of_time ASC LIMIT 1)"""
+        specific_where = """id = (SELECT id FROM stueble.motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1) ORDER BY date_of_time ASC LIMIT 1)"""
     else:
         conditions =  {"date_of_time": date}
 
     result = db.update(
-        table="stueble_motto",
+        table="stueble.motto",
         columns=arguments,
         conditions=conditions,
         specific_where=specific_where,
@@ -317,10 +317,10 @@ def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: An
 
     if method == "add":
         rows = [(user_id, stueble_id) for user_id in user_ids] # type: ignore
-        query = """INSERT INTO hosts (user_id, stueble_id) VALUES %s"""
+        query = """INSERT INTO stueble.hosts (user_id, stueble_id) VALUES %s"""
     else:
         rows = [tuple((user_id, stueble_id) for user_id in user_ids)] # type: ignore
-        query = """DELETE FROM hosts WHERE (user_id, stueble_id) IN %s"""
+        query = """DELETE FROM stueble.hosts WHERE (user_id, stueble_id) IN %s"""
     try:
         execute_values(cursor, query, rows)
         cursor.connection.commit() # type: ignore

@@ -393,7 +393,7 @@ def get_invited_friends(user_id: int, stueble_id: int) -> FuncRes:
     SELECT {', '.join(['u.' + i for i in arguments])}
     FROM (SELECT user_id
           FROM (SELECT DISTINCT ON (user_id) *
-                FROM events
+                FROM stueble.events
                 WHERE invited_by = %s
                   AND stueble_id = %s
                   AND event_type IN ('add', 'remove')
@@ -425,7 +425,7 @@ def get_invited_friends(user_id: int, stueble_id: int) -> FuncRes:
         query = """
         SELECT 'add' =
         COALESCE((SELECT event_type
-        FROM events
+        FROM stueble.events
         WHERE user_id = %s
           AND stueble_id = %s
           AND event_type IN ('add', 'remove')
@@ -719,11 +719,11 @@ def check_user_guest_list(user_id: int) -> FuncRes:
 
     query = """SELECT (COALESCE(
   (SELECT event_type
-   FROM events
+   FROM stueble.events
    WHERE user_id = %s
      AND stueble_id = (
        SELECT id
-       FROM stueble_motto
+       FROM stueble.motto
        WHERE date_of_time >= CURRENT_DATE
           OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1)
        ORDER BY date_of_time ASC
@@ -779,10 +779,10 @@ def check_user_present(user_id: int) -> FuncRes:
 
     query = """SELECT COALESCE(
             (SELECT event_type
-             FROM events
+             FROM stueble.events
              WHERE user_id = 1
                AND stueble_id = (SELECT id
-                                 FROM stueble_motto
+                                 FROM stueble.motto
                                  WHERE date_of_time >= CURRENT_DATE
                                     OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1)
                                  ORDER BY date_of_time ASC

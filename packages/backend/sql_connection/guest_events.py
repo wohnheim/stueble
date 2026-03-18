@@ -9,7 +9,7 @@ from backend.datatypes.stueble_types import EventType, FrontendUserRole
 def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "Explicit with user_id"] = None,
                  user_id: Annotated[int | None, "Explicit with user_uuid"] = None) -> FuncRes:
     """
-    add or remove a guest to the guest_list of present people in events for a stueble party \n
+    add or remove a guest to the guest_list of present people in stueble.events for a stueble party \n
     used when a guest arrives / leaves
     
     Args:
@@ -61,7 +61,7 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
     # get stueble_id
     result = db.select(
         columns=["id"],
-        table="stueble_motto",
+        table="stueble.motto",
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         specific_where="date_of_time = CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = (CURRENT_DATE - INTERVAL '1 day' ))")
 
@@ -86,9 +86,9 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
 
     stueble_id = result.data[0]
 
-    # add user to events
+    # add user to stueble.events
     result = db.insert(
-        table="events",
+        table="stueble.events",
         values={"user_id": user_id, "event_type": event_type.value, "stueble_id": stueble_id},
         returning_column="id")
 
@@ -133,7 +133,7 @@ def guest_list_present(stueble_id: int | None = None) -> FuncRes:
     parameters = {}
 
     if stueble_id is None:
-        stueble_info = """(SELECT id FROM stueble_motto WHERE date_of_time = CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = (CURRENT_DATE - INTERVAL '1 day')) ORDER BY date_of_time DESC LIMIT 1)"""
+        stueble_info = """(SELECT id FROM stueble.motto WHERE date_of_time = CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = (CURRENT_DATE - INTERVAL '1 day')) ORDER BY date_of_time DESC LIMIT 1)"""
     else:
         stueble_info = "%s"
         parameters["variables"] = [stueble_id]
@@ -143,7 +143,7 @@ def guest_list_present(stueble_id: int | None = None) -> FuncRes:
     FROM
     (SELECT user_id, submitted
     FROM (SELECT DISTINCT ON (user_id) id, user_id, event_type, submitted
-          FROM events
+          FROM stueble.events
             WHERE stueble_id = {stueble_info}
             ORDER BY user_id, submitted DESC) AS subquery
         WHERE event_type = 'arrive'
@@ -192,7 +192,7 @@ def guest_list(stueble_id: int | None = None) -> FuncRes:
     parameters = {}
 
     if stueble_id is None:
-        stueble_info = """(SELECT id FROM stueble_motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1)"""
+        stueble_info = """(SELECT id FROM stueble.motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1)"""
     else:
         stueble_info = "%s"
         parameters["variables"] = [stueble_id]
@@ -206,7 +206,7 @@ SELECT
     verified, 
     room, 
     residence, 
-    COALESCE((SELECT event_type FROM events WHERE user_id = users_user_id AND event_type IN ('arrive', 'leave', 'remove') AND stueble_id = {stueble_info}ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive' AS present, 
+    COALESCE((SELECT event_type FROM stueble.events WHERE user_id = users_user_id AND event_type IN ('arrive', 'leave', 'remove') AND stueble_id = {stueble_info}ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive' AS present, 
     (SELECT user_uuid FROM users WHERE users.id = invited_by) AS invited_by
 FROM (
     SELECT
@@ -222,7 +222,7 @@ FROM (
         e.submitted,
         e.invited_by,
         ROW_NUMBER() OVER (PARTITION BY e.user_id ORDER BY e.submitted DESC) as rn
-    FROM events e
+    FROM stueble.events e
     LEFT JOIN users u ON e.user_id = u.id
     WHERE e.stueble_id = {stueble_info}
       AND e.event_type IN ('add', 'remove')

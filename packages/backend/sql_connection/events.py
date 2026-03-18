@@ -5,7 +5,7 @@ from backend.datatypes.funcres import FuncRes, Message, Status
 
 def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> FuncRes:
     """
-    adds a guest to the table events with event_type "add"
+    adds a guest to the table stueble.events with event_type "add"
 
     Args:
         user_id (int): id of the user
@@ -20,7 +20,7 @@ def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> F
         values["invited_by"] = invited_by
 
     result = db.insert(
-        table="events",
+        table="stueble.events",
         values=values,
         returning_column="NOW()")
 
@@ -54,7 +54,7 @@ def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> F
 
 def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
     """
-    adds a guest to the table events with event_type "remove" effectively removing them from the guest list
+    adds a guest to the table stueble.events with event_type "remove" effectively removing them from the guest list
 
     Args:
         user_id (int): id of the user
@@ -65,18 +65,18 @@ def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
     if stueble_id == -1:
         # get all stueble ids where the user is currently added
         query = f"""
-        INSERT INTO events (user_id, event_type, stueble_id)
+        INSERT INTO stueble.events (user_id, event_type, stueble_id)
         SELECT user_id, 'remove', stueble_id FROM
         (SELECT user_id, stueble_id
         FROM
-            (SELECT DISTINCT ON (events.stueble_id) events.*
-            FROM events
-                LEFT JOIN stueble_motto sm ON sm.id = events.stueble_id
+            (SELECT DISTINCT ON (stueble.events.stueble_id) stueble.events.*
+            FROM stueble.events
+                LEFT JOIN stueble.motto sm ON sm.id = stueble.events.stueble_id
             WHERE ((sm.date_of_time >= CURRENT_DATE)
                OR (CURRENT_TIME <= '06:00:00' AND sm.date_of_time = CURRENT_DATE - 1))
-                      AND events.user_id = %s
-                      AND events.event_type IN ('add', 'remove')
-            ORDER BY events.stueble_id, events.submitted DESC ) AS stuebles
+                      AND stueble.events.user_id = %s
+                      AND stueble.events.event_type IN ('add', 'remove')
+            ORDER BY stueble.events.stueble_id, stueble.events.submitted DESC ) AS stuebles
         WHERE stuebles.event_type = 'add') AS to_remove
         RETURNING stueble_id;
         """
@@ -105,7 +105,7 @@ def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
         )
     else:
         result = db.insert(
-            table="events",
+            table="stueble.events",
             values={"user_id": user_id, "stueble_id": stueble_id, "event_type": "remove"},
             returning_column="NOW()")
         # maybe shouldn't be possible, but still left in
@@ -150,7 +150,7 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
 
     # TODO: add 6 o'clock handling
     if stueble_id is None:
-        query = """SELECT id FROM stueble_motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
+        query = """SELECT id FROM stueble.motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
         result = db.custom_call(
             query=query,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
@@ -179,7 +179,7 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
     query = f"""
             SELECT 'add' =
                    COALESCE((SELECT event_type
-                             FROM events
+                             FROM stueble.events
                              WHERE user_id = %s
                                AND stueble_id = %s
                                AND event_type IN ('add', 'remove')

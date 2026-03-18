@@ -76,7 +76,7 @@ def get_motto(date: datetime.date | None = None) -> FuncRes:
         date = None
     arguments = {"conditions": {"date_of_time": date}} if date is not None else {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
     result = db.select(
-        table="stueble_motto",
+        table="stueble.motto",
         columns=["motto", "date_of_time", "description", "id"],
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         **arguments) # type: ignore
