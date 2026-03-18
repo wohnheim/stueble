@@ -64,3 +64,20 @@ CREATE TABLE IF NOT EXISTS stueble.hosts (
 CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
     SELECT submitted FROM stueble.events WHERE id = $1 LIMIT 1;
 $$ LANGUAGE SQL;
+
+
+CREATE TABLE IF NOT EXISTS stueble.applications (
+    id SERIAL PRIMARY KEY,
+    uuid UUID UNIQUE NOT NULL,
+    motto TEXT NOT NULL,
+    date DATE NOT NULL CHECK (date >= CURRENT_DATE),
+    application_group INTEGER NOT NULL REFERENCES stueble.applicants(application_group) ON DELETE CASCADE
+    priority INTEGER NOT NULL CHECK (priority > 0)
+);
+
+CREATE TABLE IF NOT EXISTS stueble.applicants (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    application_id INTEGER REFERENCES stueble.applications(id) ON DELETE CASCADE NOT NULL,
+    application_group INTEGER NOT NULL CHECK application_group > 0
+);
