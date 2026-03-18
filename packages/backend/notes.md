@@ -1,7 +1,9 @@
 # Login
+
 - Hash will not be using HMAC
 
 # Tables
+
 - Sessions
   - SessionID (int, generated_automatically, primary_key) <- can be deleted
   - expiration_date (timestamptz, !NULL)
@@ -28,44 +30,47 @@ Externs can be completely deleted before the present
   - submitted (timestamptz, !NULL, default=now())
 
 stueble_motto
-  - id SERIAL PRIMARY KEY,
-  - motto TEXT NOT NULL,
-  - date_of_time TIMESTAMPTZ NOT NULL,
-  - shared_apartment TEXT
+
+- id SERIAL PRIMARY KEY,
+- motto TEXT NOT NULL,
+- date_of_time TIMESTAMPTZ NOT NULL,
+- shared_apartment TEXT
 
 stueble_codes
-  - id SERIAL PRIMARY KEY,
-  - userID INTEGER REFERENCES users(id) NOT NULL,
-  - code TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL,
-  - created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  - expiration_date TIMESTAMPTZ NOT NULL,
-  - stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL
-  - invited_by (ID can't loop, can just reference IDs, that have invited_by == NULL !!!)
+
+- id SERIAL PRIMARY KEY,
+- userID INTEGER REFERENCES users(id) NOT NULL,
+- code TEXT DEFAULT encode(gen_random_bytes(16), 'hex') UNIQUE NOT NULL,
+- created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+- expiration_date TIMESTAMPTZ NOT NULL,
+- stueble_id INTEGER REFERENCES stueble.motto(id) NOT NULL
+- invited_by (ID can't loop, can just reference IDs, that have invited_by == NULL !!!)
 
 configurations
-  - id SERIAL PRIMARY KEY,
-  - name TEXT UNIQUE NOT NULL,
-  - value TEXT NOT NULL
 
-
+- id SERIAL PRIMARY KEY,
+- name TEXT UNIQUE NOT NULL,
+- value TEXT NOT NULL
 
 ## SQL-Functions
+
 - SessionID
   - expiration_date (remove if older than 1 month)
 - Guest Lists will be created in Python
 - Run SQL code with: psql -d stueble_data -f filename.sql
 
 ## Weitere Informationen
+
 - Datenbanktyp: Postgres
 - User: stueble
 - Further information can be found in [create_tables.sql](../data/create_tables.sql)
 
-
 ## Response codes
+
 - 200: OK + data
 - 201: OK + no data
 -
 
-
 # Externe Dienste
+
 strato

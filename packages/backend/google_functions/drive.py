@@ -73,7 +73,7 @@ def export_stueble_guests(stueble_id: int) -> FuncRes:
     default_tz = ZoneInfo("Europe/Berlin")
 
     result = db.select(
-        table="stueble_motto",
+        table="stueble.motto",
         columns=["date_of_time"],
         conditions={"id": stueble_id},
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
@@ -101,7 +101,7 @@ def export_stueble_guests(stueble_id: int) -> FuncRes:
     keywords_users = ["first_name", "last_name", "email", "room", "residence"]
 
     query = f"""SELECT {', '.join(['events.' + keyword for keyword in keywords_events])}, {', '.join(['users.' + keyword for keyword in keywords_users])}
-                FROM (SELECT * FROM events WHERE stueble_id = %s) AS events
+                FROM (SELECT * FROM stueble.events WHERE stueble_id = %s) AS events
                 LEFT JOIN users ON events.user_id = users.id;
                 """
 
@@ -136,7 +136,7 @@ def export_stueble_guests(stueble_id: int) -> FuncRes:
     csv = csv["data"]
 
     result = db.select(
-        table="stueble_motto",
+        table="stueble.motto",
         columns=["date_of_time"],
         conditions={"id": stueble_id},
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)

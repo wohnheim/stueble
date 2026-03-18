@@ -1208,7 +1208,7 @@ def invitee():
         users_list = []
         for i in possible_users:
             query = """
-            SELECT user_id FROM events
+            SELECT user_id FROM stueble.events
             WHERE user_id = %s AND stueble_id = %s AND event_type = 'add' AND invited_by = %s
             ORDER BY submitted DESC LIMIT 1"""
             result = db.custom_call(query=query,
@@ -2203,10 +2203,12 @@ def get_hosts_tutors():
     result = motto.get_info(date=date)
     if result.is_error:
         response = Response(
-            response=json.dumps({"code": 500, "message": str(result.error)}),
-            status=500,
+            response=json.dumps({"code": code, "message": str(result.error)} if (code := result.message.code) != 404 else []),
+            status=result.message.code,
             mimetype="application/json")
         return response
+
+    # NOTE: can't occurr, but still added in case of redesign of get_info function
     if result.data is None:
         response = Response(
             response=json.dumps({"code": 404, "message": "no stueble party found"}),
@@ -2279,7 +2281,7 @@ def force_add_guest():
         return response
     user_id = result.data[0]
     query = """SET additional.skip_triggers = 'on';
-INSERT INTO events (user_id, stueble_id, event_type) VALUES (%s, %s, %s), (%s, %s, %s);  -- Triggers will be skipped
+INSERT INTO stueble.events (user_id, stueble_id, event_type) VALUES (%s, %s, %s), (%s, %s, %s);  -- Triggers will be skipped
 RESET additional.skip_triggers;"""
     result = db.custom_call(query=query,
                             type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
