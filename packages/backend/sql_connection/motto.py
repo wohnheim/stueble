@@ -1,9 +1,8 @@
 from datetime import date
 from typing import Annotated, Any, Literal
 
-from psycopg2 import DatabaseError
+from psycopg import DatabaseError
 from psycopg import Cursor
-from psycopg2.extras import execute_values
 
 from backend.database import database as db
 from backend.sql_connection.ultimate_functions import clean_single_data
@@ -322,7 +321,7 @@ def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: An
         rows = [tuple((user_id, stueble_id) for user_id in user_ids)] # type: ignore
         query = """DELETE FROM stueble.hosts WHERE (user_id, stueble_id) IN %s"""
     try:
-        execute_values(cursor, query, rows)
+        cursor.executemany(query, rows) # type: ignore
         cursor.connection.commit() # type: ignore
     except DatabaseError as e:
         cursor.connection.rollback() # type: ignore

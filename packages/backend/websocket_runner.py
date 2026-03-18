@@ -2,11 +2,11 @@ import json
 import select
 import warnings
 
-import psycopg2
-from psycopg2.extensions import connection, cursor
+import psycopg
+from psycopg import Connection, Cursor
 import requests
 
-from backend.data_types import Event_Notify
+from backend.datatypes.stueble_types import Event_Notify
 from backend.database import database as db
 from backend.sql_connection import users
 
@@ -17,17 +17,17 @@ def is_valid_event_notify(other):
 
 conn, cursor = db.connect()
 
-def listen_to_db(connection: connection, cursor: cursor):
+def listen_to_db(connection: Connection, cursor: Cursor):
     """
     Listens to the database for notifications on the channel 'automatically_removed_users'.
     When a notification is received, it processes the payload and retrieves user information.
     The payload is expected to be a JSON string with keys: event, user_id, stueble_id
 
     Args:
-        connection: psycopg2 connection object
-        cursor: psycopg2 cursor object
+        Connection: psycopg connection object
+        Cursor: psycopg cursor object
     """
-    connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)  # autocommit mode
+    connection.autocommit = True
     cursor.execute("LISTEN automatically_removed_users;")
     while True:
         if select.select([connection], [], [], 0.5) == ([], [], []):

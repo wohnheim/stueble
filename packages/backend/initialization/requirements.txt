@@ -1,5 +1,4 @@
 flask
-# psycopg2-binary
 bcrypt
 pytz
 pyzbar
@@ -20,7 +19,7 @@ websockets
 waitress
 dotenv
 psycopg
-
+psycopg_pool
 h11
 pip
 protobuf

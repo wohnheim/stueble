@@ -6,7 +6,10 @@ from email.mime.multipart import MIMEMultipart
 from typing import Annotated
 
 from backend.datatypes.stueble_types import Email
+<<<<<<< Updated upstream
 from backend.datatypes.funcres import FuncRes, Message, Status
+=======
+>>>>>>> Stashed changes
 from dotenv import load_dotenv
 import os
 from pathlib import Path
