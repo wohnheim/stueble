@@ -50,3 +50,4 @@ setuptools
 uritemplate
 wsproto
 requests-oauthlib
+pyscopg_pool
