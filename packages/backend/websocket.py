@@ -16,6 +16,7 @@ from enum import Enum
 
 from backend.sql_connection.common_functions import check_permissions, get_motto
 from backend.datatypes.stueble_types import *
+from backend.datatypes.funcres import FuncRes, Message, Status
 from backend.sql_connection import events, sessions, users, motto
 from backend.database import database as db
 from backend import hash_pwd as hp
@@ -236,7 +237,7 @@ le_
         ws_sid = websockets_info.get(id(ws), {}).get("session_id", None)
         if ws_sid != skip_sid and ws_sid is not None:
             try:
-                await ws.send(message)
+                await ws.send(message) # type: ignore
             # when websocket connection is already closed, remove it from lists
             except (ConnectionClosed, ConnectionClosedOK, ConnectionClosedError):
                 host_upwards_room.discard(ws)
@@ -261,14 +262,14 @@ async def handle_ws(websocket):
                                                               "capabilities": [],
                                                               "authorized": False})
         return
-    
-    result = sessions.get_session(session_id=session_id)
+ 
+    result = sessions.get_session(session_id=session_id) # type: ignore
     if result.is_error:
         await send(websocket=websocket, event="status", data={"code": "401",
                                                               "capabilities": [],
                                                               "authorized": False})
         return
-    
+ 
     _, expiration_date = result.data
     websockets_info[id(websocket)] = {"expiration_date": expiration_date, "session_id": session_id}
 
@@ -282,7 +283,7 @@ async def handle_ws(websocket):
         await send(websocket=websocket, **message)
 
     # send stueble_status
-    result = await stueble_status(session_id=session_id)
+    result = await stueble_status(session_id=session_id) # type: ignore
     if result.is_error:
         await send(websocket=websocket, event="error", data={"code": "500",
             "message": "Couldn't send stueble_status"})
@@ -547,7 +548,7 @@ async def request_motto(websocket, msg, req_id):
             {"code": "500",
              "message": str(result.error)})
         return
-    motto = {"motto": result.data["motto"], "description": result.data["description"], "date": result["data"]["date"].isoformat()}
+    motto = {"motto": result.data["motto"], "description": result.data["description"], "date": result.data["date"].isoformat()}
     await send(websocket=websocket, event="motto", reqId=req_id, data=motto)
     return
 
@@ -640,7 +641,7 @@ async def request_qrcode(websocket, msg, req_id):
         stueble_id = None
 
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
-    result = sessions.get_user(session_id=session_id, columns=["id", "user_uuid", "user_role"])
+    result = sessions.get_user(session_id=session_id, keywords=["id", "user_uuid", "user_role"]) # type: ignore
     if result.is_error:
         await send(websocket=websocket, event="status", data={"code": "401",
                                                               "capabilities": [],
@@ -679,14 +680,14 @@ async def request_qrcode(websocket, msg, req_id):
     information = {"id": user_uuid, "timestamp": timestamp, "extern": extern}
 
     signature = hp.create_signature(message=information)
-    if signature["success"] is False:
+    if signature.is_error:
         await send(websocket=websocket, event="error", reqId=req_id, 
-                   data={"code": "500","message": str(signature["error"])})
+                   data={"code": "500","message": str(signature.error)})
         return
 
     data = {
         "data": information,
-        "signature": signature["data"]
+        "signature": signature.data
     }
 
     await send(websocket=websocket, event="qrCode", reqId=req_id, data=data)
@@ -706,6 +707,7 @@ async def request_public_key(websocket, req_id):
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "500",
              "message": "Public key not found in environment variables."})
+        return
     public_key = serialization.load_pem_public_key(
         public_key.encode('utf-8')
     )
@@ -713,11 +715,11 @@ async def request_public_key(websocket, req_id):
         encoding=serialization.Encoding.Raw,
         format=serialization.PublicFormat.Raw
     )
-    
+ 
     # Base64url encode (no padding)
     def base64url_encode(data):
         return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
-    
+
     # Create JWK
     jwk = {
         "kty": "OKP",                           # Key Type: Octet Key Pair
@@ -730,7 +732,7 @@ async def request_public_key(websocket, req_id):
     await send(websocket=websocket, event="publicKey", reqId=req_id, data=jwk)
     return
 
-async def stueble_status(session_id: str | int, date: datetime.date | None=None, registered: bool | None=None, present: bool | None=None, skip_sid: str | int | None=None):
+async def stueble_status(session_id: str | int, date: datetime.date | None=None, registered: bool | None=None, present: bool | None=None, skip_sid: str | int | None=None) -> FuncRes:
     """
     broadcasts a user
 
@@ -739,9 +741,11 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         date (date): the stueble id of the stueble party
         registered (bool): whether the user is registered or not
         present (bool): whether the user is present or not
+    Returns:
+        FuncRes: the result of the operation
     """
 
-    result = sessions.get_user(session_id=session_id, columns=["id", "user_role"])
+    result = sessions.get_user(session_id=session_id, keywords=["id", "user_role"])
     if result.is_error:
         return result
     user_id = result.data[0]
@@ -755,7 +759,14 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
 
     if result.is_error:
-        return result
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Stueble Status Error",
+                            type="error",
+                            category="Stueble Status",
+                            code=500)
+        )
 
     session_ids = [i[0] for i in result.data]
     # unneccessary but for style of coding
@@ -795,7 +806,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         invited_guests = [{snake_to_camel_case(key) if key != "user_uuid" else "id": value for key, value in guest.items()} for guest in invited_guests]
     else:
 
-    date = date.isoformat()
+    date = date.isoformat() # type: ignore
 
     data = {"date": date, "registered": registered, "present": present}
     if invited_guests is not None:
@@ -807,22 +818,38 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     except:
         pass
     await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
-    return {"success": True}
+    return FuncRes(
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Stueble Status Success",
+                        type="success",
+                        category="Stueble Status",
+                        code=200)
+    )
 
 
-async def status(user_id: Annotated[str | int, "Explicit with user_uuid"] = None, user_uuid: Annotated[str | int, "Explicit with user_id"] = None):
+async def status(user_id: Annotated[str | int | None, "Explicit with user_uuid"] = None, user_uuid: Annotated[str | int | None, "Explicit with user_id"] = None) -> FuncRes:
     """
     sends the capabilities and authorized to the user
     Authorized not specified
+
     Args:
-        user_id (str | int): the user id of the user
-        user_uuid (str | int): the user uuid of the user
+        user_id (str | int | None): the user id of the user
+        user_uuid (str | int | None): the user uuid of the user
+    Returns:
+        FuncRes: the result of the operation
     """
 
     if (user_id is not None and user_uuid is not None) or (user_id is None and user_uuid is None):
-        return {"success": False, "error": "either user_id or user_uuid must be specified"}
+        return FuncRes(
+                error="either user_id or user_uuid must be specified",
+                status=Status.FULL_ERROR,
+                message=Message(name="Status Error",
+                                type="error",
+                                category="Status",
+                                code=400)
+        )
 
-    result = users.get_user(user_id=user_id, user_uuid=user_uuid, columns=["id", "user_role"], expect_single_answer=True)
+    result = users.get_user(user_id=user_id, user_uuid=user_uuid, keywords=["id", "user_role"], type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER) # type: ignore
     if result.is_error:
         return result
 
@@ -831,7 +858,7 @@ async def status(user_id: Annotated[str | int, "Explicit with user_uuid"] = None
     data = {"code": "200",
             "capabilities": capabilities}
     
-    result = sessions.get_session_ids(user_id=user_id)
+    result = sessions.get_session_ids(user_id=user_id) # type: ignore
     if result.is_error:
         return result
     session_ids = result.data
@@ -839,6 +866,13 @@ async def status(user_id: Annotated[str | int, "Explicit with user_uuid"] = None
         websocket = get_websocket_by_sid(sid=sid)
         if websocket is not None:
             asyncio.run(send(websocket=websocket, event="status", data=data))
+    return FuncRes(
+        status=Status.FULL_SUCCESS,
+        message=Message(name="Status Success",
+                        type="success",
+                        category="Status",
+                        code=200)
+    )
 
 
 # Start server
