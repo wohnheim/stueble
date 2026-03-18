@@ -7,7 +7,7 @@ This module defines the Result class for representing operation outcomes.
 # TODO: implement .succes Enum datatype of success values: FULL_SUCCESS, PARTIAL_SUCCESS, ERROR
 
 from dataclasses import dataclass
-from typing import Any, Generic, TypeVar, Optional
+from typing import Any, Generic, TypeVar
 
 Data = TypeVar("Data") # success type
 Error = TypeVar("Error") # error type
