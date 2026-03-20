@@ -27,7 +27,7 @@ BEGIN
 
             -- check, whether user already arrived
             IF COALESCE((SELECT event_type
-                FROM events
+                FROM stueble.events
                 WHERE stueble_id = NEW.stueble_id
                   AND user_id = NEW.user_id
                   AND event_type IN ('arrive', 'leave', 'remove') -- remove, since when the user is removed, all past arrived have to be ignored
@@ -39,7 +39,7 @@ BEGIN
 
             -- check, whether user is registered for the stueble
             IF COALESCE((SELECT event_type
-                FROM events
+                FROM stueble.events
                 WHERE stueble_id = NEW.stueble_id
                   AND user_id = NEW.user_id
                   AND event_type IN ('add', 'remove')
@@ -52,7 +52,7 @@ BEGIN
         -- if user is leaving, check if not already left and whether they arrived first
         ELSE
             IF COALESCE((SELECT event_type
-                FROM events
+                FROM stueble.events
                 WHERE stueble_id = NEW.stueble_id
                   AND user_id = NEW.user_id
                   AND event_type IN ('arrive', 'leave')
@@ -99,7 +99,7 @@ BEGIN
 
             -- check, whether user is already added
             IF COALESCE((SELECT event_type
-                FROM events
+                FROM stueble.events
                 WHERE stueble_id = NEW.stueble_id
                   AND user_id = NEW.user_id
                   AND event_type IN ('add', 'remove')
@@ -112,7 +112,7 @@ BEGIN
             -- check, whether maximum capacity of guests is already reached
             IF (SELECT COUNT(*)
                 FROM (SELECT DISTINCT ON (user_id) event_type
-                      FROM events
+                      FROM stueble.events
                       WHERE event_type IN ('add', 'remove') AND stueble_id = NEW.stueble_id
                       ORDER BY user_id, submitted DESC) as last_events
                 WHERE event_type = 'add') >=
@@ -132,7 +132,7 @@ BEGIN
             IF NEW.invited_by IS NOT NULL
             THEN
                 WITH last_events AS (SELECT DISTINCT ON (user_id) event_type
-                                     FROM events
+                                     FROM stueble.events
                                      WHERE (event_type IN ('add', 'remove') AND invited_by = NEW.invited_by AND
                                             stueble_id = NEW.stueble_id)
                                      ORDER BY user_id, submitted DESC)
@@ -150,7 +150,7 @@ BEGIN
         -- check whether remove is valid
         ELSE
             IF COALESCE((SELECT event_type
-                FROM events
+                FROM stueble.events
                 WHERE stueble_id = NEW.stueble_id
                   AND user_id = NEW.user_id
                   AND event_type IN ('add', 'remove')
@@ -161,7 +161,7 @@ BEGIN
             END IF;
 
             present := COALESCE((SELECT event_type
-                                FROM events
+                                FROM stueble.events
                                 WHERE user_id = NEW.user_id
                                           AND stueble_id = NEW.stueble_id
                                           AND event_type IN ('arrive', 'leave')
@@ -173,8 +173,8 @@ BEGIN
             END IF;
 
             all_invitees_absent := (SELECT (SELECT COUNT(*) FROM
-            (SELECT * FROM (SELECT DISTINCT ON (events.user_id) event_type
-                      FROM events
+            (SELECT * FROM (SELECT DISTINCT ON (stueble.events.user_id) event_type
+                      FROM stueble.events
                       WHERE invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
                       ORDER BY events.user_id, submitted DESC) AS invitees_event
             WHERE event_type = 'arrive') AS arrived_invitees) = 0);
@@ -188,9 +188,9 @@ BEGIN
             IF (SELECT user_role FROM users WHERE id = NEW.user_id) != 'extern'
             THEN
                 -- if already arrived at stueble forbid removing
-                INSERT INTO events (user_id, stueble_id, event_type)
-                (SELECT users_event.user_id, NEW.stueble_id, 'remove' FROM (SELECT DISTINCT ON (events.user_id) user_id, event_type
-                      FROM events
+                INSERT INTO stueble.events (user_id, stueble_id, event_type)
+                (SELECT users_event.user_id, NEW.stueble_id, 'remove' FROM (SELECT DISTINCT ON (stueble.events.user_id) user_id, event_type
+                      FROM stueble.events
                       WHERE invited_by = NEW.user_id AND stueble_id = NEW.stueble_id
                       ORDER BY events.user_id, submitted DESC) AS users_event
                 WHERE event_type NOT IN ('arrive', 'remove'))
@@ -217,7 +217,7 @@ BEGIN
         -- check, whether inviter is still added for stueble
         IF COALESCE((SELECT user_role FROM users WHERE id = NEW.user_id), 'extern') = 'extern'
             AND COALESCE((SELECT event_type
-                            FROM events
+                            FROM stueble.events
                             WHERE user_id = NEW.invited_by
                             AND stueble_id = NEW.stueble_id
                             AND event_type IN ('add', 'remove')
@@ -302,7 +302,7 @@ BEGIN
     IF NEW.invited_by IS NULL AND NEW.event_type != 'add' AND (SELECT user_role FROM users WHERE id = NEW.user_id) = 'extern'
     THEN
         NEW.invited_by := (SELECT invited_by
-                           FROM events
+                           FROM stueble.events
                            WHERE user_id = NEW.user_id
                              AND stueble_id = NEW.stueble_id
                              AND event_type = 'add'
@@ -316,16 +316,16 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION add_hosts()
 RETURNS trigger AS $$
 BEGIN
-IF (SELECT date_of_time FROM stueble_motto WHERE id = NEW.stueble_id) = (SELECT MIN(date_of_time)
+IF (SELECT date_of_time FROM stueble.motto WHERE id = NEW.stueble_id) = (SELECT MIN(date_of_time)
                         FROM (
                             SELECT date_of_time
-                            FROM stueble_motto
+                            FROM stueble.motto
                             WHERE ((date_of_time >= CURRENT_DATE)
                                OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1))))
 THEN
     UPDATE users
     SET user_role = 'host'
-    WHERE id IN (SELECT user_id FROM hosts WHERE stueble_id = NEW.stueble_id) AND user_role = 'user';
+    WHERE id IN (SELECT user_id FROM stueble.hosts WHERE stueble_id = NEW.stueble_id) AND user_role = 'user';
 END IF;
 RETURN NEW;
 END;
@@ -343,7 +343,7 @@ BEGIN
     WHERE user_id = NEW.id
       AND stueble_id = (
         SELECT id
-        FROM stueble_motto
+        FROM stueble.motto
         WHERE ((date_of_time >= CURRENT_DATE)
           OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1))
         ORDER BY date_of_time ASC LIMIT 1);
@@ -418,12 +418,12 @@ $$ LANGUAGE plpgsql;
 
 -- NOTE: DO NOT RENAME THE TRIGGERS, SINCE THEIR ALPHABETICAL ORDER SPECIFIES THE ORDER OF EXECUTION
 CREATE OR REPLACE TRIGGER event_add_invited_by_trigger
-BEFORE INSERT OR UPDATE ON events
+BEFORE INSERT OR UPDATE ON stueble.events
 FOR EACH ROW EXECUTE FUNCTION add_invited_by();
 
 -- NOTE: DO NOT RENAME THE TRIGGERS, SINCE THEIR ALPHABETICAL ORDER SPECIFIES THE ORDER OF EXECUTION
 CREATE OR REPLACE TRIGGER event_guest_change_trigger
-BEFORE INSERT OR UPDATE ON events
+BEFORE INSERT OR UPDATE ON stueble.events
 FOR EACH ROW
 EXECUTE FUNCTION event_guest_change();
 
@@ -448,7 +448,7 @@ CREATE OR REPLACE TRIGGER set_reset_code_trigger
     FOR EACH ROW EXECUTE FUNCTION set_reset_code();
 
 CREATE OR REPLACE TRIGGER add_hosts
-    AFTER INSERT OR UPDATE ON hosts
+    AFTER INSERT OR UPDATE ON stueble.hosts
     FOR EACH ROW EXECUTE FUNCTION add_hosts();
 
 CREATE OR REPLACE TRIGGER add_websockets_affected_trigger
