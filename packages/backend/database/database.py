@@ -25,11 +25,11 @@ from database.pool import create_pool, get_cursor, close_cursor
 
 load_dotenv()
 
-USER = os.getenv("USERDB")  # (like the linux user name!)
-PASSWORD = os.getenv("PASSWORD")
-HOST = os.getenv("HOST")  # localhost
-PORT = os.getenv("PORT")  # 5432
-DBNAME = os.getenv("DBNAME")  # media-library
+USER = os.getenv("PGUSER")  # (like the linux user name!)
+PASSWORD = os.getenv("PGPASSWORD")
+HOST = os.getenv("PGHOST")  # localhost
+PORT = os.getenv("PGPORT")  # 5432
+DBNAME = os.getenv("PGDATABASE")  # media-library
 
 # initialize pool
 pool: ConnectionPool = create_pool()
