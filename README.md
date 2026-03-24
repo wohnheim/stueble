@@ -18,7 +18,7 @@ yarn run build
 The backend can be built using the [Nix](https://nixos.org/nix) package manager.
 
 ```
-nix-build -A backend
+nix build .#backend
 ```
 
 ## Data
@@ -51,7 +51,7 @@ Information to the tables can be found in [notes.md](packages/backend/notes.md).
 A development shell with all required dependencies can be started. This requires [Nix](https://nixos.org/nix).
 
 ```
-nix-shell -A shell
+nix develop
 ```
 
 The components contained in this shell can be managed independently using [Overmind](https://github.com/DarthSim/overmind).
