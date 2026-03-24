@@ -19,8 +19,8 @@ from psycopg_pool import ConnectionPool
 from psycopg.rows import TupleRow
 from psycopg import sql
 
-from datatypes.result import Result
-from database.pool import create_pool, get_cursor, close_cursor
+from backend.datatypes.result import Result
+from backend.database.pool import create_pool, get_cursor, close_cursor
 
 
 load_dotenv()
@@ -199,7 +199,7 @@ def catch_exception(func):
     return wrapper
 
 
-def connect(**kwargs):
+def connect(**kwargs) -> Cursor[TupleRow]:
     """
     connect \n
     kwargs format: user, password, host, port, database \n

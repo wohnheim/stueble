@@ -2,8 +2,8 @@ import json
 import select
 import warnings
 
-import psycopg
 from psycopg import Connection, Cursor
+from psycopg.rows import TupleRow
 import requests
 
 from backend.datatypes.stueble_types import Event_Notify
@@ -15,9 +15,9 @@ def is_valid_event_notify(other):
         return other in Event_Notify._value2member_map_
     return NotImplemented
 
-conn, cursor = db.connect()
+cursor = db.connect()
 
-def listen_to_db(connection: Connection, cursor: Cursor):
+def listen_to_db(connection: Connection, cursor: Cursor[TupleRow]):
     """
     Listens to the database for notifications on the channel 'automatically_removed_users'.
     When a notification is received, it processes the payload and retrieves user information.
@@ -64,4 +64,4 @@ def listen_to_db(connection: Connection, cursor: Cursor):
             # TODO handle error
 
 def run_listener():
-    listen_to_db(conn, cursor)
+    listen_to_db(cursor.connection, cursor)
