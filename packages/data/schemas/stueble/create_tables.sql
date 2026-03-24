@@ -1,6 +1,6 @@
 -- Description: create tables, types, check functions for database
 
--- Create shcema if not exists
+-- Create schema if not exists
 CREATE SCHEMA IF NOT EXISTS stueble;
 
 
@@ -26,9 +26,9 @@ CREATE TABLE IF NOT EXISTS stueble.events (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) NOT NULL,
     invited_by INTEGER REFERENCES users(id),
-    event_type EVENT_TYPE NOT NULL,
+    event_type stueble.EVENT_TYPE NOT NULL,
     submitted TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    stueble_id INTEGER REFERENCES stueble_motto(id) NOT NULL
+    stueble_id INTEGER REFERENCES stueble.motto(id) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS stueble.allowed_users (
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS error_logs (
 CREATE TABLE IF NOT EXISTS stueble.hosts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    stueble_id INTEGER REFERENCES stueble_motto(id) ON DELETE CASCADE NOT NULL,
+    stueble_id INTEGER REFERENCES stueble.motto(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, stueble_id)
 );
@@ -71,13 +71,17 @@ CREATE TABLE IF NOT EXISTS stueble.applications (
     uuid UUID UNIQUE NOT NULL,
     motto TEXT NOT NULL,
     date DATE NOT NULL CHECK (date >= CURRENT_DATE),
-    application_group INTEGER NOT NULL REFERENCES stueble.applicants(application_group) ON DELETE CASCADE
-    priority INTEGER NOT NULL CHECK (priority > 0)
+    application_group INTEGER NOT NULL,
+    application_priority INTEGER NOT NULL CHECK (application_priority > 0)
 );
 
 CREATE TABLE IF NOT EXISTS stueble.applicants (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     application_id INTEGER REFERENCES stueble.applications(id) ON DELETE CASCADE NOT NULL,
-    application_group INTEGER NOT NULL CHECK application_group > 0
+    application_group INTEGER NOT NULL CHECK (application_group > 0)
 );
+
+-- Avoid undefined relation error
+ALTER TABLE stueble.applications
+ADD CONSTRAINT application_group_constraint FOREIGN KEY (application_group) REFERENCES stueble.applicants(application_group) ON DELETE CASCADE
