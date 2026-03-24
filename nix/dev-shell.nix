@@ -1,31 +1,12 @@
+{
+  lib,
+  origInputs,
+  pkgs,
+  ...
+}:
+
 let
-  /* Inputs */
-
-  pkgs = import <nixpkgs> { };
-  inherit (pkgs) lib;
-
-  pyproject-nix = import (builtins.fetchGit {
-    url = "https://github.com/pyproject-nix/pyproject.nix.git";
-    rev = "eb204c6b3335698dec6c7fc1da0ebc3c6df05937";
-  }) {
-    inherit lib;
-  };
-
-  uv2nix = import (builtins.fetchGit {
-    url = "https://github.com/pyproject-nix/uv2nix.git";
-    rev = "482aba340ded40ef557d331315f227d5eba84ced";
-  }) {
-    inherit pyproject-nix lib;
-  };
-
-  pyproject-build-systems = import (builtins.fetchGit {
-    url = "https://github.com/pyproject-nix/build-system-pkgs.git";
-    rev = "c37f66a953535c394244888598947679af231863";
-  }) {
-    inherit pyproject-nix uv2nix lib;
-  };
-
-  /* Hardcoded Ports (Development) */
+  # Hardcoded Ports
 
   webserverPort = 3010;
   frontendPort = 3011;
@@ -33,47 +14,35 @@ let
   websocketPort = 3013;
   databasePort = 3014;
 
-  /* Python */
+  # Python
 
-  workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+  common = pkgs.callPackage ./python-common.nix { inherit origInputs; };
 
-  overlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
+  sourceOverlay = final: prev: {
+    backend = prev.backend.overrideAttrs (old: {
+      src = pkgs.runCommand "backend-stub-src" { } ''
+        mkdir -p $out/packages/backend
 
-  zbarOverlay = final: prev: {
-    pyzbar = prev.pyzbar.overrideAttrs (old: {
-      buildInputs = (old.buildInputs or []) ++ [ pkgs.zbar ];
-
-      postInstall = (old.postInstall or "") + ''
-        substituteInPlace $out/${pkgs.python3.sitePackages}/pyzbar/zbar_library.py \
-          --replace-fail "find_library('zbar')" '"${lib.getLib pkgs.zbar}/lib/libzbar${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}"'
+        cp ${../pyproject.toml} $out/pyproject.toml
+        touch $out/packages/backend/__init__.py
       '';
     });
   };
 
-  pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
-    python = pkgs.python3;
-  }).overrideScope (
+  editableOverlay = common.workspace.mkEditablePyprojectOverlay {
+    root = "$REPO_ROOT";
+  };
+
+  editableSet = common.pythonSet.overrideScope (
     lib.composeManyExtensions [
-      pyproject-build-systems.wheel
-      overlay
-      zbarOverlay
-    ]);
+      sourceOverlay
+      editableOverlay
+    ]
+  );
 
-  packageSet = pythonSet.overrideScope (
-    final: prev: {
-      backend = prev.backend.overrideAttrs (old: {
-        src = lib.fileset.toSource rec {
-          root = ./.;
+  virtualenv = editableSet.mkVirtualEnv "backend-env" common.workspace.deps.all;
 
-          fileset = lib.fileset.unions [
-            (root + "/pyproject.toml")
-            (root + "/packages/backend")
-          ];
-        };
-      });
-    });
-
-  /* Nginx */
+  # Nginx
 
   recommendedProxyConfig = pkgs.writeText "nginx-recommended-proxy_set_header-headers.conf" ''
     proxy_set_header        Host $host;
@@ -165,35 +134,10 @@ let
       }
     }
   '';
-in {
-  # Backend production package
-  backend = packageSet.mkVirtualEnv "backend-env" workspace.deps.default;
-
+in
+{
   # Development shell (doesn't contain source code)
-  shell = let
-    sourceOverlay = final: prev: {
-      backend = prev.backend.overrideAttrs (old: {
-        src = pkgs.runCommand "backend-stub-src" {} ''
-          mkdir -p $out/packages/backend
-
-          cp ${./pyproject.toml} $out/pyproject.toml
-          touch $out/packages/backend/__init__.py
-        '';
-      });
-    };
-
-    editableOverlay = workspace.mkEditablePyprojectOverlay {
-      root = "$REPO_ROOT";
-    };
-
-    editableSet = pythonSet.overrideScope (
-      lib.composeManyExtensions [
-        sourceOverlay
-        editableOverlay
-      ]);
-
-    virtualenv = editableSet.mkVirtualEnv "backend-env" workspace.deps.all;
-  in pkgs.mkShell {
+  devShells.default = pkgs.mkShell {
     packages = [
       pkgs.overmind
       pkgs.postgresql_18
@@ -218,6 +162,9 @@ in {
       UV_NO_SYNC = "1";
       UV_PYTHON = editableSet.python.interpreter;
       UV_PYTHON_DOWNLOADS = "never";
+
+      # Environment variable for VSCode (manually read inside settings.yaml)
+      PYTHON_EXECUTABLE = "${virtualenv}/bin/python";
     };
 
     shellHook = ''
@@ -253,8 +200,9 @@ in {
           pg_ctl -s -l logs/database.log -o "--unix_socket_directories='$PGHOST'" start
 
           createdb 1>/dev/null
-          psql -q -f packages/data/create_tables.sql
-          psql -q -f packages/data/triggers.sql
+          psql -q -f packages/data/schemas/create_tables.sql
+          psql -q -f packages/data/schemas/stueble/create_tables.sql
+          psql -q -f packages/data/schemas/stueble/triggers.sql
 
           psql -q -c "INSERT INTO users (user_role, room, residence, first_name, last_name, password_hash, email, user_name, verified) VALUES ('admin', 0, 'altbau', 'Super', 'Admin', '$ADMIN_PASSWORD', '$EMAIL_ADDRESS', 'admin', 't');"
 
@@ -263,7 +211,7 @@ in {
 
       trap "if [ ! -e .OVERMIND_REF_COUNT ] || [ \"\$(cat .OVERMIND_REF_COUNT)\" == '1' ]; then rm -f .OVERMIND_REF_COUNT; test -e '$PWD/.overmind.sock' && overmind quit --socket '$PWD/.overmind.sock'; else echo \$((\$(cat .OVERMIND_REF_COUNT) - 1)) > .OVERMIND_REF_COUNT; fi" EXIT
       if [ "$SKIP_OVERMIND" != "1" ]; then
-          overmind start -D && echo "1" > .OVERMIND_REF_COUNT
+          overmind start # && echo "1" > .OVERMIND_REF_COUNT
       fi
     '';
   };
