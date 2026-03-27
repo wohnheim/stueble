@@ -9,7 +9,6 @@ if not pwd_hes:
 # if not pwd_hirte:
 #     raise Exception("Please set pwd_hirte")
 
-conn, cursor = db.connect()
 password_hes = hash_pwd.hash_pwd(pwd_hes)
 # password_hirte = hash_pwd.hash_pwd(pwd_hirte)
 result = db.insert(
@@ -30,3 +29,5 @@ if result.is_error:
 """
 
 print("Admin user added.")
+
+db.__close_pool()

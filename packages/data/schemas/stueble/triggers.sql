@@ -294,17 +294,19 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPALACE FUNCTION add_group()
-RETURN trigger AS $$
+CREATE OR REPLACE FUNCTION add_group()
+RETURNS trigger AS $$
+BEGIN
     IF NEW.application_group IS NULL
     THEN
       NEW.application_group := (SELECT COALESCE(MAX(application_group), 0) + 1 FROM stueble.applicants);
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION delete_application_group()
+CREATE OR REPLACE FUNCTION delete_applicants()
 RETURNS trigger AS $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM stueble.applications WHERE application_group = OLD.application_group)
@@ -313,6 +315,18 @@ BEGIN
     END IF;
 RETURN OLD;
 END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION delete_applications()
+RETURNS trigger AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM stueble.applicants WHERE application_group = OLD.application_group)
+    THEN
+        DELETE FROM stueble.applications WHERE application_group = OLD.application_group;
+    END IF;
+RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
 
 
 -- NOTE: DO NOT RENAME THE TRIGGERS, SINCE THEIR ALPHABETICAL ORDER SPECIFIES THE ORDER OF EXECUTION
@@ -334,10 +348,10 @@ CREATE OR REPLACE TRIGGER add_application_uuid_trigger
     BEFORE INSERT ON stueble.applications
     FOR EACH ROW EXECUTE FUNCTION set_application_uuid();
 
-CREATE OR REPLACE TRIGGER add_application_group_trigger
-    BEFORE INSERT ON stueble.applicants
-    FOR EACH ROW EXECUTE FUNCTION add_application_group();
-
-CREATE OR REPLACE TRIGGER delete_application_group_trigger
+CREATE OR REPLACE TRIGGER delete_applicants_trigger
     AFTER DELETE ON stueble.applications
-    FOR EACH ROW EXECUTE FUNCTION delete_application_group();
+    FOR EACH ROW EXECUTE FUNCTION delete_applications();
+
+CREATE OR REPLACE TRIGGER delete_applications_trigger
+    AFTER DELETE ON stueble.applicants
+    FOR EACH ROW EXECUTE FUNCTION delete_applicants();

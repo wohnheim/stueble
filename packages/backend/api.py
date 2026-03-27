@@ -3,6 +3,7 @@
 
 import asyncio
 import json
+from datetime import datetime as dt
 
 from flask import Flask, Response, request
 
@@ -33,15 +34,15 @@ from backend.basic_functions import camel_to_snake_case, snake_to_camel_case
 
 # initialize flask app
 app = Flask(__name__)
-app.register_blueprint(auth, url_prefix="/auth")
-app.register_blueprint(user, url_prefix="/users")
-app.register_blueprint(tutor, url_prefix="/tutors")
+app.register_blueprint(auth.auth, url_prefix="/auth")
+app.register_blueprint(user.users, url_prefix="/users")
+app.register_blueprint(tutor.tutor, url_prefix="/tutors")
 
-app.register_blueprint(event, url_prefix="/events")
+app.register_blueprint(event.event, url_prefix="/events")
 
-app.register_blueprint(host, url_prefix="/stueble/hosts")
-app.register_blueprint(guest, url_prefix="/stueble/guests")
-app.register_blueprint(application, url_prefix="/stueble/applications")
+app.register_blueprint(host.host, url_prefix="/stueble/hosts")
+app.register_blueprint(guest.guest, url_prefix="/stueble/guests")
+app.register_blueprint(application.applic, url_prefix="/stueble/applications")
 
 
 """
@@ -530,7 +531,19 @@ def stueble_dates():
 
     date = request.args.get("date", None)
 
-    return applications.get_application_count(date=date)
+    result = applications.get_application_count(date=dt.strptime(date, "%Y-%m-%d").date() if date is not None else None)
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+
+    return Response(
+        response=json.dumps(result.data),
+        status=200,
+        mimetype="application/json")
 
 
 

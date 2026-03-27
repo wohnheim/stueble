@@ -4,7 +4,7 @@ import json
 from flask import Blueprint, Response, request
 from psycopg import sql
 
-from database import database as db
+from backend.database import database as db
 
 event = Blueprint("event", __name__)
 

@@ -13,14 +13,13 @@ import traceback
 from typing import Any
 import warnings
 from dotenv import load_dotenv
-import psycopg as pg
-from psycopg import Cursor
-from psycopg_pool import ConnectionPool
+import psycopg
+from psycopg import sql, Cursor
 from psycopg.rows import TupleRow
-from psycopg import sql
+from psycopg_pool import ConnectionPool
 
 from backend.datatypes.result import Result
-from backend.database.pool import create_pool, get_cursor, close_cursor
+from backend.database.pool import create_pool, get_cursor, close_cursor, close_pool
 
 
 load_dotenv()
@@ -33,6 +32,12 @@ DBNAME = os.getenv("PGDATABASE")  # mhbs
 
 # initialize pool
 pool: ConnectionPool = create_pool()
+
+def __close_pool():
+    """
+    close the connection pool, not needed except for packages/backend/initialization/add_admins.py
+    """
+    close_pool(pool=pool)
 
 
 class ANSWER_TYPE(str, Enum):
@@ -170,7 +175,7 @@ def cursor_handling(
                 if to_close is True:
                     # to_close the cursor after the function call
                     # fmt: off
-                    close_cursor(cursor=internal_cursor) if use_pool else close(cursor=internal_cursor)  # type: ignore
+                    close_cursor(cursor=internal_cursor, pool=pool) if use_pool else close(cursor=internal_cursor)  # type: ignore
                     # fmt: off
 
         return wrapped
@@ -211,10 +216,11 @@ def connect(**kwargs) -> Cursor[TupleRow]:
         Cursor: cursor to interact with db
     """
     if len(kwargs) > 0:
-        return pg.connect(**kwargs).cursor()
-    return pg.connect(
+        return psycopg.connect(**kwargs).cursor()
+    return psycopg.connect(
         user=USER, password=PASSWORD, host=HOST, port=PORT, dbname=DBNAME
     ).cursor()
+
 
 def fetch(query: sql.Composable, type_of_answer: ANSWER_TYPE, variables: list[Any] | tuple[Any,...] | None = None, commit: bool = False) -> TupleRow | list[list[TupleRow]] | None | Exception:
     """

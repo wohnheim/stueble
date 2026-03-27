@@ -16,7 +16,7 @@ PORT = os.getenv("PGPORT")  # 5432
 DBNAME = os.getenv("PGDATABASE")  # media-library
 
 
-def create_pool(max_connections: int = 100, min_connections: int = 40) -> ConnectionPool:
+def create_pool(max_connections: int = 100, min_connections: int = 40) -> ConnectionPool | Exception:
     """
     create_pool \n
     creates a thread pool safely
@@ -42,6 +42,15 @@ def create_pool(max_connections: int = 100, min_connections: int = 40) -> Connec
     if not connection_pool:
         raise Exception("Creation of connection pool failed")
     return connection_pool
+
+def close_pool(pool: ConnectionPool) -> None:
+    """
+    close the connection pool
+
+    Args:
+        pool (ConnectionPool): connection pool to close
+    """
+    pool.close()
 
 
 def get_cursor(pool: ConnectionPool) -> Cursor:

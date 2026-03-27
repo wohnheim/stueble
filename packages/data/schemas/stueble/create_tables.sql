@@ -66,19 +66,6 @@ CREATE FUNCTION get_submitted_timestamp(INTEGER) RETURNS timestamptz AS $$
 $$ LANGUAGE SQL;
 
 
-CREATE TABLE IF NOT EXISTS stueble.applications (
-    id SERIAL PRIMARY KEY,
-    uuid UUID UNIQUE NOT NULL,
-    motto TEXT NOT NULL,
-    date DATE NOT NULL CHECK (date >= CURRENT_DATE),
-    application_priority INTEGER NOT NULL CHECK (application_priority > 0),
-    application_group INTEGER NOT NULL REFERENCES stueble.applicants(application_group) ON DELETE CASCADE,
-
-    UNIQUE (date, application_group),
-    UNIQUE (application_group, application_priority)
-
-);
-
 CREATE TABLE IF NOT EXISTS stueble.applicants (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
@@ -86,6 +73,14 @@ CREATE TABLE IF NOT EXISTS stueble.applicants (
     group_hash TEXT NOT NULL UNIQUE
 );
 
--- Avoid undefined relation error
-ALTER TABLE stueble.applications
-ADD CONSTRAINT application_group_constraint FOREIGN KEY (application_group) REFERENCES stueble.applicants(application_group) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS stueble.applications (
+    id SERIAL PRIMARY KEY,
+    uuid UUID UNIQUE NOT NULL,
+    motto TEXT NOT NULL,
+    date DATE NOT NULL CHECK (date >= CURRENT_DATE),
+    application_priority INTEGER NOT NULL CHECK (application_priority > 0),
+    application_group INTEGER NOT NULL CHECK (application_group > 0),
+
+    UNIQUE (date, application_group),
+    UNIQUE (application_group, application_priority)
+);
