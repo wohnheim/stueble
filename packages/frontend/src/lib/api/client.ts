@@ -291,7 +291,7 @@ class HTTPClient {
   }
 
   async modifyGuest(props: ModifyGuestAction["data"]) {
-    const res = await fetch("/api/guest", {
+    const res = await fetch("/api/guests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(props),
