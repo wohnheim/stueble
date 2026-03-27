@@ -6,16 +6,20 @@ import json
 
 from flask import Flask, Response, request
 
-from backend.api import (
+from backend.endpoints import (
     auth,
     guest,
+    tutor,
+    host,
     user,
-    application
+    application,
+    event,
 )
 
 from backend import websocket as ws
 from backend.datatypes.stueble_types import UserRole
 from backend.sql_connection import (
+    applications,
     configs,
     motto,
     users,
@@ -24,13 +28,19 @@ from backend.database import database as db
 from backend.sql_connection.common_functions import check_permissions
 from backend.basic_functions import camel_to_snake_case, snake_to_camel_case
 
+
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
 
 # initialize flask app
 app = Flask(__name__)
 app.register_blueprint(auth, url_prefix="/auth")
-app.register_blueprint(guest, url_prefix="/guests")
 app.register_blueprint(user, url_prefix="/users")
+app.register_blueprint(tutor, url_prefix="/tutors")
+
+app.register_blueprint(event, url_prefix="/events")
+
+app.register_blueprint(host, url_prefix="/stueble/hosts")
+app.register_blueprint(guest, url_prefix="/stueble/guests")
 app.register_blueprint(application, url_prefix="/stueble/applications")
 
 
@@ -430,153 +440,7 @@ def update_hosts():
         mimetype="application/json")
     return response
 
-@app.route("/hosts", methods=["GET"])
-@app.route("/tutors", methods=["GET"])
-def get_hosts_tutors():
-    """
-    Get hosts for a stueble.
-    """
-    session_id = request.cookies.get("SID", None)
-    if session_id is None:
-        response = Response(
-            response=json.dumps({"code": 401, "message": "The session_id must be specified"}),
-            status=401,
-            mimetype="application/json")
-        return response
 
-    try:
-        data = request.get_json()
-        date = data.get("date", None)
-    except:
-        date = None
-
-    # check permissions, since only hosts or above can change user role
-    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
-    if result.is_error:
-        response = Response(
-            response=json.dumps({"code": 401, "message": str(result.error)}),
-            status=401,
-            mimetype="application/json")
-        return response
-    if result.data["allowed"] is False:
-        response = Response(
-            response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
-            status=403,
-            mimetype="application/json")
-        return response
-
-    if request.path == "/tutors":
-        query = """SELECT user_uuid, first_name, last_name, residence FROM users WHERE user_role = 'tutor'"""
-        result = db.custom_call(query=query,
-                                type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
-        if result.is_error:
-            response = Response(
-                response=json.dumps({"code": 500, "message": str(result.error)}),
-                status=500,
-                mimetype="application/json")
-            return response
-        tutors = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3]} for i in result.data]
-        response = Response(
-            response=json.dumps(tutors),
-            status=200,
-            mimetype="application/json")
-        return response
-
-    result = motto.get_info(date=date)
-    if result.is_error:
-        response = Response(
-            response=json.dumps({"code": code, "message": str(result.error)} if (code := result.message.code) != 404 else []),
-            status=result.message.code,
-            mimetype="application/json")
-        return response
-
-    # NOTE: can't occurr, but still added in case of redesign of get_info function
-    if result.data is None:
-        response = Response(
-            response=json.dumps({"code": 404, "message": "no stueble party found"}),
-            status=404,
-            mimetype="application/json")
-        return response
-    stueble_id = result.data[2]
-
-    result = motto.get_hosts(stueble_id=stueble_id)
-    if result.is_error:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result.error)}),
-            status=500,
-            mimetype="application/json")
-        return response
-
-    result._data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in result.data]
-
-    response = Response(
-        response=json.dumps(result.data),
-        status=200,
-        mimetype="application/json")
-    return response
-
-@app.route("/hosts/force_add_guest", methods=["POST"])
-def force_add_guest():
-    """
-    force add guest to current stueble
-    """
-
-    # load data
-    data = request.get_json()
-    session_id = request.cookies.get("SID", None)
-    if session_id is None:
-        response = Response(
-            response=json.dumps({"code": 400, "message": "The session id must be specified"}),
-            status=401,
-            mimetype="application/json")
-        return response
-    user_uuid = data.get("id", None)
-    if user_uuid is None:
-        response = Response(
-            response=json.dumps({"code": 400, "message": "The user_uuid must be specified"}),
-            status=400,
-            mimetype="application/json")
-        return response
-
-    # check permissions, since only hosts and above can add guests
-    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
-    if result.is_error:
-        response = Response(
-            response=json.dumps({"code": 401, "message": str(result.error)}),
-            status=401,
-            mimetype="application/json")
-        return response
-    if result.data["allowed"] is False:
-        response = Response(
-            response=json.dumps({"code": 403, "message": "invalid permissions, need role host or above"}),
-            status=403,
-            mimetype="application/json")
-        return response
-
-    # get user_id from user_uuid
-    result = users.get_user(user_uuid=user_uuid, columns=["id"])
-    if result.is_error:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result.error)}),
-            status=500,
-            mimetype="application/json")
-        return response
-    user_id = result.data[0]
-    query = """SET additional.skip_triggers = 'on';
-INSERT INTO stueble.events (user_id, stueble_id, event_type) VALUES (%s, %s, %s), (%s, %s, %s);  -- Triggers will be skipped
-RESET additional.skip_triggers;"""
-    result = db.custom_call(query=query,
-                            type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
-                            variables=[user_id, 1, 'add', user_id, 1, 'arrive'])
-    if result.is_error:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result.error)}),
-            status=500,
-            mimetype="application/json")
-        return response
-    response = Response(
-        status=204)
-    return response
 
 """
 Config management
@@ -658,7 +522,7 @@ def config():
 Stueble dates
 """
 
-@app.route("/stueble_dates", methods=["GET"])
+@app.route("/stueble/stueble_dates", methods=["GET"])
 def stueble_dates():
     """
     Get the dates and the number of applications for that date of stueble

@@ -5,16 +5,14 @@ Application related endpoints for the stueble party.
 import json
 
 from flask import Blueprint, Response, request
-from psycopg import sql
 
 from backend.datatypes.stueble_types import UserRole
 from backend.sql_connection import applications
-from backend.database import database as db
 from backend.sql_connection.common_functions import check_permissions
 
 applic = Blueprint("application", __name__)
 
-@applic.route("/stueble/applications", methods=["GET"])
+@applic.route("/", methods=["GET"])
 def get_applications():
     """
     Get all applications for throwing the stueble party.
@@ -61,7 +59,7 @@ def get_applications():
     return response
 
 
-@applic.route("/stueble/application", methods=["POST"])
+@applic.route("/", methods=["POST"])
 def send_applications():
     """
     Register for multiple dates using an application for throwing the stueble party.
@@ -110,7 +108,7 @@ def send_applications():
     )
 
 
-@applic.route("/stueble/application", methods=["DELETE"])
+@applic.route("/", methods=["DELETE"])
 def delete_application():
     """
     Delete an application.
@@ -162,62 +160,4 @@ def delete_application():
     
     return Response(
         status=204
-    )
-
-
-@applic.route("/events", methods=["GET"])
-def get_events():
-    """
-    Get the events in the dorm.
-    """
-
-    name = request.args.get("name", None)
-
-    columns = [
-        "name", 
-        "category", 
-        "location", 
-        "start", 
-        "end", 
-        "full_days", 
-        "description", 
-        "image"
-    ]
-
-    query = sql.SQL("SELECT  \
-                    FROM events.events \
-                    WHERE end >= NOW() if end IS NOT NULL else start >= CURRENT_DATE() \
-                    {name} \
-                    ORDER BY start ASC").format(
-        name=sql.SQL("AND name = {name}") if name else sql.SQL("")
-                    )
-    
-    result = db.custom_call(
-        query=query,
-        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-        variables=[name] if name else []
-    )
-
-    if result.is_error:
-        return Response(
-            response=json.dumps({"code": 500, "message": str(result.error)}),
-            status=500,
-            mimetype="application/json"
-        )
-
-    data = [{key: value for key, value in zip(columns, i)} for i in result.data]
-    # TODO: test time format conversion
-    for i in data:
-        if i["full_days"] is True:
-            i["start"] = i["start"].strftime("%Y-%m-%d")
-            i["end"] = i["end"].strftime("%Y-%m-%d") if i["end"] is not None else None
-        else:
-            i["start"] = i["start"].isoformat()
-            i["end"] = i["end"].isoformat() if i["end"] is not None else None
-        del i["full_days"]
-
-    return Response(
-        response=json.dumps(data),
-        status=200,
-        mimetype="application/json"
     )
