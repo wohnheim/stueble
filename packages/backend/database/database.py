@@ -29,7 +29,7 @@ USER = os.getenv("USERDB")  # (like the linux user name!)
 PASSWORD = os.getenv("PASSWORD")
 HOST = os.getenv("HOST")  # localhost
 PORT = os.getenv("PORT")  # 5432
-DBNAME = os.getenv("DBNAME")  # media-library
+DBNAME = os.getenv("DBNAME")  # mhbs
 
 # initialize pool
 pool: ConnectionPool = create_pool()
@@ -310,8 +310,13 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
         for key, value in negated_conditions.items()
     }
 
-    query = sql.SQL("SELECT {cols} FROM {table}").format(
+    schema = None
+    if "." in table:
+        schema, table = table.split(".")
+
+    query = sql.SQL("SELECT {cols} FROM {schema}{table}").format(
         cols=sql.SQL(", ").join(map(sql.Identifier, columns)) if columns[0] != "*" else sql.SQL("*"),
+        schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
         table=sql.Identifier(table)
     )
 
@@ -340,7 +345,9 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
 
     # add select max of key condition
     elif select_max_of_key != "":
-        query += sql.SQL(" WHERE {max_key} = (SELECT MAX({max_key}) FROM {table}) LIMIT 1").format(max_key=sql.Identifier(select_max_of_key), table=sql.Identifier(table))
+        query += sql.SQL(" WHERE {max_key} = (SELECT MAX({max_key}) FROM {schema}{table}) LIMIT 1").format(max_key=sql.Identifier(select_max_of_key), 
+                                                                                                           schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
+                                                                                                           table=sql.Identifier(table))
         
     # add specific where condition
     elif specific_where != "":
@@ -398,14 +405,20 @@ def insert(
     query = ""
     vals = []
 
+    schema = None
+    if "." in table:
+        schema, table = table.split(".")
+
     # build parametrized query
     if isinstance(values, list):
-        query = sql.SQL("INSERT INTO {table} VALUES (").format(
+        query = sql.SQL("INSERT INTO {schema}{table} VALUES (").format(
+            schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
             table=sql.Identifier(table)
         ) + sql.SQL(", ").join(sql.Placeholder() * len(values)) + sql.SQL(")")
         vals = values
     elif isinstance(values, dict):
-        query = sql.SQL("INSERT INTO {table} ({cols}) VALUES ({vals})").format(
+        query = sql.SQL("INSERT INTO {schema}{table} ({cols}) VALUES ({vals})").format(
+            schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
             table=sql.Identifier(table),
             cols=sql.SQL(", ").join(map(sql.Identifier, values.keys())),
             vals=sql.SQL(", ").join(sql.Placeholder() for _ in values.keys())
@@ -459,8 +472,13 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
     if returning_column == "":
         returning_column = None
 
+    schema = None
+    if "." in table:
+        schema, table = table.split(".")
+
     # build query
-    query = sql.SQL("UPDATE {table} SET {setter}").format(
+    query = sql.SQL("UPDATE {schema}{table} SET {setter}").format(
+        schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
         table=sql.Identifier(table),
         setter=(sql.SQL(specific_set) if specific_set != "" else sql.SQL(", ").join([sql.SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for key in columns.keys()])) # type: ignore
     )
@@ -503,8 +521,15 @@ def delete(
     if returning_column == "":
         returning_column = None
 
+    schema = None
+    if "." in table:
+        schema, table = table.split(".")
+
     # build query
-    query = sql.SQL("DELETE FROM {table} WHERE ").format(table=sql.Identifier(table))
+    query = sql.SQL("DELETE FROM {schema}{table} WHERE ").format(
+        schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
+        table=sql.Identifier(table)
+    )
     query += sql.SQL(" AND ").join(sql.SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for key in conditions.keys())
 
     # returning part
@@ -520,7 +545,7 @@ def delete(
 
 
 def custom_call(
-    query: str,
+    query: sql.Composed | str,
     type_of_answer: ANSWER_TYPE,
     variables: list[Any] | tuple[Any,...] | None = None,
 ) -> Result[Any, Exception]:
@@ -528,13 +553,13 @@ def custom_call(
     send a custom query to the database
 
     Args:
-        query (str):
+        query (sql.Composed | str): the SQL query to execute
         type_of_answer (ANSWER_TYPE): what answer to expect
         variables (list | tuple | None): list of variables that should be passed into the query
     Returns:
         Result: result object with data or error
     """
-    commit = query.startswith("SELECT") is False
+    commit = (query if isinstance(query, str) else query.as_string()).startswith("SELECT") is False
     data = fetch(query=query, type_of_answer=type_of_answer, variables=variables, commit=commit) # type: ignore
 
     if isinstance(data, Exception):
