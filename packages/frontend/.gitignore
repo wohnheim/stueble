@@ -1,6 +1,7 @@
 vite.config.ts.timestamp*
 .wrangler
 build*
+static/api-spec/bundled-asyncapi.yaml
 
 # Created by https://www.toptal.com/developers/gitignore/api/git,node,yarn,svelte
 # Edit at https://www.toptal.com/developers/gitignore?templates=git,node,yarn,svelte

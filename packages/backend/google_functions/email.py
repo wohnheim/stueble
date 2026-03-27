@@ -1,8 +1,11 @@
-import smtplib
 from email.message import EmailMessage
 from email.mime.image import MIMEImage
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import io
+import os
+from pathlib import Path
+import smtplib
 from typing import Annotated
 
 from backend.datatypes.stueble_types import Email

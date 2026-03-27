@@ -804,7 +804,6 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
             return result
         invited_guests = result.data
         invited_guests = [{snake_to_camel_case(key) if key != "user_uuid" else "id": value for key, value in guest.items()} for guest in invited_guests]
-    else:
 
     date = date.isoformat() # type: ignore
 

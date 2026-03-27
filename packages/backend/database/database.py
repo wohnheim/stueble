@@ -19,17 +19,17 @@ from psycopg_pool import ConnectionPool
 from psycopg.rows import TupleRow
 from psycopg import sql
 
-from datatypes.result import Result
-from database.pool import create_pool, get_cursor, close_cursor
+from backend.datatypes.result import Result
+from backend.database.pool import create_pool, get_cursor, close_cursor
 
 
 load_dotenv()
 
-USER = os.getenv("USERDB")  # (like the linux user name!)
-PASSWORD = os.getenv("PASSWORD")
-HOST = os.getenv("HOST")  # localhost
-PORT = os.getenv("PORT")  # 5432
-DBNAME = os.getenv("DBNAME")  # mhbs
+USER = os.getenv("PGUSER")  # (like the linux user name!)
+PASSWORD = os.getenv("PGPASSWORD")
+HOST = os.getenv("PGHOST")  # localhost
+PORT = os.getenv("PGPORT")  # 5432
+DBNAME = os.getenv("PGDATABASE")  # mhbs
 
 # initialize pool
 pool: ConnectionPool = create_pool()
@@ -199,7 +199,7 @@ def catch_exception(func):
     return wrapper
 
 
-def connect(**kwargs):
+def connect(**kwargs) -> Cursor[TupleRow]:
     """
     connect \n
     kwargs format: user, password, host, port, database \n

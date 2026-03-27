@@ -9,11 +9,11 @@ from psycopg import Cursor
 
 load_dotenv()
 
-USER = os.getenv("USERDB")
-PASSWORD = os.getenv("PASSWORD")
-HOST = os.getenv("HOST")  # localhost
-PORT = os.getenv("PORT")  # 5432
-DBNAME = os.getenv("DBNAME")  # media-library
+USER = os.getenv("PGUSER")
+PASSWORD = os.getenv("PGPASSWORD")
+HOST = os.getenv("PGHOST")  # localhost
+PORT = os.getenv("PGPORT")  # 5432
+DBNAME = os.getenv("PGDATABASE")  # media-library
 
 
 def create_pool(max_connections: int = 100, min_connections: int = 40) -> ConnectionPool:
