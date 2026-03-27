@@ -71,13 +71,17 @@ CREATE TABLE IF NOT EXISTS stueble.applications (
     uuid UUID UNIQUE NOT NULL,
     motto TEXT NOT NULL,
     date DATE NOT NULL CHECK (date >= CURRENT_DATE),
-    application_group INTEGER NOT NULL REFERENCES stueble.applicants(application_group) ON DELETE CASCADE
-    priority INTEGER NOT NULL CHECK (priority > 0)
+    priority INTEGER NOT NULL CHECK (priority > 0),
+    application_group INTEGER NOT NULL REFERENCES stueble.applicants(application_group) ON DELETE CASCADE,
+
+    UNIQUE (date, application_group),
+    UNIQUE (application_group, priority)
+
 );
 
 CREATE TABLE IF NOT EXISTS stueble.applicants (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    application_id INTEGER REFERENCES stueble.applications(id) ON DELETE CASCADE NOT NULL,
-    application_group INTEGER NOT NULL CHECK application_group > 0
+    application_group INTEGER NOT NULL CHECK application_group > 0,
+    group_hash TEXT NOT NULL UNIQUE
 );

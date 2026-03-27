@@ -17,4 +17,13 @@ CREATE TABLE IF NOT EXISTS events (
     full_days BOOLEAN NOT NULL DEFAULT FALSE,
     description TEXT,
     image TEXT,
+
+    CONSTRAINT unique_event UNIQUE (name, start)
+);
+
+CREATE TABLE IF NOT EXISTS participants (
+    id SERIAL PRIMARY KEY,
+    event_id INTEGER REFERENCES events(id) ON DELETE CASCADE NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    UNIQUE (event_id, user_id)
 );
