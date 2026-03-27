@@ -13,7 +13,7 @@ def check_permissions(session_id: str | None, required_role: UserRole) -> FuncRe
         session_id (str): session id of the user
         required_role (UserRole): required role of the user
     Returns:
-        FuncRes: {"allowed": bool, "user_id": int, "user_role": UserRole} or error data
+        FuncRes: {"allowed": bool, "user_id": int, "user_role": UserRole, "user_uuid": str, "first_name": str, "last_name": str} or error data
     """
 
     if session_id is None:

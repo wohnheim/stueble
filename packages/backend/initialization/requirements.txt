@@ -49,4 +49,4 @@ setuptools
 uritemplate
 wsproto
 requests-oauthlib
-pyscopg_pool
+psycopg_pool
