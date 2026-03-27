@@ -71,11 +71,11 @@ CREATE TABLE IF NOT EXISTS stueble.applications (
     uuid UUID UNIQUE NOT NULL,
     motto TEXT NOT NULL,
     date DATE NOT NULL CHECK (date >= CURRENT_DATE),
-    priority INTEGER NOT NULL CHECK (priority > 0),
+    application_priority INTEGER NOT NULL CHECK (application_priority > 0),
     application_group INTEGER NOT NULL REFERENCES stueble.applicants(application_group) ON DELETE CASCADE,
 
     UNIQUE (date, application_group),
-    UNIQUE (application_group, priority)
+    UNIQUE (application_group, application_priority)
 
 );
 

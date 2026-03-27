@@ -49,20 +49,20 @@ def get_application_count(date: dt.date | None = None) -> FuncRes:
 def get_applications(user_id: int) -> Result:
     """
     Get all current or future applications for a user.
-    The result is ordered by date, priority and application group.
+    The result is ordered by date, application_priority and application group.
 
     Args:
         user_id (int): The id of the user for which the applications should be retrieved.
     Returns:
         Result: A Result object containing a list of applications or an error message.
     """
-    columns = ["uuid", "date", "motto", "priority", "application_group"]
+    columns = ["uuid", "date", "motto", "application_priority", "application_group"]
     query = sql.SQL("WITH a (application_group) AS (SELECT application_group FROM sql.applicants WHERE user_id = {user_id}) \" \
                     \
                     SELECT {columns} \
                     FROM stueble.applications \
                     WHERE application_group IN (SELECT application_group FROM a) AND date >= CURRENT_DATE \
-                    ORDER BY date, priority, application_group").format(
+                    ORDER BY date, application_priority, application_group").format(
                         columns=sql.SQL(", ").join(sql.Identifier(col) for col in columns),
                         user_id=sql.Placeholder())
     result = db.custom_call(
@@ -83,7 +83,7 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]])
     Args:
         motto (str): The motto of the application.
         hosts (list[str | uuid.UUID]): A list of host ids or names for the application.
-        dates (list[tuple[str, int]]): A list of tuples containing the date and priority for the application.
+        dates (list[tuple[str, int]]): A list of tuples containing the date and application_priority for the application.
 
     Returns:
         FuncRes: A FuncRes object containing a success message or an error message.
@@ -97,7 +97,7 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]])
     result = db.custom_call(
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-        variables=data["hosts"] # type: ignore
+        variables=hosts
     )
 
     if result.is_error:
@@ -150,17 +150,17 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]])
                                  user_uuid = sql.Placeholder(),
                                  group=sql.Placeholder(),
                                  group_hash=sql.Placeholder())
-    application = lambda : sql.SQL("({motto}, {date}, {priority}, a.application_group)").format(
+    application = lambda : sql.SQL("({motto}, {date}, {application_priority}, a.application_group)").format(
         motto=sql.Placeholder(),
         date=sql.Placeholder(),
-        priority=sql.Placeholder())
+        application_priority=sql.Placeholder())
 
     query = sql.SQL("""
     WITH a (application_group) AS (
     INSERT INTO stueble.applicants (user_id, application_group, group_hash) VALUES {values}
     RETURNING application_group)
 
-    INSERT INTO stueble.applications (motto, date, priority, application_group) VALUES {applications}
+    INSERT INTO stueble.applications (motto, date, application_priority, application_group) VALUES {applications}
     RETURNING date, uuid;
     """).format(
         values=sql.SQL(", ").join(value() for _ in hosts),

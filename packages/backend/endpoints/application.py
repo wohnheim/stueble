@@ -87,7 +87,7 @@ def send_applications():
 
     if any(not isinstance(i, tuple) for i in data["dates"]):
         return Response(
-                response=json.dumps({"code": 400, "message": "Dates must be a list of tuples containing date and priority"}),
+                response=json.dumps({"code": 400, "message": "Dates must be a list of tuples containing date and application_priority"}),
                 status=400,
                 mimetype="application/json"
         )
