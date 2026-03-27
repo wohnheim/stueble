@@ -201,10 +201,13 @@ in
 
           createdb 1>/dev/null
           psql -q -f packages/data/schemas/create_tables.sql
+          psql -q -f packages/data/schemas/triggers.sql
           psql -q -f packages/data/schemas/stueble/create_tables.sql
           psql -q -f packages/data/schemas/stueble/triggers.sql
 
-          psql -q -c "INSERT INTO users (user_role, room, residence, first_name, last_name, password_hash, email, user_name, verified) VALUES ('admin', 0, 'altbau', 'Super', 'Admin', '$ADMIN_PASSWORD', '$EMAIL_ADDRESS', 'admin', 't');"
+          cd packages
+          python -m backend.initialization.add_admins
+          cd -
 
           pg_ctl -s stop
       fi
