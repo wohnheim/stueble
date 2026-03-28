@@ -221,7 +221,7 @@ def get_user(session_id: str, keywords: tuple[str, ...] | list[str] | None = Non
                             code=404)
         )
     
-    result._data = {key: value for key, value in zip(keywords, result.data)}
+    result._data = {key: value if key != "user_uuid" else str(value) for key, value in zip(keywords, result.data)}
 
     if len(keywords) == 1:
         return FuncRes(

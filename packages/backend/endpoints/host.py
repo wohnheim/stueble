@@ -16,7 +16,7 @@ from backend.sql_connection.common_functions import check_permissions
 
 host = Blueprint("host", __name__)
 
-@host.route("/", methods=["GET"])
+@host.route("", methods=["GET"])
 def get_hosts():
     """
     Get hosts for a stueble.
@@ -115,7 +115,7 @@ RESET additional.skip_triggers;"""
         status=204)
     return response
 
-@host.route("/", methods=["PUT", "DELETE"])
+@host.route("", methods=["PUT", "DELETE"])
 def update_hosts():
     """
     Update hosts for a stueble.

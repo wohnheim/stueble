@@ -370,6 +370,8 @@ def get_hosts(stueble_id: int) -> FuncRes:
                             code=500)
         )
     hosts = [dict(zip(params, host)) for host in result.data]
+    for i in hosts:
+        i["user_uuid"] = str(i["user_uuid"])
     return FuncRes(
         data=hosts,
         status=Status.FULL_SUCCESS,

@@ -19,7 +19,7 @@ from backend.basic_functions import snake_to_camel_case
 
 user = Blueprint("users", __name__)
 
-@user.route("/", methods=["GET"])
+@user.route("", methods=["GET"])
 def get_user():
     """
     return data to user
@@ -49,7 +49,7 @@ def get_user():
             "roomNumber": data["room"],
             "residence": data["residence"],
             "email": data["email"],
-            "id": data["user_uuid"],
+            "id": str(data["user_uuid"]),
             "username": data["user_name"]}
 
     response = Response(
@@ -58,7 +58,7 @@ def get_user():
         mimetype="application/json")
     return response
 
-@user.route("/", methods=["POST"])
+@user.route("", methods=["POST"])
 def verify_user():
     """
     verify a user (only hosts and above can verify users)
@@ -119,7 +119,7 @@ def verify_user():
     present = result.data
 
     user_data = {
-        "id": user_info["user_uuid"],
+        "id": str(user_info["user_uuid"]),
         "present": present,
         "firstName": user_info["first_name"],
         "lastName": user_info["last_name"],
@@ -240,7 +240,7 @@ def change_user_role():
         present = result.data
 
         user_data = {
-            "id": user_info["user_uuid"],
+            "id": str(user_info["user_uuid"]),
             "present": present,
             "firstName": user_info["first_name"],
             "lastName": user_info["last_name"],
@@ -386,7 +386,7 @@ def search_intern():
     for entry in result.data:
         users_data.append({"first_name": entry["first_name"],
                       "last_name": entry["last_name"],
-                      "id": entry["user_uuid"],
+                      "id": str(entry["user_uuid"]),
                       "residence": entry["residence"]})
     users_data = [{snake_to_camel_case(key): value for key, value in i.items()} for i in users_data]
 

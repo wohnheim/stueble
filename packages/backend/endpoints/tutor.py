@@ -14,7 +14,7 @@ from backend.datatypes.stueble_types import UserRole
 
 tutor = Blueprint("tutor", __name__)
 
-@tutor.route("/", methods=["GET"])
+@tutor.route("", methods=["GET"])
 def get_tutors():
     """
     Get tutors.
@@ -50,7 +50,7 @@ def get_tutors():
         mimetype="application/json")
 
 
-@tutor.route("/", methods=["PUT", "DELETE"])
+@tutor.route("", methods=["PUT", "DELETE"])
 def update_tutors():
     """
     Update tutors.

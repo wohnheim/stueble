@@ -204,6 +204,7 @@ in
           psql -q -f packages/data/schemas/triggers.sql
           psql -q -f packages/data/schemas/stueble/create_tables.sql
           psql -q -f packages/data/schemas/stueble/triggers.sql
+          psql -q -f packages/data/schemas/events/create_tables.sql
 
           cd packages
           python -m backend.initialization.add_admins

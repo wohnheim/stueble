@@ -11,10 +11,10 @@ from backend.sql_connection import motto
 from backend.sql_connection.common_functions import check_permissions
 
 
-motto = Blueprint("motto", __name__)
+mo = Blueprint("motto", __name__)
 
 # TODO allow date changes
-@motto.route("/motto", methods=["POST"])
+@mo.route("", methods=["POST"])
 def create_stueble():
     """
     creates or modifies a stueble event

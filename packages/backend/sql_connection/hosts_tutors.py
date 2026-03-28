@@ -119,7 +119,7 @@ def get_hosts_tutors(session_id: str, path: str, date: date | None = None) -> Fu
         )
         return response
 
-    result._data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in result.data]
+    result._data = [{"id": str(i["user_uuid"]), "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in result.data]
 
     response = FuncRes(
         data=result.data,

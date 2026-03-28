@@ -8,7 +8,7 @@ from backend.database import database as db
 
 event = Blueprint("event", __name__)
 
-@event.route("/", methods=["GET"])
+@event.route("", methods=["GET"])
 def get_events():
     """
     Get the events in the dorm.
@@ -20,20 +20,21 @@ def get_events():
         "name", 
         "category", 
         "location", 
-        "start", 
-        "end", 
+        "start_time", 
+        "end_time", 
         "full_days", 
         "description", 
         "image"
     ]
 
-    query = sql.SQL("SELECT  \
+    query = sql.SQL("SELECT {columns} \
                     FROM events.events \
-                    WHERE end >= NOW() if end IS NOT NULL else start >= CURRENT_DATE() \
+                    WHERE (start_time >= CURRENT_DATE) OR (end_time IS NOT NULL AND end_time >= NOW()) \
                     {name} \
-                    ORDER BY start ASC").format(
-        name=sql.SQL("AND name = {name}") if name else sql.SQL("")
-                    )
+                    ORDER BY start_time ASC").format(
+        columns=sql.SQL(", ").join([sql.Identifier(col) for col in columns]),
+        name=sql.SQL("AND name = {name}").format(name=sql.Placeholder()) if name else sql.SQL("")
+        )
     
     result = db.custom_call(
         query=query,
@@ -52,12 +53,14 @@ def get_events():
     # TODO: test time format conversion
     for i in data:
         if i["full_days"] is True:
-            i["start"] = i["start"].strftime("%Y-%m-%d")
-            i["end"] = i["end"].strftime("%Y-%m-%d") if i["end"] is not None else None
+            i["start"] = i["start_time"].strftime("%Y-%m-%d")
+            i["end"] = i["end_time"].strftime("%Y-%m-%d") if i["end_time"] is not None else None
         else:
-            i["start"] = i["start"].isoformat()
-            i["end"] = i["end"].isoformat() if i["end"] is not None else None
+            i["start"] = i["start_time"].isoformat()
+            i["end"] = i["end_time"].isoformat() if i["end_time"] is not None else None
         del i["full_days"]
+        del i["start_time"]
+        del i["end_time"]
 
     return Response(
         response=json.dumps(data),

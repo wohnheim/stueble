@@ -12,7 +12,7 @@ from backend.sql_connection.common_functions import check_permissions
 
 applic = Blueprint("application", __name__)
 
-@applic.route("/", methods=["GET"])
+@applic.route("", methods=["GET"])
 def get_applications():
     """
     Get all applications for throwing the stueble party.
@@ -59,7 +59,7 @@ def get_applications():
     return response
 
 
-@applic.route("/", methods=["POST"])
+@applic.route("", methods=["POST"])
 def send_applications():
     """
     Register for multiple dates using an application for throwing the stueble party.
@@ -108,7 +108,7 @@ def send_applications():
     )
 
 
-@applic.route("/", methods=["DELETE"])
+@applic.route("", methods=["DELETE"])
 def delete_application():
     """
     Delete an application.

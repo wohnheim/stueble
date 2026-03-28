@@ -27,7 +27,7 @@ from backend.basic_functions import *
 guest = Blueprint("guests", __name__)
 
 # NOTE: if no stueble is happening today or yesterday, an empty list is returned
-@guest.route("/", methods=["GET"])
+@guest.route("", methods=["GET"])
 def guests():
     """
     returns list of all guests
@@ -72,7 +72,7 @@ def guests():
     )
     return response
 
-@guest.route("/", methods=["POST"])
+@guest.route("", methods=["POST"])
 def guest_change():
     """
     add / remove a guest to the guest_list of present people
@@ -193,7 +193,7 @@ def guest_change():
     return response
 
 # TODO broadcast add remove user
-@guest.route("/", methods=["PUT", "DELETE"])
+@guest.route("", methods=["PUT", "DELETE"])
 def attend_stueble():
     """
     sign up for a stueble party

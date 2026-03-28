@@ -43,7 +43,7 @@ def check_permissions(session_id: str | None, required_role: UserRole) -> FuncRe
     user_id = result.data["id"]
     user_role = result.data["user_role"]
     user_role = UserRole(user_role)
-    user_uuid = result.data["user_uuid"]
+    user_uuid = str(result.data["user_uuid"])
     first_name = result.data["first_name"]
     last_name = result.data["last_name"]
     if user_role >= required_role:

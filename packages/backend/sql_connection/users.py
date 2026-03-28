@@ -479,7 +479,7 @@ def get_invited_friends(user_id: int, stueble_id: int) -> FuncRes:
         )
 
     return FuncRes(
-        data=[{key: value for key, value in zip(arguments, guest)} for guest in result.data],
+        data=[{key: value if key != "user_uuid" else str(value) for key, value in zip(arguments, guest)} for guest in result.data],
         status=Status.FULL_SUCCESS,
         message=Message(name="Get Invited Friends Success",
                         type="success",
@@ -717,6 +717,10 @@ def get_users(user_uuids: list[str],
                             category="Get Users",
                             code=404)
         )
+    
+    for i in result.data:
+        i["user_uuid"] = str(i["user_uuid"])
+
     return FuncRes(
         data=result.data,
         status=Status.FULL_SUCCESS,

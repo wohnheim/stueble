@@ -39,7 +39,7 @@ app.register_blueprint(event.event, url_prefix="/events")
 app.register_blueprint(host.host, url_prefix="/stueble/hosts")
 app.register_blueprint(guest.guest, url_prefix="/stueble/guests")
 app.register_blueprint(application.applic, url_prefix="/stueble/applications")
-app.register_blueprint(motto.motto, url_prefix="/stueble/motto")
+app.register_blueprint(motto.mo, url_prefix="/stueble/motto")
 
 
 """
@@ -167,6 +167,7 @@ def websocket_change():
     first_name = data.get("first_name", None)
     last_name = data.get("last_name", None)
     user_uuid = data.get("user_uuid", None)
+    user_uuid = str(user_uuid) if user_uuid is not None else None
     stueble_id = data.get("stuebleId", None)
     # event = data.get("event", None)
     if first_name is None or last_name is None or user_uuid is None: # or event is None:
