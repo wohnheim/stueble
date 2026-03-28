@@ -288,17 +288,16 @@ def verify_signup():
     # add user to table
     # TODO maybe check, whether correct user is updated and whether it is really allowed
     if method == "update":
-        user_data = {}
-        user_data["user_role"] = user_info["user_role"]
-        user_data["password_hash"] = user_info["password_hash"]
-        user_data["user_name"] = user_info["user_name"]
+        columns = ["user_role", "password_hash", "user_name"]
+        user_data = {key: value for key, value in user_info.items() if key in columns}
         result = users.update_user(
             user_email=user_info["email"], # type: ignore
-            **user_data)
+            **user_data) # type: ignore
     else:
         result = users.add_user(
             returning_column="id",
             **user_info) # type: ignore
+        
     # if server error occurred, return error
     if result.is_error:
         response = Response(
@@ -326,7 +325,7 @@ def verify_signup():
         status=204)
 
     response.set_cookie("SID",
-                        session_id,
+                        str(session_id),
                         expires=expiration_date,
                         httponly=True,
                         secure=True,

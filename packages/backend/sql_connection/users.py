@@ -88,7 +88,7 @@ def add_user(user_role: UserRole,
                                             code=500)
             )
     if returning_column is not None and ", " not in returning_column:
-            result = FuncRes(
+            response = FuncRes(
                 data=clean_single_data(result.data),
                 status=Status.FULL_SUCCESS,
                 message=Message(name="Add User Success",
@@ -96,9 +96,9 @@ def add_user(user_role: UserRole,
                                 category="Add User",
                                 code=200)
             )
-
+            return response
         
-    return FuncRes(
+    response = FuncRes(
         data=result,
         status=Status.FULL_SUCCESS,
         message=Message(name="Add User Success",
@@ -106,6 +106,7 @@ def add_user(user_role: UserRole,
                         category="Add User",
                         code=200)
     )
+    return response
 
 
 def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email OR user_name"] = None,
