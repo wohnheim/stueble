@@ -246,7 +246,7 @@ def update_stueble(date: date | None, **kwargs) -> FuncRes:
                             code=404)
         )
     return FuncRes(
-            data=clean_single_data(result),
+            data=clean_single_data(result.data),
             status=Status.FULL_SUCCESS,
             message=Message(name="Update Stueble Success",
                             type="success",

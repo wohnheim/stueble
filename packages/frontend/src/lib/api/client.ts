@@ -446,7 +446,7 @@ class HTTPClient {
   async modifyMotto(motto?: string, description?: string, date?: Date) {
     if (motto === undefined && description == undefined) return false;
 
-    const res = await fetch("/api/motto", {
+    const res = await fetch("/api/stueble/motto", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

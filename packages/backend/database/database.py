@@ -495,15 +495,14 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
         schema, table = table.split(".")
 
     # build query
-    query = SQL("UPDATE {schema}{table} SET {setter}").format(
+    query = SQL("UPDATE {schema}{table} SET ").format(
         schema=SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else SQL(""),
-        table=sql.Identifier(table),
-        setter=(specific_set if (specific_set != SQL("") and specific_set != sql.SQL("").format()) else SQL(", ").join([SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for key in columns.keys()])) # type: ignore
-    )
+        table=sql.Identifier(table)
+    ) + (specific_set if specific_set.as_string() != "" else SQL(", ").join([SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for key in columns.keys()]))
 
     # where part
     if specific_where.as_string() != "":
-        query += SQL(" WHERE {specific_where}").format(specific_where=SQL(specific_where)) # type: ignore
+        query += SQL(" WHERE ") + specific_where
     else:
         query += SQL(" WHERE {w}").format(w=SQL(" AND ").join([SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for _, key in enumerate(conditions)]))
 

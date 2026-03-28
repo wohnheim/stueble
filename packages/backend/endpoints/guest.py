@@ -60,8 +60,8 @@ def guests():
     result = guest_events.guest_list()
     if result.is_error:
         response = Response(
-            response=json.dumps({"code": 500, "message": str(result.error)}),
-            status=500,
+            response=json.dumps({"code": 500 if result.message is None else result.message.code, "message": str(result.error)}),
+            status=500 if result.message is None else result.message.code,
             mimetype="application/json")
         return response
 
@@ -142,7 +142,7 @@ def guest_change():
     # change guest status to arrive / leave
     result = guest_events.change_guest(user_uuid=user_uuid, event_type=event_type)
     if result.is_error:
-        error = {"code": 500, "message": str(result.error)}
+        error = {"code": 500 if result.message is None else result.message.code, "message": str(result.error)}
         if all(i in error["message"] for i in ["Inviter of user", "is not registered for stueble"]):
             error = {"code": 400, "message": "Inviter not registered to stueble any more"}
         elif "is not registered for stueble" in error["message"]:
@@ -219,14 +219,14 @@ def attend_stueble():
         result = motto.get_info()
         if result.is_error:
             response = Response(
-                response=json.dumps({"code": 500, "message": str(result.error)}),
-                status=500,
+                response=json.dumps({"code": 500 if result.message is None else result.message.code, "message": str(result.error)}),
+                status=500 if result.message is None else result.message.code,
                 mimetype="application/json")
             return response
         if result.data is None:
             response = Response(
-                response=json.dumps({"code": 400, "message": "No stueble is happening in the next time"}),
-                status=400,
+                response=json.dumps({"code": 404, "message": "No stueble is planned for next week"}),
+                status=404,
                 mimetype="application/json")
             return response
         date = result.data["date"]

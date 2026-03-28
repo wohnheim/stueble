@@ -2,6 +2,7 @@
 import asyncio
 import base64
 import os
+import re
 import uuid
 from typing import Annotated, Literal
 
@@ -13,16 +14,17 @@ from cryptography.hazmat.primitives import serialization
 import inspect
 from functools import wraps
 from enum import Enum
+from zoneinfo import ZoneInfo
+from dotenv import load_dotenv
 
 from backend.sql_connection.common_functions import check_permissions
-from backend.datatypes.stueble_types import *
+from backend.datatypes.stueble_types import UserRole, VerificationMethod, valid_verification_method, get_leq_roles
 from backend.datatypes.funcres import FuncRes, Message, Status
 from backend.sql_connection import events, sessions, users, motto
 from backend.database import database as db
 from backend import hash_pwd as hp
-from zoneinfo import ZoneInfo
-from dotenv import load_dotenv
-from backend.basic_functions import *
+
+from backend.basic_functions import snake_to_camel_case
 
 # load environment variables
 load_dotenv("~/stueble/packages/backend/.env")
@@ -189,14 +191,14 @@ def add_to_message_log(func):
     return wrapper
 
 @add_to_message_log
-async def send(websocket, event: str, data: dict | bool, **kwargs):
+async def send(websocket, event: str, data: dict | bool | None, **kwargs):
     """
     sends an event to a websocket
 
     Args:
         websocket: the websocket connection
         event (str): the event to send
-        data (dict | bool): the data to send
+        data (dict | bool | None): the data to send
         **kwargs: additional keyword arguments to send
     """
     message = msgpack.packb({"event": event, **kwargs, "data": data}, use_bin_type=True)
@@ -525,7 +527,7 @@ async def heartbeat(websocket):
         websocket: websocket connection
     """
 
-    await send(websocket=websocket, event="heartbeat")
+    await send(websocket=websocket, event="heartbeat", data=None)
     return
 
 async def request_motto(websocket, msg, req_id):
