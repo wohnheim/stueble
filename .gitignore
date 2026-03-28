@@ -7,15 +7,17 @@
 # IDEs
 .idea/
 .vscode/
-do_not_track
+.code-workspace
 
 # Secrets
 .env
 passwords.md
+do_not_track
 
 # Python
 __pycache__/
 .venv/
+venv/
 dist/
 
 # Overmind
@@ -28,7 +30,3 @@ pg_data/
 
 # Nix
 result
-
-# Python
-**/venv/
-**/__pycache__/
