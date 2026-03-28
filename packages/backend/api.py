@@ -35,7 +35,7 @@ from backend.basic_functions import camel_to_snake_case, snake_to_camel_case
 # initialize flask app
 app = Flask(__name__)
 app.register_blueprint(auth.auth, url_prefix="/auth")
-app.register_blueprint(user.users, url_prefix="/users")
+app.register_blueprint(user.user, url_prefix="/users")
 app.register_blueprint(tutor.tutor, url_prefix="/tutors")
 
 app.register_blueprint(event.event, url_prefix="/events")
@@ -188,7 +188,7 @@ def update_tutors():
 
     # clean result data
     tutors_data = result.data
-    tutors_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3], "user_role": UserRole(i[4]), "user_uuid": i[5]} for i in tutors_data]
+    tutors_data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"], "user_role": UserRole(i["user_role"]), "user_uuid": i["user_uuid"]} for i in tutors_data]
 
     # check, whether all users were found
     if len(tutors_data) != len(user_uuids):
@@ -353,7 +353,7 @@ def update_hosts():
             status=404,
             mimetype="application/json")
         return response
-    stueble_id = result.data[2]
+    stueble_id = result.data["id"]
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
 
@@ -365,7 +365,7 @@ def update_hosts():
             mimetype="application/json")
         return response
     hosts_data = result.data
-    hosts_data = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3]} for i in hosts_data if i[4] == ('user' if request.method == "PUT" else 'host')]
+    hosts_data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in hosts_data if i["user_role"] == ('user' if request.method == "PUT" else 'host')]
     if len(hosts_data) != len(user_uuids):
         response = Response(
             response=json.dumps({"code": 404, "message": "Tutoren und Admins können nicht zu Hosts gemacht werden"}), # "Not all users found"}),

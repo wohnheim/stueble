@@ -1,5 +1,6 @@
 from typing import Annotated
 import uuid
+from psycopg import sql
 
 from backend.database import database as db
 from backend.datatypes.funcres import FuncRes, Status, Message
@@ -56,14 +57,14 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
                             category="Change Guest",
                             code=404)
         )
-        user_id = result.data[0]
+        user_id = result.data["id"]
 
     # get stueble_id
     result = db.select(
         columns=["id"],
         table="stueble.motto",
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
-        specific_where="date_of_time = CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = (CURRENT_DATE - INTERVAL '1 day' ))")
+        specific_where=sql.SQL("date_of_time = CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = (CURRENT_DATE - INTERVAL '1 day' ))"))
 
     if result.is_error:
         return FuncRes(
@@ -84,7 +85,7 @@ def change_guest(event_type: EventType, user_uuid: Annotated[uuid.UUID | None, "
                             code=404)
         )
 
-    stueble_id = result.data[0]
+    stueble_id = result.data["id"]
 
     # add user to stueble.events
     result = db.insert(

@@ -92,7 +92,7 @@ def send_applications():
                 mimetype="application/json"
         )
 
-    response = applications.send_application(motto=data["motto"], hosts=data["hosts"], dates=data["dates"])
+    response = applications.send_application(motto=data["motto"], hosts=data["hosts"], dates=data["dates"]) # type: ignore
     
     if response.is_error:
         return Response(

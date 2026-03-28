@@ -95,7 +95,7 @@ def force_add_guest():
             status=500,
             mimetype="application/json")
         return response
-    user_id = result.data[0]
+    user_id = result.data["id"]
     query = """SET additional.skip_triggers = 'on';
 INSERT INTO stueble.events (user_id, stueble_id, event_type) VALUES (%s, %s, %s), (%s, %s, %s);  -- Triggers will be skipped
 RESET additional.skip_triggers;"""

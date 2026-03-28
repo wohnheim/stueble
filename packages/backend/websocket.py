@@ -647,9 +647,9 @@ async def request_qrcode(websocket, msg, req_id):
                                                               "capabilities": [],
                                                               "authorized": False})
         return
-    user_id = result.data[0]
-    user_uuid = result.data[1]
-    extern = result.data[2] == "extern"
+    user_id = result.data["id"]
+    user_uuid = result.data["user_uuid"]
+    extern = result.data["user_role"] == "extern"
 
     result = events.check_guest(user_id=user_id,
                                 stueble_id=stueble_id)
@@ -745,11 +745,11 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         FuncRes: the result of the operation
     """
 
-    result = sessions.get_user(session_id=session_id, keywords=["id", "user_role"])
+    result = sessions.get_user(session_id=str(session_id), keywords=["id", "user_role"])
     if result.is_error:
         return result
-    user_id = result.data[0]
-    user_role = result.data[1]
+    user_id = result.data["id"]
+    user_role = result.data["user_role"]
     user_role = UserRole(user_role)
 
     result = db.select(
@@ -768,7 +768,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
                             code=500)
         )
 
-    session_ids = [i[0] for i in result.data]
+    session_ids = [i["session_id"] for i in result.data]
     # unneccessary but for style of coding
     # stueble_id = None
     invited_guests = None
@@ -782,7 +782,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         result = motto.get_info(date=date)
         if result.is_error:
             return result
-        stueble_id = result.data[0]
+        stueble_id = result.data["id"]
         # stueble_id = result.data["stueble_id"]
     if registered is None or present is None:
         result = users.check_user_guest_list(user_id=user_id)
@@ -848,11 +848,11 @@ async def status(user_id: Annotated[str | int | None, "Explicit with user_uuid"]
                                 code=400)
         )
 
-    result = users.get_user(user_id=user_id, user_uuid=user_uuid, keywords=["id", "user_role"], type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER) # type: ignore
+    result = users.get_user(user_id=user_id, user_uuid=user_uuid, columns=["id", "user_role"], type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER) # type: ignore
     if result.is_error:
         return result
 
-    capabilities = [i.value for i in get_leq_roles(result.data[1]) if i.value in ["user", "host", "tutor", "admin"]]
+    capabilities = [i.value for i in get_leq_roles(result.data["user_role"]) if i.value in ["user", "host", "tutor", "admin"]]
 
     data = {"code": "200",
             "capabilities": capabilities}
@@ -876,7 +876,7 @@ async def status(user_id: Annotated[str | int | None, "Explicit with user_uuid"]
 
 # Start server
 async def main():
-    async with websockets.serve(handle_ws, HOST, WS_PORT, ping_interval=25, ping_timeout=20, close_timeout=9):
+    async with websockets.serve(handle_ws, HOST, int(WS_PORT), ping_interval=25, ping_timeout=20, close_timeout=9):
         await asyncio.Future()
 
 if __name__ == "__main__":

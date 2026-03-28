@@ -87,7 +87,7 @@ def export_stueble_guests(stueble_id: int) -> FuncRes:
                             category="Google Drive",
                             code=500)
         )
-    date = result.data[0]
+    date = result.data["date_of_time"]
     if date > (datetime.datetime.now(default_tz).date() - datetime.timedelta(days=1)) or (date == (datetime.datetime.now(default_tz).date() - datetime.timedelta(days=1)) and (datetime.datetime.now(default_tz).hour < 11)):
         return FuncRes(
             error="Can only export guest lists for past stueble events (e.g. if stueble was on 01.01.2000 then guest list can be exported earliest at 02.01.2000 11:00).",
@@ -150,7 +150,7 @@ def export_stueble_guests(stueble_id: int) -> FuncRes:
                             code=500)
         )
 
-    date = result.data[0]
+    date = result.data["date_of_time"]
     print(date)
     print(type(date))
     print(date.day, date.month, date.year)

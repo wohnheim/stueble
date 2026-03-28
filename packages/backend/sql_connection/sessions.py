@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Literal, overload
+from psycopg import sql
 
 import pytz
 
@@ -39,7 +40,7 @@ def create_session(user_id: int) -> FuncRes:
                             code=500)
         )
 
-    expiration_time = int(expiration_time.data[0])
+    expiration_time = int(expiration_time.data["value"])
 
     # calculate expiration date
     tz = pytz.timezone("Europe/Berlin")
@@ -94,7 +95,7 @@ def get_session(session_id: str) -> FuncRes:
         columns=["session_id", "expiration_date"],
         table="sessions",
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
-        specific_where="session_id = %s AND expiration_date > NOW()",
+        specific_where=sql.SQL("session_id = {session_id} AND expiration_date > NOW()").format(session_id=sql.Placeholder()),
         variables=[session_id]
         )
     if result.is_error:
@@ -164,21 +165,13 @@ def remove_session(session_id: str) -> FuncRes:
                         code=200)
     )
 
-@overload
-def get_user(session_id: str, keywords: None = None) -> FuncRes: ...
 
-@overload
-def get_user(session_id: str, keywords: tuple[Literal["id"], Literal["user_role"], Literal["user_uuid"], Literal["room"], Literal["residence"],
-             Literal["first_name"], Literal["last_name"], Literal["email"], Literal["user_name"]]) -> FuncRes: ...
-@overload
-def get_user(session_id: str, keywords: tuple[str] | list[str]) -> FuncRes: ...
-
-def get_user(session_id: str, keywords: tuple[str] | list[str] | None = None) -> FuncRes:
+def get_user(session_id: str, keywords: tuple[str, ...] | list[str] | None = None) -> FuncRes:
     """
     gets the user role of a user from the table users via the sessions table
     Args:
         session_id (str): id of the user
-        keywords (tuple[str] | list[str]): list of keywords to be returned
+        keywords (tuple[str, ...] | list[str]): list of keywords to be returned
     Returns:
         FuncRes: Return object containing user data or error
     """
@@ -362,7 +355,7 @@ def get_session_ids(user_id: int, uuid: bool = False) -> FuncRes:
         )
 
     return FuncRes(
-        data=[row[0] for row in result.data],
+        data=[row["id" if uuid is False else "session_id"] for row in result.data],
         status=Status.FULL_SUCCESS,
         message=Message(name="Get Session IDs Success",
                         type="success",

@@ -173,7 +173,7 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
                                 category="Check Guest",
                                 code=404)
             )
-        stueble_id = result.data[0]
+        stueble_id = result.data["id"]
 
 
     query = f"""

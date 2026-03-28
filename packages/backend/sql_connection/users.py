@@ -1,6 +1,7 @@
 import enum
 import json
 from typing import Annotated, Any, Literal
+from psycopg import sql
 
 from backend.datatypes.stueble_types import Email, Residence, UserRole, VerificationMethod
 from backend.database import database as db
@@ -157,7 +158,7 @@ def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email
                                         category="Remove User",
                                         code=404)
         )
-    if result.data[1] == UserRole.EXTERN.value:
+    if result.data["user_role"] == UserRole.EXTERN.value:
         return FuncRes(error="User role is extern.",
                         status=Status.FULL_ERROR,
                         message=Message(name="Remove User Error",
@@ -167,7 +168,7 @@ def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email
         )
 
     return FuncRes(
-        data=int(result.data[0]),
+        data=int(result.data["id"]),
         status=Status.FULL_SUCCESS,
         message=Message(name="Remove User Success",
                         type="success",
@@ -544,10 +545,15 @@ def confirm_verification_code(reset_code: str, additional_data: bool = False, ex
 
     arguments = {}
     if expiration_minutes is not None:
-        arguments["specific_where"] = f"reset_code = %s AND used = FALSE AND created_at >= NOW() - (%s * INTERVAL '1 minute')"
+        arguments["specific_where"] = sql.SQL("reset_code = {reset_code} AND used = FALSE AND created_at >= NOW() - ({expiration_minutes} * INTERVAL '1 minute')").format(
+            reset_code=sql.Placeholder(),
+            expiration_minutes=sql.Placeholder()
+        )
         arguments["variables"] = (reset_code, expiration_minutes,)
     else:
-        arguments["specific_where"] = f"reset_code = %s AND created_at >= NOW() - ((SELECT value::int FROM configurations WHERE key = 'reset_code_expiration_minutes') * INTERVAL '1 minute') AND used = FALSE"
+        arguments["specific_where"] = sql.SQL("reset_code = {reset_code} AND created_at >= NOW() - ((SELECT value::int FROM configurations WHERE key = 'reset_code_expiration_minutes') * INTERVAL '1 minute') AND used = FALSE").format(
+            reset_code=sql.Placeholder()
+        )
         arguments["variables"] = (reset_code,)
     result = db.select(
         table="verification_codes",
@@ -567,7 +573,7 @@ def confirm_verification_code(reset_code: str, additional_data: bool = False, ex
         )
     if result.data is None:
         return FuncRes(
-            error="Reset code doesn't exist.",
+            error="Reset code doesn't exist anymore.",
             status=Status.FULL_ERROR,
             message=Message(name="Confirm Verification Code Error",
                             type="error",

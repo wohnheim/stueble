@@ -122,12 +122,12 @@ def guest_change():
             mimetype="application/json")
         return response
 
-    guest_user_id = data.data[-1]
-    data._data = data.data[:-1]
+    guest_user_id = data.data["id"]
+    user_info= {key: value for key, value in data.data.items() if key != "id"}
 
     if event_type == EventType.ARRIVE:
         # verify guest if not verified yet
-        if data.data[4] is False:
+        if user_info["verified"] is False:
             result = users.update_user(user_uuid_key=user_uuid, 
                                        verified=True)
             if result.is_error:
@@ -155,7 +155,6 @@ def guest_change():
             mimetype="application/json")
         return response
 
-    user_info = {key: value for key, value in zip(keywords, data.data)}
     user_info["user_role"] = FrontendUserRole.EXTERN if user_info["user_role"] == "extern" else FrontendUserRole.INTERN
 
     user_data = {
@@ -228,7 +227,7 @@ def attend_stueble():
                 status=400,
                 mimetype="application/json")
             return response
-        date = result.data[1]
+        date = result.data["motto"]
 
     if session_id is None or date is None:
         response = Response(
@@ -265,8 +264,8 @@ def attend_stueble():
                 status=500,
                 mimetype="application/json")
             return response
-        user_id = result.data[0]
-        user_uuid = result.data[1]
+        user_id = result.data["id"]
+        user_uuid = result.data["user_uuid"]
 
     # get all sessions of user
     result = sessions.get_session_ids(user_id=user_id, uuid=True)
@@ -286,7 +285,7 @@ def attend_stueble():
             mimetype="application/json")
         return response
 
-    stueble_id = result.data[0]
+    stueble_id = result.data["id"]
 
     if request.method == "PUT":
         result = events.add_guest(
@@ -358,7 +357,7 @@ def attend_stueble():
     action_type = Action_Type("guestAdded" if request.method == "PUT" else "guestRemoved")
 
     # send a websocket message to all hosts that the guest list changed
-    asyncio.run(ws.broadcast(event=action_type.value, data=user_data if request.method == "PUT" else user_uuid, skip_sid=session_id)) # type: ignore
+    asyncio.run(ws.broadcast(event=action_type.value, data=user_data if request.method == "PUT" else user_uuid, skip_sid=session_id)) # type: ignore # pylint: disable=E0606
 
     # send a websocket message to the user
     for sess_id in guest_session_ids:
@@ -464,9 +463,9 @@ def invitee():
             mimetype="application/json")
         return response
 
-    stueble_id = result.data[0]
-    motto_name = result.data[1]
-    stueble_date = result.data[2]
+    stueble_id = result.data["id"]
+    motto_name = result.data["motto"]
+    stueble_date = result.data["date"]
     stueble_date = stueble_date.strftime("%d.%m.%Y")
 
     if request.method == "PUT":
@@ -491,7 +490,7 @@ def invitee():
             mimetype="application/json")
         return response
     if request.method == "PUT":
-        created_invitee_id = result.data[0]
+        created_invitee_id = result.data["id"]
 
     if request.method == "DELETE":
         possible_users = result.data
@@ -535,7 +534,7 @@ def invitee():
                     status=500,
                     mimetype="application/json")
                 return response
-            possible_invitee_uuid = result.data[0]
+            possible_invitee_uuid = result.data["id"]
             users_list.append({"invitee_id": possible_invitee_id, "invitee_uuid": possible_invitee_uuid})
         if len(users_list) == 0:
             response = Response(
@@ -552,8 +551,8 @@ def invitee():
         invitee_id = users_list[0]["invitee_id"]
         invitee_uuid = users_list[0]["invitee_uuid"]
     else:
-        invitee_id = result.data[0]
-        invitee_uuid = result.data[1]
+        invitee_id = result.data["id"]
+        invitee_uuid = result.data["user_uuid"]
 
     if request.method == "PUT":
         result = events.add_guest(

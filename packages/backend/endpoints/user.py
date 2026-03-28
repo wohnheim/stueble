@@ -17,10 +17,10 @@ from backend.database import database as db
 from backend.sql_connection.common_functions import check_permissions
 from backend.basic_functions import snake_to_camel_case
 
-users = Blueprint("users", __name__)
+user = Blueprint("users", __name__)
 
-@users.route("/user", methods=["GET"])
-def user():
+@user.route("/user", methods=["GET"])
+def get_user():
     """
     return data to user
     """
@@ -44,21 +44,21 @@ def user():
     data = result.data
 
     # initialize user
-    user = {"firstName": data[5],
-            "lastName": data[6],
-            "roomNumber": data[3],
-            "residence": data[4],
-            "email": data[7],
-            "id": data[0],
-            "username": data[8]}
+    user_data = {"firstName": data["first_name"],
+            "lastName": data["last_name"],
+            "roomNumber": data["room"],
+            "residence": data["residence"],
+            "email": data["email"],
+            "id": data["user_uuid"],
+            "username": data["user_name"]}
 
     response = Response(
-        response=json.dumps(user),
+        response=json.dumps(user_data),
         status=200,
         mimetype="application/json")
     return response
 
-@users.route("/user", methods=["POST"])
+@user.route("/user", methods=["POST"])
 def verify_user():
     """
     verify a user (only hosts and above can verify users)
@@ -139,7 +139,7 @@ def verify_user():
     return response
 
 # TODO websocket change update user
-@users.route("/user/change_role", methods=["POST"])
+@user.route("/user/change_role", methods=["POST"])
 def change_user_role():
     """
     change the user role of a user (only admin can change user to tutor)
@@ -257,7 +257,7 @@ def change_user_role():
         status=204)
     return response
 
-@users.route("/user/search", methods=["GET"])
+@user.route("/user/search", methods=["GET"])
 def search_intern():
     """
     search for a guest \n
@@ -382,17 +382,16 @@ def search_intern():
     if result.data is None:
         result._data = list()
 
-    users = []
+    users_data = []
     for entry in result.data:
-
-        users.append({"first_name": entry[0],
-                      "last_name": entry[1],
-                      "id": entry[2],
-                      "residence": entry[3]})
-    users = [{snake_to_camel_case(key): value for key, value in i.items()} for i in users]
+        users_data.append({"first_name": entry["first_name"],
+                      "last_name": entry["last_name"],
+                      "id": entry["user_uuid"],
+                      "residence": entry["residence"]})
+    users_data = [{snake_to_camel_case(key): value for key, value in i.items()} for i in users_data]
 
     response = Response(
-        response=json.dumps(users),
+        response=json.dumps(users_data),
         status=200,
         mimetype="application/json")
 

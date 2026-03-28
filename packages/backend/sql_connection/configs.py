@@ -68,7 +68,7 @@ def get_all_configurations() -> FuncRes:
                             code=500)
         )
     return FuncRes(
-            data={i[0]: i[1] for i in result.data},
+            data={i["key"]: i["value"] for i in result.data},
             status=Status.FULL_SUCCESS,
             message=Message(name="Get Configuration Success",
                             type="success",

@@ -2,7 +2,7 @@ from datetime import date
 from typing import Annotated, Any, Literal
 
 from psycopg import DatabaseError
-from psycopg import Cursor
+from psycopg import Cursor, sql
 
 from backend.database import database as db
 from backend.sql_connection.ultimate_functions import clean_single_data
@@ -32,7 +32,7 @@ def get_motto(date: date | None = None) -> FuncRes:
             table="stueble.motto",
             columns=["motto", "date_of_time", "id"],
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
-            specific_where="date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")
+            specific_where=sql.SQL("date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"))
 
     if result.is_error:
         return FuncRes(
@@ -75,7 +75,7 @@ def get_info(date: date | None=None) -> FuncRes:
     if date is not None:
         arguments = {"conditions": {"date_of_time": date}, "order_by": ("date_of_time", 1)}
     else:
-        arguments = {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
+        arguments = {"specific_where": sql.SQL("date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")}
 
     result = db.select(
         table="stueble.motto",
@@ -209,10 +209,10 @@ def update_stueble(date: date | None, **kwargs) -> FuncRes:
         )
 
     conditions = None
-    specific_where = ""
+    specific_where = sql.SQL("")
 
     if (date is None):
-        specific_where = """id = (SELECT id FROM stueble.motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1) ORDER BY date_of_time ASC LIMIT 1)"""
+        specific_where = sql.SQL("id = (SELECT id FROM stueble.motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1) ORDER BY date_of_time ASC LIMIT 1)")
     else:
         conditions =  {"date_of_time": date}
 

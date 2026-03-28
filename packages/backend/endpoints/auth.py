@@ -95,7 +95,7 @@ def login():
     # check password
     user = result.data
 
-    if user[1] is None:
+    if user["password_hash"] is None:
         response = Response(
             response=json.dumps({"code": 401, "message": "account was deleted, can be reactivated by signup"}),
             status=401,
@@ -103,7 +103,7 @@ def login():
         return response
 
     # if passwords don't match return error
-    if not hp.match_pwd(password, user[1]):
+    if not hp.match_pwd(password, user["password_hash"]):
         response = Response(
             response=json.dumps({"code": 401, "message": "invalid password"}),
             status=401,
@@ -111,7 +111,7 @@ def login():
         return response
 
     # create a new session
-    result = sessions.create_session(user_id=user[0])
+    result = sessions.create_session(user_id=user["id"])
 
     if result.is_error:
         response = Response(
@@ -273,12 +273,12 @@ def verify_signup():
     result = users.confirm_verification_code(reset_code=token, additional_data=True, expiration_minutes=30)
     if result.is_error:
         response = Response(
-            response=json.dumps({"code": 500, "message": str(result.error)}),
-            status=500,
+            response=json.dumps({"code": (code := result.message.code) if result.message is not None else 500, "message": str(result.error)}),
+            status=code if result.message is not None else 500,
             mimetype="application/json")
         return response
-
-    additional_data = result.data[1]
+    
+    additional_data = result.data["additional_data"]
     method = additional_data["method"]
     user_info = additional_data.copy()
     del user_info["method"]
@@ -387,7 +387,7 @@ def TEST_DELETE_PLEASE_REMOVE():
         return response
 
     # set user_id
-    user_id = result.data[0]
+    user_id = result.data["id"]
 
     result = db.delete(table="users", conditions={"id": user_id})
     if result.is_error:
@@ -424,7 +424,7 @@ def delete():
             mimetype="application/json")
         return response
 
-    if result.data[1] == UserRole.ADMIN.value:
+    if result.data["user_role"] == UserRole.ADMIN.value:
         response = Response(
             response=json.dumps({"code": 403, "message": "Admins cannot be deleted"}),
             status=403,
@@ -432,7 +432,7 @@ def delete():
         return response
 
     # set user_id
-    user_id = result.data[0]
+    user_id = result.data["id"]
 
     # remove user from table
     result = users.remove_user(user_id=user_id)
@@ -506,11 +506,11 @@ def reset_password_mail():
             status=500 if result.error != "No matching user found" else 404,
             mimetype="application/json")
         return response
-    user_id = result.data[0]
-    first_name = result.data[1]
-    last_name = result.data[2]
-    email = result.data[3]
-    password_hash = result.data[4]
+    user_id = result.data["id"]
+    first_name = result.data["first_name"]
+    last_name = result.data["last_name"]
+    email = result.data["email"]
+    password_hash = result.data["password_hash"]
 
     if password_hash is None or password_hash == "":
         response = Response(

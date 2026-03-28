@@ -1,4 +1,5 @@
 import datetime
+from psycopg import sql
 
 from backend.datatypes.stueble_types import UserRole
 from backend.database import database as db
@@ -39,12 +40,12 @@ def check_permissions(session_id: str | None, required_role: UserRole) -> FuncRe
                             category="Permission Check",
                             code=500)
         )
-    user_id = result.data[0]
-    user_role = result.data[1]
+    user_id = result.data["id"]
+    user_role = result.data["user_role"]
     user_role = UserRole(user_role)
-    user_uuid = result.data[2]
-    first_name = result.data[3]
-    last_name = result.data[4]
+    user_uuid = result.data["user_uuid"]
+    first_name = result.data["first_name"]
+    last_name = result.data["last_name"]
     if user_role >= required_role:
         return FuncRes(
             data={"allowed": True, "user_id": user_id, "user_role": user_role, "user_uuid": user_uuid, "first_name": first_name, "last_name": last_name},
@@ -74,7 +75,7 @@ def get_motto(date: datetime.date | None = None) -> FuncRes:
     """
     if date == "":
         date = None
-    arguments = {"conditions": {"date_of_time": date}} if date is not None else {"specific_where": "date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1"}
+    arguments = {"conditions": {"date_of_time": date}} if date is not None else {"specific_where": sql.SQL("date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")}
     result = db.select(
         table="stueble.motto",
         columns=["motto", "date_of_time", "description", "id"],
@@ -99,7 +100,7 @@ def get_motto(date: datetime.date | None = None) -> FuncRes:
                             code=404)
         )
     return FuncRes(
-        data={"motto": result.data[0], "date": result.data[1], "description": result.data[2], "stueble_id": result.data[3]},
+        data={"motto": result.data["motto"], "date": result.data["date_of_time"], "description": result.data["description"], "stueble_id": result.data["id"]},
         status=Status.FULL_SUCCESS,
         message=Message(name="Get Motto Success",
                         type="success",

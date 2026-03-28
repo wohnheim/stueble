@@ -15,6 +15,7 @@ import warnings
 from dotenv import load_dotenv
 import psycopg
 from psycopg import sql, Cursor
+from psycopg.sql import SQL, Composed
 from psycopg.rows import TupleRow
 from psycopg_pool import ConnectionPool
 
@@ -263,7 +264,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
     conditions: dict[str, Any] | None = None,
     negated_conditions: dict[str, Any] | None = None,
     select_max_of_key: str = "",
-    specific_where: str = "",
+    specific_where: SQL | Composed = SQL(""),
     variables: list[str] | None = None,
     order_by: tuple[str, ORDER] | None = None,
 ) -> Result[Any, Exception]:
@@ -278,7 +279,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
         negated_conditions (dict): under which conditions (key: column, value: value) values should NOT be selected, if empty, no negated conditions
         type_of_answer (ANSWER_TYPE): specify whether one or more answers are to be received, therefore it changes, whether list or single object will be returned
         select_max_of_key (bool): conditions must be empty, otherwise it won't be used
-        specific_where (str): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string),
+        specific_where (SQL | Composed): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string),
         variables (list | None): list of variables that should be passed into the specific_where statement
         order_by (str, ORDER) | None: ORDER by default no ordering
     Returns:
@@ -295,7 +296,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
         )
 
     # specific_where and variables can't be used together
-    if specific_where != "" and (
+    if (specific_where != sql.SQL("").format() and specific_where != SQL("")) and (
         conditions is not None or negated_conditions is not None
     ):
         raise ValueError(
@@ -306,7 +307,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
     columns = list(columns)
     conditions = {} if conditions is None else conditions
     negated_conditions = {} if negated_conditions is None else negated_conditions
-    result = {"success": False, "data": None, "error": None}
+    result = {"success": False, "data": None, "error": None} # TODO: adjust to fit the assignments below
 
     # build query
     all_conditions = {
@@ -320,62 +321,67 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
     if "." in table:
         schema, table = table.split(".")
 
-    query = sql.SQL("SELECT {cols} FROM {schema}{table}").format(
-        cols=sql.SQL(", ").join(map(sql.Identifier, columns)) if columns[0] != "*" else sql.SQL("*"),
-        schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
+    query = SQL("SELECT {cols} FROM {schema}{table}").format(
+        cols=SQL(", ").join(map(sql.Identifier, columns)) if columns[0] != "*" else SQL("*"),
+        schema=SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else SQL(""),
         table=sql.Identifier(table)
     )
 
 
     # add conditions if any
     if len(all_conditions) > 0:
-        query += sql.SQL(" WHERE ") + \
-            sql.SQL(' AND '.join([f'{{}} {'!' if value_data['negated'] is True else ''}= %s' 
-                for key, value_data in all_conditions.items()])) \
+        query += SQL(" WHERE ") + \
+            SQL(' AND '.join([f'{{}} {'!' if value_data['negated'] is True else ''}= %s' # TODO: replace %s with sql.Placeholder()
+                for _, value_data in all_conditions.items()])) \
         .format(*[sql.Identifier(key) for key in all_conditions.keys()])
         if order_by is not None:
-            query += sql.SQL(" ORDER BY {} {}").format(sql.Identifier(order_by[0], order_by[1].value))
+            query += SQL(" ORDER BY {} {}").format(sql.Identifier(order_by[0], order_by[1].value))
         # get data based on answer type
         data = fetch(query=query, type_of_answer=type_of_answer, variables=tuple(i["value"] for i in all_conditions.values()), commit=False)
         if data is None: data = []
+
         # map the data to the columns if columns are explicitly specified
-        if columns is not None and "*" not in columns:
+        if columns is not None and "*" not in columns and data is not None:
             result = (
                 dict(zip(columns, data))  # type: ignore
                 if type_of_answer == ANSWER_TYPE.SINGLE_ANSWER
                 else [dict(zip(columns, vals)) for vals in data]  # type: ignore
             )
+        elif data is None:
+            result = None
         if isinstance(data, Exception):
             return Result(error=data, stack_trace=traceback.format_exc())
         return Result(data=result)
 
     # add select max of key condition
     elif select_max_of_key != "":
-        query += sql.SQL(" WHERE {max_key} = (SELECT MAX({max_key}) FROM {schema}{table}) LIMIT 1").format(max_key=sql.Identifier(select_max_of_key), 
-                                                                                                           schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
+        query += SQL(" WHERE {max_key} = (SELECT MAX({max_key}) FROM {schema}{table}) LIMIT 1").format(max_key=sql.Identifier(select_max_of_key), 
+                                                                                                           schema=SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else SQL(""),
                                                                                                            table=sql.Identifier(table))
         
     # add specific where condition
-    elif specific_where != "":
-        query += sql.SQL(f" WHERE {specific_where}").format(specific_where=sql.Identifier(specific_where)) # type: ignore
-        if specific_where.count(" %s") != (
+    elif (specific_where != sql.SQL("").format() and specific_where != SQL("")):
+        query += SQL(" WHERE ") + specific_where
+        if specific_where.as_string().count("%s") != (
             len(variables) if variables is not None else 0
         ):
             raise ValueError(
                 "number of placeholders must match the number of provided variables"
             )
     if order_by is not None:
-        query += sql.SQL(" ORDER BY {} {}").format(sql.Identifier(order_by[0], order_by[1].value))
+        query += SQL(" ORDER BY {} {}").format(sql.Identifier(order_by[0], order_by[1].value))
 
     # get data based on answer type
     data = fetch(query=query, type_of_answer=type_of_answer, variables=variables, commit=False)
     # map the data to the columns if columns are explicitly specified
-    if columns is not None and "*" not in columns:
+    if columns is not None and "*" not in columns and data is not None:
         result = (
             dict(zip(columns, data))  # type: ignore
             if type_of_answer == ANSWER_TYPE.SINGLE_ANSWER
             else [dict(zip(columns, vals)) for vals in data]  # type: ignore
         )
+    elif data is None:
+        result = None
     elif "*" in columns:
         result = data
     if isinstance(data, Exception):
@@ -417,23 +423,23 @@ def insert(
 
     # build parametrized query
     if isinstance(values, list):
-        query = sql.SQL("INSERT INTO {schema}{table} VALUES (").format(
-            schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
+        query = SQL("INSERT INTO {schema}{table} VALUES (").format(
+            schema=SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else SQL(""),
             table=sql.Identifier(table)
-        ) + sql.SQL(", ").join(sql.Placeholder() * len(values)) + sql.SQL(")")
+        ) + SQL(", ").join(sql.Placeholder() * len(values)) + SQL(")")
         vals = values
     elif isinstance(values, dict):
-        query = sql.SQL("INSERT INTO {schema}{table} ({cols}) VALUES ({vals})").format(
-            schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
+        query = SQL("INSERT INTO {schema}{table} ({cols}) VALUES ({vals})").format(
+            schema=SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else SQL(""),
             table=sql.Identifier(table),
-            cols=sql.SQL(", ").join(map(sql.Identifier, values.keys())),
-            vals=sql.SQL(", ").join(sql.Placeholder() for _ in values.keys())
+            cols=SQL(", ").join(map(sql.Identifier, values.keys())),
+            vals=SQL(", ").join(sql.Placeholder() for _ in values.keys())
         )
         vals = list(values.values())
 
     # add returning_column
     if returning_column is not None:
-        query += sql.SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
+        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
 
     # run query
     data = fetch(query=query, type_of_answer=ANSWER_TYPE.SINGLE_ANSWER if returning_column is not None else ANSWER_TYPE.NO_ANSWER, variables=vals, commit=True)
@@ -450,8 +456,8 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
     returning_column: str | None = None,
     columns: dict[str, Any] | None = None,
     conditions: dict[str, Any] | None = None,
-    specific_where: str = "",
-    specific_set: str = "",
+    specific_where: SQL | Composed = SQL(""),
+    specific_set: SQL | Composed = SQL(""),
 ) -> Result[Any, Exception]:
     """
     updates values in a table \n
@@ -461,9 +467,9 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
         table (str): table to insert into, if empty set all
         columns (dict | None): values that should be entered (key: column, value: value)
         conditions (dict | None): specify to insert into the correct row
-        specific_where (str): conditions must be empty, otherwise conditions will be ignored, specifies where should be set,
+        specific_where (SQL | Composed): conditions must be empty, otherwise conditions will be ignored, specifies where should be set,
                               IMPORTANT what is being ignored differs from the other functions
-        specific_set (str): columns must be empty, otherwise columns will be ignored,
+        specific_set (SQL | Composed): columns must be empty, otherwise columns will be ignored,
                             specifies what should be set
         returning_column (str): returns the specified column, returns just a single column
     Returns:
@@ -483,21 +489,21 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
         schema, table = table.split(".")
 
     # build query
-    query = sql.SQL("UPDATE {schema}{table} SET {setter}").format(
-        schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
+    query = SQL("UPDATE {schema}{table} SET {setter}").format(
+        schema=SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else SQL(""),
         table=sql.Identifier(table),
-        setter=(sql.SQL(specific_set) if specific_set != "" else sql.SQL(", ").join([sql.SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for key in columns.keys()])) # type: ignore
+        setter=(specific_set if (specific_set != SQL("") and specific_set != sql.SQL("").format()) else SQL(", ").join([SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for key in columns.keys()])) # type: ignore
     )
 
     # where part
-    if specific_where != "":
-        query += sql.SQL(" WHERE {specific_where}").format(specific_where=sql.SQL(specific_where)) # type: ignore
+    if specific_where != SQL("") and specific_where != sql.SQL("").format():
+        query += SQL(" WHERE {specific_where}").format(specific_where=SQL(specific_where)) # type: ignore
     else:
-        query += sql.SQL(" WHERE {w}").format(w=sql.SQL(" AND ").join([sql.SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for _, key in enumerate(conditions)]))
+        query += SQL(" WHERE {w}").format(w=SQL(" AND ").join([SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for _, key in enumerate(conditions)]))
 
     # returning part
     if returning_column is not None:
-        query += sql.SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
+        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
 
     # execute query
     data = fetch(query=query, type_of_answer=ANSWER_TYPE.SINGLE_ANSWER if returning_column is not None else ANSWER_TYPE.NO_ANSWER, variables=list(columns.values()) + list(conditions.values()))
@@ -532,15 +538,15 @@ def delete(
         schema, table = table.split(".")
 
     # build query
-    query = sql.SQL("DELETE FROM {schema}{table} WHERE ").format(
-        schema=sql.SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else sql.SQL(""),
+    query = SQL("DELETE FROM {schema}{table} WHERE ").format(
+        schema=SQL("{schema}.").format(schema=sql.Identifier(schema)) if schema is not None else SQL(""),
         table=sql.Identifier(table)
     )
-    query += sql.SQL(" AND ").join(sql.SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for key in conditions.keys())
+    query += SQL(" AND ").join(SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for key in conditions.keys())
 
     # returning part
     if returning_column is not None:
-        query += sql.SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
+        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
 
     data = fetch(query=query, type_of_answer=ANSWER_TYPE.SINGLE_ANSWER if returning_column is not None else ANSWER_TYPE.NO_ANSWER, variables=list(conditions.values()), commit=True)
 
@@ -583,7 +589,7 @@ def get_time() -> Result[Any, Exception]:
         Result: result object with data or error
     """
     # execute query
-    query = sql.SQL("SELECT NOW() AT TIME ZONE 'Europe/Berlin' AS current_time")
+    query = SQL("SELECT NOW() AT TIME ZONE 'Europe/Berlin' AS current_time")
     data = fetch(query=query, type_of_answer=ANSWER_TYPE.SINGLE_ANSWER, variables=None, commit=False)
     if isinstance(data, Exception):
         return Result(error=data, stack_trace=traceback.format_exc())
