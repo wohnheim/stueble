@@ -263,7 +263,7 @@ class HTTPClient {
   /* Guests */
 
   async getGuestList() {
-    const res = await fetch("/api/guests");
+    const res = await fetch("/api/stueble/guests");
 
     if (res.ok) return await res.json<(GuestIntern | GuestExtern)[]>();
 
@@ -272,7 +272,7 @@ class HTTPClient {
   }
 
   async addToGuestList(props?: AddToGuestListAction["data"]) {
-    const res = await fetch("/api/guests", {
+    const res = await fetch("/api/stueble/guests", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body:
@@ -291,7 +291,7 @@ class HTTPClient {
   }
 
   async modifyGuest(props: ModifyGuestAction["data"]) {
-    const res = await fetch("/api/guests", {
+    const res = await fetch("/api/stueble/guests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(props),
@@ -304,7 +304,7 @@ class HTTPClient {
   }
 
   async removeFromGuestList(props?: RemoveFromGuestListAction["data"]) {
-    const res = await fetch("/api/guests", {
+    const res = await fetch("/api/stueble/guests", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body:
@@ -328,7 +328,7 @@ class HTTPClient {
     email?: string,
     date?: Date,
   ) {
-    const res = await fetch("/api/guests/invitee", {
+    const res = await fetch("/api/stueble/guests/invitee", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -348,7 +348,7 @@ class HTTPClient {
   /* Hosts */
 
   async getHosts() {
-    const res = await fetch("/api/hosts");
+    const res = await fetch("/api/stueble/guests");
 
     if (res.ok) return await res.json<HostOrTutor[]>();
 
@@ -357,7 +357,7 @@ class HTTPClient {
   }
 
   async addHosts(hosts: string[], date?: Date) {
-    const res = await fetch("/api/hosts", {
+    const res = await fetch("/api/stueble/guests", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -376,7 +376,7 @@ class HTTPClient {
   }
 
   async removeHosts(hosts: string[], date?: Date) {
-    const res = await fetch("/api/hosts", {
+    const res = await fetch("/api/stueble/guests", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

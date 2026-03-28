@@ -14,7 +14,7 @@ import inspect
 from functools import wraps
 from enum import Enum
 
-from backend.sql_connection.common_functions import check_permissions, get_motto
+from backend.sql_connection.common_functions import check_permissions
 from backend.datatypes.stueble_types import *
 from backend.datatypes.funcres import FuncRes, Message, Status
 from backend.sql_connection import events, sessions, users, motto
@@ -542,10 +542,10 @@ async def request_motto(websocket, msg, req_id):
     else:
         date = None
 
-    result = get_motto(date=date)
+    result = motto.get_info(date=date)
     if result.is_error:
         await send(websocket=websocket, event="error", reqId=req_id, data=
-            {"code": "500",
+            {"code": str(result.message.code) if result.message is not None else "500",
              "message": str(result.error)})
         return
     motto_data = {"motto": result.data["motto"], "description": result.data["description"], "date": result.data["date"].isoformat()}
@@ -616,7 +616,7 @@ async def verify_guest(websocket, msg):
     result = users.add_verification_method(user_uuid=user_uuid, method=verification_method)
     if result.is_error:
         await send(websocket=websocket, event="error", data=
-            {"code": "500",
+            {"code": str(result.message.code) if result.message is not None else "500",
              "message": str(result.error)})
         return
 

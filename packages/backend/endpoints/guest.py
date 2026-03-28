@@ -72,6 +72,8 @@ def guests():
     )
     return response
 
+
+# TODO: change to list of guests to change
 @guest.route("", methods=["POST"])
 def guest_change():
     """

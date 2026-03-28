@@ -71,7 +71,7 @@ def create_stueble():
 
     if result.is_error:
         if result.error == "no stueble found":
-            if actual_user_role == UserRole.HOST:
+            if actual_user_role == UserRole.HOST: # TODO: check, whether this is actually correct
                 response = Response(
                     response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor or above to create a new stueble"}),
                     status=403,
