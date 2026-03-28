@@ -74,7 +74,7 @@ def create_session(user_id: int) -> FuncRes:
         )
     else:
         return FuncRes(
-            data={**result.data, "expiration_date": expiration_date},
+            data={"session_id": result.data[0], "expiration_date": expiration_date},
             status=Status.FULL_SUCCESS,
             message=Message(name="Create Session Success",
                             type="success",
