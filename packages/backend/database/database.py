@@ -267,6 +267,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
     specific_where: SQL | Composed = SQL(""),
     variables: list[str] | None = None,
     order_by: tuple[str, ORDER] | None = None,
+    explicit_schema: str | None = None
 ) -> Result[Any, Exception]:
     """
     select \n
@@ -282,6 +283,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
         specific_where (SQL | Composed): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string),
         variables (list | None): list of variables that should be passed into the specific_where statement
         order_by (str, ORDER) | None: ORDER by default no ordering
+        explicit_schema (str | None): in case an explicit schema is provided ("" is valid), no schema splitting will be done
     Returns:
         Result: result object with data or error
     """
@@ -296,7 +298,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
         )
 
     # specific_where and variables can't be used together
-    if (specific_where != sql.SQL("").format() and specific_where != SQL("")) and (
+    if (specific_where.as_string() != "") and (
         conditions is not None or negated_conditions is not None
     ):
         raise ValueError(
@@ -317,8 +319,8 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
         for key, value in negated_conditions.items()
     }
 
-    schema = None
-    if "." in table:
+    schema = explicit_schema if explicit_schema != "" else None
+    if explicit_schema is None and "." in table:
         schema, table = table.split(".")
 
     query = SQL("SELECT {cols} FROM {schema}{table}").format(
@@ -360,7 +362,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
                                                                                                            table=sql.Identifier(table))
         
     # add specific where condition
-    elif (specific_where != sql.SQL("").format() and specific_where != SQL("")):
+    elif (specific_where.as_string() != ""):
         query += SQL(" WHERE ") + specific_where
         if specific_where.as_string().count("%s") != (
             len(variables) if variables is not None else 0
@@ -396,6 +398,7 @@ def insert(
     table: str,
     values: dict[str, Any] | list[str] | None,
     returning_column: str | None = None,
+    explicit_schema: str | None = None
 ) -> Result[Any, Exception]:
     """
     insert data into table
@@ -405,6 +408,7 @@ def insert(
         table (str): table to insert into, if empty set all
         values (dict | list): values that should be entered (key: column, value: value), if empty, no conditions, if values is of type list, then list has to contain all values that have to be entered
         returning_column (int): returns the column; IMPORTANT: returning_column is not being parametrized
+        explicit_schema (str | None): in case an explicit schema is provided ("" is valid), no schema splitting will be done
     Returns:
         Result: result object with data or error
     """
@@ -417,8 +421,8 @@ def insert(
     query = ""
     vals = []
 
-    schema = None
-    if "." in table:
+    schema = explicit_schema if explicit_schema != "" else None
+    if explicit_schema is None and "." in table:
         schema, table = table.split(".")
 
     # build parametrized query
@@ -458,6 +462,7 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
     conditions: dict[str, Any] | None = None,
     specific_where: SQL | Composed = SQL(""),
     specific_set: SQL | Composed = SQL(""),
+    explicit_schema: str | None = None
 ) -> Result[Any, Exception]:
     """
     updates values in a table \n
@@ -472,6 +477,7 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
         specific_set (SQL | Composed): columns must be empty, otherwise columns will be ignored,
                             specifies what should be set
         returning_column (str): returns the specified column, returns just a single column
+        explicit_schema (str | None): in case an explicit schema is provided ("" is valid), no schema splitting will be done
     Returns:
         Result: result object with data or error
     """
@@ -484,8 +490,8 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
     if returning_column == "":
         returning_column = None
 
-    schema = None
-    if "." in table:
+    schema = explicit_schema if explicit_schema != "" else None
+    if explicit_schema is None and "." in table:
         schema, table = table.split(".")
 
     # build query
@@ -496,7 +502,7 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
     )
 
     # where part
-    if specific_where != SQL("") and specific_where != sql.SQL("").format():
+    if specific_where.as_string() != "":
         query += SQL(" WHERE {specific_where}").format(specific_where=SQL(specific_where)) # type: ignore
     else:
         query += SQL(" WHERE {w}").format(w=SQL(" AND ").join([SQL("{key} = {placeholder}").format(key=sql.Identifier(key), placeholder=sql.Placeholder()) for _, key in enumerate(conditions)]))
@@ -516,6 +522,7 @@ def delete(
     table: str,
     conditions: dict[str, Any],
     returning_column: str | None = None,
+    explicit_schema: str | None = None
 ) -> Result[Any, Exception]:
     """
     removes data from table \n
@@ -525,6 +532,7 @@ def delete(
         table (str): table to insert into, if empty set all
         conditions (dict): specify from which row to remove the data
         returning_column (str): returns the specified column, returns just a single value
+        explicit_schema (str | None): in case an explicit schema is provided ("" is valid), no schema splitting will be done
     Returns:
         Result: result object with data or error
     """
@@ -533,8 +541,8 @@ def delete(
     if returning_column == "":
         returning_column = None
 
-    schema = None
-    if "." in table:
+    schema = explicit_schema if explicit_schema != "" else None
+    if explicit_schema is None and "." in table:
         schema, table = table.split(".")
 
     # build query

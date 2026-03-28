@@ -14,8 +14,9 @@
 # Websocket
 
 | Task | Status |
-|  Couldn't send stueble status 500 zu 404
-|  Auswahl der Stüblebewerbungen: stueble_selection: Dict aus uuid, selected: boolean; UUID der Bewerbung und ob ausgewählt oder nicht
+| ---- | ------ |
+|  Couldn't send stueble status 500 zu 404 | - |
+|  Auswahl der Stüblebewerbungen: stueble_selection: Dict aus uuid, selected: boolean; UUID der Bewerbung und ob ausgewählt oder nicht | - |
 |  Änderung der Stübleauswahl an alle Tutoren mit Hinweis, welcher Tutor, was verändert hat
 
 # Schema

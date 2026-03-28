@@ -366,7 +366,7 @@ def attend_stueble():
     return response
 
 # NOTE: extern guest can be multiple times in table users since only first_name, last_name are specified, which are not unique
-@guest.route("//invitee", methods=["PUT", "DELETE"])
+@guest.route("/invitee", methods=["PUT", "DELETE"])
 def invitee():
     """
     invite a friend and share a qr-code

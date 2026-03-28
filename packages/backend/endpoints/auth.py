@@ -127,7 +127,7 @@ def login():
         status=204)
 
     response.set_cookie("SID",
-                        session_id,
+                        str(session_id),
                         expires=expiration_date,
                         httponly=True,
                         secure=True,

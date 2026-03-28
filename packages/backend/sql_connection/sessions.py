@@ -192,11 +192,15 @@ def get_user(session_id: str, keywords: tuple[str, ...] | list[str] | None = Non
                                 code=400)
             )
 
-    result = db.select(
-        columns=["u." + i for i in keywords],
-        table="sessions s JOIN users u ON s.user_id = u.id",
-        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
-        conditions={"s.session_id": session_id})
+    query = sql.SQL("SELECT {columns} FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.session_id = {session_id}").format(
+        columns=sql.SQL(", ").join(sql.Identifier("u") + sql.SQL(".") + sql.Identifier(k) for k in keywords),
+        session_id=sql.Placeholder()
+    )
+    result = db.custom_call(
+        query=query,
+        variables=[session_id],
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
+    )
 
     if result.is_error:
         return FuncRes(
@@ -216,7 +220,10 @@ def get_user(session_id: str, keywords: tuple[str, ...] | list[str] | None = Non
                             category="Get User",
                             code=404)
         )
-    elif len(keywords) == 1:
+    
+    result._data = {key: value for key, value in zip(keywords, result.data)}
+
+    if len(keywords) == 1:
         return FuncRes(
             data=clean_single_data(result),
             status=Status.FULL_SUCCESS,

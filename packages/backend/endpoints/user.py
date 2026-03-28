@@ -19,7 +19,7 @@ from backend.basic_functions import snake_to_camel_case
 
 user = Blueprint("users", __name__)
 
-@user.route("/user", methods=["GET"])
+@user.route("/", methods=["GET"])
 def get_user():
     """
     return data to user
@@ -58,7 +58,7 @@ def get_user():
         mimetype="application/json")
     return response
 
-@user.route("/user", methods=["POST"])
+@user.route("/", methods=["POST"])
 def verify_user():
     """
     verify a user (only hosts and above can verify users)
@@ -139,7 +139,7 @@ def verify_user():
     return response
 
 # TODO websocket change update user
-@user.route("/user/change_role", methods=["POST"])
+@user.route("/change_role", methods=["POST"])
 def change_user_role():
     """
     change the user role of a user (only admin can change user to tutor)
@@ -257,7 +257,7 @@ def change_user_role():
         status=204)
     return response
 
-@user.route("/user/search", methods=["GET"])
+@user.route("/search", methods=["GET"])
 def search_intern():
     """
     search for a guest \n

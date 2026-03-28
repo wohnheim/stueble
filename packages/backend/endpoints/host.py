@@ -13,7 +13,7 @@ from backend.sql_connection.common_functions import check_permissions
 
 host = Blueprint("host", __name__)
 
-@host.route("/hosts", methods=["GET"])
+@host.route("/", methods=["GET"])
 def get_hosts():
     """
     Get hosts for a stueble.
@@ -49,7 +49,7 @@ def get_hosts():
         mimetype="application/json")
     
 
-@host.route("/hosts/force_add_guest", methods=["POST"])
+@host.route("/force_add_guest", methods=["POST"])
 def force_add_guest():
     """
     force add guest to current stueble

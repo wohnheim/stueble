@@ -2,6 +2,7 @@ import enum
 import json
 from typing import Annotated, Any, Literal
 from psycopg import sql
+from psycopg.sql import Composed
 
 from backend.datatypes.stueble_types import Email, Residence, UserRole, VerificationMethod
 from backend.database import database as db
@@ -132,14 +133,22 @@ def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email
 
     conditions: dict[str, str | int] = {}
     if user_id is not None:
-        conditions["id"] = user_id
+        conditions["id"] = str(user_id)
     elif user_email is not None:
         conditions["email"] = user_email.email
     elif user_name is not None:
         conditions["user_name"] = user_name
 
-    result = db.update(table="users",
-                       columns={"password_hash": None}, conditions=conditions, returning_column="id, user_role")
+
+    query = sql.SQL("UPDATE users SET password_hash = NULL WHERE {conditions} RETURNING {id}, {user_role}").format(
+        conditions=sql.SQL(" AND ").join([sql.SQL("{key} = {value}").format(key=sql.Identifier(key), value=sql.Placeholder()) for key in conditions.keys()]),
+        id=sql.Identifier("id"),
+        user_role=sql.Identifier("user_role")
+    )
+
+    result = db.custom_call(query=query,
+                            variables=list(conditions.values()),
+                            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
 
     if result.is_error:
         return FuncRes(
@@ -158,6 +167,9 @@ def remove_user(user_id: Annotated[int | None, "set EITHER user_id OR user_email
                                         category="Remove User",
                                         code=404)
         )
+    
+    result._data = {key: value for key, value in zip(["id", "user_role"], result.data)}
+
     if result.data["user_role"] == UserRole.EXTERN.value:
         return FuncRes(error="User role is extern.",
                         status=Status.FULL_ERROR,
@@ -266,7 +278,7 @@ def get_user(
         columns: tuple[str] | list[str] = ("*",),
         conditions: Annotated[dict[str, Any] | None, "Explicit with user_id, user_email, select_max_of_key, specific_where"] = None,
         select_max_of_key: Annotated[str, "Explicit with user_id, user_email, conditions, specific_where"] = "",
-        specific_where: Annotated[str, "Explicit with user_id, user_email, select_max_of_key, conditions"] = "",
+        specific_where: Annotated[sql.SQL | Composed, "Explicit with user_id, user_email, select_max_of_key, conditions"] = sql.SQL(""),
         order_by: Annotated[tuple[str, Literal[0, 1]] | None, "Explicit with type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER"] = None
     ) -> FuncRes:
     """
@@ -282,7 +294,7 @@ def get_user(
         conditions (dict | None): additional conditions for the query
         type_of_answer (bool): whether to expect a single user or multiple users
         select_max_of_key (str): if set, will select the max of this key
-        specific_where (str): if set, will add this specific where clause
+        specific_where (sql.SQL | Composed): if set, will add this specific where clause
         order_by (tuple): if set, will order the results by this tuple
     Returns:
         FuncRes: user data if successful, error otherwise
@@ -301,7 +313,7 @@ def get_user(
         )
 
     # check, whether a where statement is set for sql query
-    if user_id is None and user_email is None and user_name is None and user_uuid is None and conditions == {} and specific_where == "":
+    if user_id is None and user_email is None and user_name is None and user_uuid is None and conditions == {} and specific_where.as_string() == "":
         return FuncRes(
             error="At least one of user_id, user_email, user_name, user_uuid, conditions or specific_where must be set.",
             status=Status.FULL_ERROR,
@@ -316,7 +328,7 @@ def get_user(
     if user_name is not None: conditions_counter += 1
     if user_uuid is not None: conditions_counter += 1
     if select_max_of_key != "": conditions_counter += 1
-    if specific_where != "": conditions_counter += 1
+    if specific_where.as_string() != "": conditions_counter += 1
     if conditions != {}: conditions_counter += 1
     if conditions_counter > 1:
         return FuncRes(
