@@ -120,7 +120,8 @@ def login():
             mimetype="application/json")
         return response
 
-    session_id, expiration_date = result.data
+    session_id = result.data["session_id"]
+    expiration_date = result.data["expiration_date"]
 
     # return 204
     response = Response(
@@ -318,7 +319,8 @@ def verify_signup():
             mimetype="application/json")
         return response
 
-    session_id, expiration_date = result.data
+    session_id = result.data["session_id"]
+    expiration_date = result.data["expiration_date"]
 
     # return 204
     response = Response(
@@ -608,7 +610,8 @@ def confirm_code():
             status=500,
             mimetype="application/json")
         return response
-    session_id, expiration_date = result.data
+    session_id = result.data["session_id"]
+    expiration_date = result.data["expiration_date"]
 
     # return 204
     response = Response(

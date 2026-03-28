@@ -79,7 +79,7 @@ def get_info(date: date | None=None) -> FuncRes:
 
     result = db.select(
         table="stueble.motto",
-        columns=["id", "motto", "date_of_time"],
+        columns=["id", "motto", "date_of_time", "description"],
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         **arguments # type: ignore
     )
@@ -103,6 +103,9 @@ def get_info(date: date | None=None) -> FuncRes:
                             code=404)
         )
     
+    result._data["stueble_id"] = result._data.pop("id") # type: ignore
+    result._data["date"] = result._data.pop("date_of_time") # type: ignore
+
     return FuncRes(
         data=result.data,
         status=Status.FULL_SUCCESS,

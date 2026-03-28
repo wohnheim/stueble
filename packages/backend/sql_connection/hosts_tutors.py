@@ -104,7 +104,7 @@ def get_hosts_tutors(session_id: str, path: str, date: date | None = None) -> Fu
             user_warning="no stueble party found"
         )
         return response
-    stueble_id = result.data["id"]
+    stueble_id = result.data["stueble_id"]
 
     result = motto.get_hosts(stueble_id=stueble_id)
     if result.is_error:

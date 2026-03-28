@@ -340,7 +340,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
             query += SQL(" ORDER BY {} {}").format(sql.Identifier(order_by[0], order_by[1].value))
         # get data based on answer type
         data = fetch(query=query, type_of_answer=type_of_answer, variables=tuple(i["value"] for i in all_conditions.values()), commit=False)
-        if data is None: data = []
+        if data is None and type_of_answer == ANSWER_TYPE.LIST_ANSWER: data = []
 
         # map the data to the columns if columns are explicitly specified
         if columns is not None and "*" not in columns and data is not None:

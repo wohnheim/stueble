@@ -227,7 +227,7 @@ def attend_stueble():
                 status=400,
                 mimetype="application/json")
             return response
-        date = result.data["motto"]
+        date = result.data["date"]
 
     if session_id is None or date is None:
         response = Response(
@@ -285,7 +285,7 @@ def attend_stueble():
             mimetype="application/json")
         return response
 
-    stueble_id = result.data["id"]
+    stueble_id = result.data["stueble_id"]
 
     if request.method == "PUT":
         result = events.add_guest(
@@ -463,7 +463,7 @@ def invitee():
             mimetype="application/json")
         return response
 
-    stueble_id = result.data["id"]
+    stueble_id = result.data["stueble_id"]
     motto_name = result.data["motto"]
     stueble_date = result.data["date"]
     stueble_date = stueble_date.strftime("%d.%m.%Y")

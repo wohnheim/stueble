@@ -74,7 +74,7 @@ def create_session(user_id: int) -> FuncRes:
         )
     else:
         return FuncRes(
-            data=list(result.data) + [expiration_date],
+            data={**result.data, "expiration_date": expiration_date},
             status=Status.FULL_SUCCESS,
             message=Message(name="Create Session Success",
                             type="success",
@@ -362,7 +362,7 @@ def get_session_ids(user_id: int, uuid: bool = False) -> FuncRes:
         )
 
     return FuncRes(
-        data=[row["id" if uuid is False else "session_id"] for row in result.data],
+        data=[row["id"] if uuid is False else str(row["session_id"])  for row in result.data],
         status=Status.FULL_SUCCESS,
         message=Message(name="Get Session IDs Success",
                         type="success",

@@ -50,11 +50,8 @@ def listen_to_db(connection: Connection, cursor: Cursor[TupleRow]):
                 warnings.warn(f"Could not get user with id {user_id}")
                 continue
             # NOTE only use user_uuid for the guest_list not publicly available for hosts etc.
-            first_name, last_name, user_uuid = result.data
-            removed_user_data = {"first_name": first_name,
-                    "last_name": last_name,
-                    "user_uuid": user_uuid,
-                    "stueble_id": stueble_id}
+            removed_user_data = result.data
+            removed_user_data["stueble_id"] = stueble_id
                     # "event": event}
             # TODO configure url
             response = requests.post("http://127.0.0.1:3000/websocket_local", json=removed_user_data)

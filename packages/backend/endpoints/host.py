@@ -167,7 +167,7 @@ def update_hosts():
             status=404,
             mimetype="application/json")
         return response
-    stueble_id = result.data["id"]
+    stueble_id = result.data["stueble_id"]
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
 

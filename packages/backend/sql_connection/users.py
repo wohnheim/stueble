@@ -372,7 +372,7 @@ def get_user(
                             code=500)
         )
 
-    if result.data is None or (isinstance(result.data, list) and len(result.data) == 0):
+    if result.data is None or (isinstance(result.data, list) and len(result.data) == 0 or isinstance(result.data, dict) and result.data == {}):
         return FuncRes(
             error="No matching user found",
             status=Status.FULL_ERROR,
@@ -782,7 +782,7 @@ def check_user_guest_list(user_id: int) -> FuncRes:
                             code=404)
         )
     return FuncRes(
-        data=result.data,
+        data=clean_single_data(result.data),
         status=Status.FULL_SUCCESS,
         message=Message(name="Check User Guest List Success",
                         type="success",

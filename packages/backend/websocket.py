@@ -270,8 +270,8 @@ async def handle_ws(websocket):
                                                               "authorized": False})
         return
  
-    _, expiration_date = result.data
-    websockets_info[id(websocket)] = {"expiration_date": expiration_date, "session_id": session_id}
+    data = result.data
+    websockets_info[id(websocket)] = {"expiration_date": data["expiration_date"], "session_id": session_id}
 
     sid_to_websocket[session_id] = websocket
 
@@ -548,8 +548,8 @@ async def request_motto(websocket, msg, req_id):
             {"code": "500",
              "message": str(result.error)})
         return
-    motto = {"motto": result.data["motto"], "description": result.data["description"], "date": result.data["date"].isoformat()}
-    await send(websocket=websocket, event="motto", reqId=req_id, data=motto)
+    motto_data = {"motto": result.data["motto"], "description": result.data["description"], "date": result.data["date"].isoformat()}
+    await send(websocket=websocket, event="motto", reqId=req_id, data=motto_data)
     return
 
 
@@ -738,7 +738,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
 
     Args:
         session_id (str | int): the session id of the user whose status changed
-        date (date): the stueble id of the stueble party
+        date (date): the date of the stueble party
         registered (bool): whether the user is registered or not
         present (bool): whether the user is present or not
     Returns:
@@ -752,12 +752,13 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     user_role = result.data["user_role"]
     user_role = UserRole(user_role)
 
+    # get all sessions for that user
     result = db.select(
         table="sessions",
         conditions={"user_id": user_id},
         columns=["session_id"],
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER)
-
+    
     if result.is_error:
         return FuncRes(
             error=str(result.error),
@@ -768,22 +769,35 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
                             code=500)
         )
 
-    session_ids = [i["session_id"] for i in result.data]
+    session_ids = [str(i["session_id"]) for i in result.data]
+
+    user_room = [sid_to_websocket.get(i, None) for i in session_ids]
+    try:
+        user_room.remove(None)
+    except:
+        pass
+
     # unneccessary but for style of coding
     # stueble_id = None
     invited_guests = None
+    result = motto.get_info(date=date)
+    if result.message.code == 404:
+        data = {"date": None, "registered": None, "present": None}
+        if user_role >= UserRole.TUTOR:
+            data["invitedGuests"] = None
+        await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
+        return FuncRes(
+            status=Status.FULL_SUCCESS,
+            message=Message(name="Stueble Status Partial Success",
+                            type="partial success",
+                            category="Stueble Status",
+                            code=404)
+        )
+    if result.is_error:
+        return result
     if date is None:
-        result = get_motto(date=None)
-        if result.is_error:
-            return result
         date = result.data["date"]
-        stueble_id = result.data["stueble_id"]
-    else:
-        result = motto.get_info(date=date)
-        if result.is_error:
-            return result
-        stueble_id = result.data["id"]
-        # stueble_id = result.data["stueble_id"]
+    stueble_id = result.data["stueble_id"]
     if registered is None or present is None:
         result = users.check_user_guest_list(user_id=user_id)
         if result.is_error:
@@ -811,11 +825,6 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     if invited_guests is not None:
         data["invitedGuests"] = invited_guests
 
-    user_room = [sid_to_websocket.get(i, None) for i in session_ids]
-    try:
-        user_room.remove(None)
-    except:
-        pass
     await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
     return FuncRes(
         status=Status.FULL_SUCCESS,
