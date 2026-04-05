@@ -78,10 +78,17 @@ def login():
     result = users.get_user(columns=["id", "password_hash", "user_role"], user_email=user_email, user_name=user_name)
 
     # return error
-    if result.is_error:
+    if result.is_error and (result.message is None or result.message.code != 404):
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
+            mimetype="application/json")
+        return response
+
+    elif result.is_error and result.message is not None and result.message.code == 404:
+        response = Response(
+            response=json.dumps({"code": 404, "message": "No matching user found"}),
+            status=404,
             mimetype="application/json")
         return response
 

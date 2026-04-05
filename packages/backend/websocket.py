@@ -643,7 +643,12 @@ async def request_qrcode(websocket, msg, req_id):
         stueble_id = None
 
     session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
-    result = sessions.get_user(session_id=session_id, keywords=["id", "user_uuid", "user_role"]) # type: ignore
+    if session_id is None:
+        await send(websocket=websocket, event="error", data={
+            "code": "401",
+            "message": "missing SID cookie"})
+        return
+    result = sessions.get_user(session_id=session_id, keywords=["id", "user_uuid", "user_role"])
     if result.is_error:
         await send(websocket=websocket, event="status", data={"code": "401",
                                                               "capabilities": [],
@@ -655,7 +660,7 @@ async def request_qrcode(websocket, msg, req_id):
 
     result = events.check_guest(user_id=user_id,
                                 stueble_id=stueble_id)
-    if result.is_error and result.error == "no stueble party found":
+    if result.is_error and result.message is not None and result.message.code == 404:
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": "404",
              "message": result.error})

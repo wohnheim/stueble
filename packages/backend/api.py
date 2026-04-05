@@ -6,6 +6,7 @@ import json
 from datetime import datetime as dt
 
 from flask import Flask, Response, request
+from psycopg import sql
 
 from backend.endpoints import (
     auth,
@@ -78,17 +79,17 @@ def config():
     if request.method == "POST":
         data = request.get_json()
 
-        case_statements = '\n'.join(["WHEN %s THEN %s" for _ in range (len(data))])
+        case_statements = sql.SQL('\n').join([sql.SQL("WHEN %s THEN %s") for _ in range (len(data))])
         keys = tuple(camel_to_snake_case(key) for key in data.keys())
         values = tuple(value for value in data.values())
 
-        params = [elem for i in zip(keys, values) for elem in i] + [tuple(keys)]
+        params = [elem for i in zip(keys, values) for elem in i] + list(keys)
 
-        query = f"""UPDATE configurations
+        query = sql.SQL("""UPDATE configurations
         SET value = CASE key
         {case_statements}
         END
-        WHERE key IN %s"""
+        WHERE key IN ({keys})""").format(case_statements=case_statements, keys=sql.SQL(', ').join(sql.Placeholder() * len(keys)))
         result = db.custom_call(query=query,
                                 type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
                                 variables=params)

@@ -3,6 +3,7 @@ import asyncio
 import json
 
 from flask import Blueprint, Response, request
+from psycopg import sql
 
 from backend import websocket as ws
 from backend.sql_connection import hosts_tutors as hosts
@@ -146,15 +147,15 @@ def update_tutors():
             mimetype="application/json")
         return response
 
-    query = """
+    query = sql.SQL("""
         UPDATE users
-        SET user_role = %s
-        WHERE user_uuid IN %s
+        SET user_role = {new_role}
+        WHERE user_uuid IN ({user_uuids})
         RETURNING id
-    """
+    """).format(new_role=sql.Placeholder(), user_uuids=sql.SQL(', ').join(sql.Placeholder() * len(user_uuids)))
     result = db.custom_call(query=query,
                             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-                            variables=[new_role.value, tuple(i["id"] for i in tutors_data)])
+                            variables=[new_role.value] + [i["id"] for i in tutors_data])
 
     if result.is_error:
         response = Response(
@@ -164,9 +165,9 @@ def update_tutors():
         return response
 
     # NOTE: unneccessary due to trigger
-    user_ids = result.data
-    query = """DELETE FROM hosts WHERE user_id IN %s"""
-    result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
+    user_ids = result.data[0]
+    query = sql.SQL("DELETE FROM stueble.hosts WHERE user_id IN ({user_ids})").format(user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
+    result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=user_ids)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -174,11 +175,11 @@ def update_tutors():
             mimetype="application/json")
         return response
 
-    query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
+    query = sql.SQL("SELECT id FROM sessions WHERE user_id IN ({user_ids})").format(user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
     result = db.custom_call(
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-        variables=tuple(user_ids))
+        variables=user_ids)
 
     if result.is_error:
         response = Response(

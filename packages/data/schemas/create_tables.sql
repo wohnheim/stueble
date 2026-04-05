@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS configurations (
 INSERT INTO configurations (key, value) VALUES
 ('session_expiration_days', '30'),
 ('maximum_guests', '150'),
-('maximum_invites_per_user', '1'),
+('maximum_invites_per_user', '2'),
 ('maximum_guests_per_tutor', '10'),
 ('reset_code_expiration_minutes', '15'),
 ('qr_code_expiration_minutes', '10');

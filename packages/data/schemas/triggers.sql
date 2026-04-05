@@ -62,7 +62,7 @@ BEGIN
     THEN
         RETURN NEW;
     END IF;
-    DELETE FROM hosts
+    DELETE FROM stueble.hosts
     WHERE user_id = NEW.id
       AND stueble_id = (
         SELECT id

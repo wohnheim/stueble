@@ -61,7 +61,7 @@ def get_hosts_tutors(session_id: str, path: str, date: date | None = None) -> Fu
                 user_warning=str(result.error)
             )
             return response
-        tutors = [{"id": i[0], "firstName": i[1], "lastName": i[2], "residence": i[3]} for i in result.data]
+        tutors = [{"id": str(i[0]), "firstName": i[1], "lastName": i[2], "residence": i[3]} for i in result.data]
         response = FuncRes(
             data=tutors,
             status=Status.FULL_SUCCESS,

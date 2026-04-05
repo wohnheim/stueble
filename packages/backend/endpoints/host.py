@@ -3,6 +3,7 @@ import asyncio
 import json
 
 from flask import Blueprint, Response, request
+from psycopg import sql
 
 from backend import websocket as ws
 from backend.datatypes.stueble_types import UserRole
@@ -170,7 +171,6 @@ def update_hosts():
     stueble_id = result.data["stueble_id"]
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
-
     result = users.get_users(user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role"])
     if result.is_error:
         response = Response(
@@ -179,10 +179,11 @@ def update_hosts():
             mimetype="application/json")
         return response
     hosts_data = result.data
+    print(hosts_data, flush=True)
     hosts_data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in hosts_data if i["user_role"] == ('user' if request.method == "PUT" else 'host')]
     if len(hosts_data) != len(user_uuids):
         response = Response(
-            response=json.dumps({"code": 404, "message": "Tutoren und Admins können nicht zu Hosts gemacht werden"}), # "Not all users found"}),
+            response=json.dumps({"code": 404, "message": "Tutoren, Admins und Hosts können nicht zu Hosts gemacht werden"}),
             status=404,
             mimetype="application/json")
         return response
@@ -200,7 +201,10 @@ def update_hosts():
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
     if request.method == "DELETE":
-        result = db.custom_call(query="UPDATE users SET user_role = 'user' WHERE id IN %s AND user_role = 'host'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
+        query = sql.SQL("UPDATE users SET user_role = 'user' WHERE id IN ({user_ids}) AND user_role = 'host'").format(
+            user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids))
+        )
+        result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=user_ids)
         if result.is_error:
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -208,7 +212,10 @@ def update_hosts():
                 mimetype="application/json")
             return response
     else:
-        result = db.custom_call(query="UPDATE users SET user_role = 'host' WHERE id IN %s AND user_role = 'user'", type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=(tuple(user_ids),))
+        query = sql.SQL("UPDATE users SET user_role = 'host' WHERE id IN ({user_ids}) AND user_role = 'user'").format(
+            user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids))
+        )
+        result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=user_ids)
         if result.is_error:
             response = Response(
                 response=json.dumps({"code": 500, "message": str(result.error)}),
@@ -216,11 +223,11 @@ def update_hosts():
                 mimetype="application/json")
             return response
 
-    query = f"SELECT id FROM sessions WHERE user_id IN ({', '.join(['%s' for _ in range(len(user_ids))])})"
+    query = sql.SQL("SELECT id FROM sessions WHERE user_id IN ({user_ids})").format(user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
     result = db.custom_call(
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-        variables=tuple(user_ids)
+        variables=user_ids
     )
 
     if result.is_error:

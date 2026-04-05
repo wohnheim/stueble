@@ -39,7 +39,7 @@ def get_configuration(key: str) -> FuncRes:
                             code=404)
         )
     return FuncRes(
-            data=clean_single_data(result),
+            data=clean_single_data(result.data),
             status=Status.FULL_SUCCESS,
             message=Message(name="Get Configuration Success",
                             type="success",

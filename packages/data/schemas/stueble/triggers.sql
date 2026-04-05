@@ -151,7 +151,7 @@ BEGIN
                 IF inviter_users >=
                    maximum_invitees
                 THEN
-                    RAISE EXCEPTION 'Inviter % has already reached the maximum number of guests; code: 400', NEW.invited_by;
+                    RAISE EXCEPTION 'Inviter has already reached the maximum number of guests; code: 400';
                 END IF;
             END IF;
 
@@ -234,7 +234,7 @@ BEGIN
                             LIMIT 1),
                             'remove') != 'add' AND COALESCE((SELECT user_role FROM users WHERE id = NEW.invited_by), 'extern') NOT IN ('admin', 'tutor', 'host')
         THEN
-            RAISE EXCEPTION 'Inviter of user % is not registered for stueble % anymore; code: 400', NEW.user_id, NEW.stueble_id;
+            RAISE EXCEPTION 'Inviter of user is not registered for stueble anymore; code: 400';
             END IF;
     END IF;
 

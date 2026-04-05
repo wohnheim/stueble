@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Generic, TypeVar, Any
 import json
+import inspect
 
 
 class Status(Enum):
@@ -147,6 +148,14 @@ class FuncRes(Generic[T, E]):
                 type="success" if self.status != Status.FULL_ERROR else "error",
             )
         )
+        self._stack_trace = None
+        try:
+            frame = inspect.currentframe()
+            caller_frame = frame.f_back
+            caller_name = caller_frame.f_code.co_name
+            self._stack_trace = f"{caller_name} at {caller_frame.f_code.co_filename}:{caller_frame.f_lineno}"
+        except:
+            pass
 
     @property
     def data(self) -> T:
@@ -197,6 +206,16 @@ class FuncRes(Generic[T, E]):
             str | None: The user warning message or None if not set.
         """
         return self._user_warning
+    
+    @property
+    def stack_trace(self) -> str | None:
+        """
+        Get the stack trace information if available.
+
+        Returns:
+            str | None: The stack trace information or None if not available.
+        """
+        return self._stack_trace
 
     def to_json(self) -> dict:
         """

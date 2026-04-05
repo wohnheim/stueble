@@ -73,7 +73,7 @@ def get_info(date: date | None=None) -> FuncRes:
     """
     arguments = {}
     if date is not None:
-        arguments = {"conditions": {"date_of_time": date}, "order_by": ("date_of_time", 1)}
+        arguments = {"conditions": {"date_of_time": date}, "order_by": ("date_of_time", db.ORDER.ASC)}
     else:
         arguments = {"specific_where": sql.SQL("date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1")}
 
@@ -171,7 +171,7 @@ def create_stueble(date: date  | None, motto: str,
                             code=500)
         )
     return FuncRes(
-            data=clean_single_data(result),
+            data=clean_single_data(result.data),
             status=Status.FULL_SUCCESS,
             message=Message(name="Create Stueble Success",
                             type="success",
@@ -255,9 +255,8 @@ def update_stueble(date: date | None, **kwargs) -> FuncRes:
     )
 
 
-@db.cursor_handling(manually_supply_cursor=False)
 def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[list[int] | tuple[int] | None, "Explicit with user_uuid"] = None,
-                 user_uuids: Annotated[list[str] | tuple[str] | None, "Explicit with user_id"] = None, cursor: Cursor | None = None) -> FuncRes:
+                 user_uuids: Annotated[list[str] | tuple[str] | None, "Explicit with user_id"] = None) -> FuncRes:
     """
     adds a host to a stueble
 
@@ -265,7 +264,6 @@ def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: An
         stueble_id (int): id of the stueble
         user_ids (list[int | None]): ids of the users to be added as host, if None user_uuids must be provided
         user_uuids (list[str | None]): uuids of the users to be added as host, if None user_ids must be provided
-        cursor (Cursor | None): Cursor object for database connection. DO NOT SUPPLY MANUALLY, AS THE DECORATOR HANDLES IT
 
     Returns:
         FuncRes: Return object containing user ids or error
@@ -292,11 +290,11 @@ def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: An
         )
 
     if user_uuids is not None:
-        query = f"""SELECT id FROM users WHERE user_uuid IN ({', '.join(['%s' for _ in range(len(user_uuids))])})"""
+        query = sql.SQL("SELECT id FROM users WHERE user_uuid IN ({user_uuids})").format(user_uuids=sql.SQL(', ').join(sql.Placeholder() * len(user_uuids)))
         result = db.custom_call(
                        query=query,
                        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-                       variables=tuple(user_uuids))
+                       variables=user_uuids)
         if result.is_error:
             return FuncRes(
                 error=str(result.error),
@@ -318,19 +316,29 @@ def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: An
         user_ids = [i[0] for i in result.data]
 
     if method == "add":
-        rows = [(user_id, stueble_id) for user_id in user_ids] # type: ignore
-        query = """INSERT INTO stueble.hosts (user_id, stueble_id) VALUES %s"""
+        variables = [e for user_id in user_ids for e in (user_id, stueble_id)] # type: ignore
+        query = sql.SQL("INSERT INTO stueble.hosts (user_id, stueble_id) VALUES {vars}").format(
+            vars=sql.SQL(', ').join(sql.SQL("({user_id}, {stueble_id})").format(
+                user_id=sql.Placeholder(),
+                stueble_id=sql.Placeholder()
+                ) * len(user_ids)) # type ignore
+            )
     else:
-        rows = [tuple((user_id, stueble_id) for user_id in user_ids)] # type: ignore
-        query = """DELETE FROM stueble.hosts WHERE (user_id, stueble_id) IN %s"""
-    try:
-        cursor.executemany(query, rows) # type: ignore
-        cursor.connection.commit() # type: ignore
-    except DatabaseError as e:
-        cursor.connection.rollback() # type: ignore
-
+        variables = [e for user_id in user_ids for e in (user_id, stueble_id)] # type: ignore
+        query = sql.SQL("DELETE FROM stueble.hosts WHERE (user_id, stueble_id) IN ({vars})").format(
+            vars=sql.SQL(', ').join(sql.SQL("({user_id}, {stueble_id})").format(
+                user_id=sql.Placeholder(),
+                stueble_id=sql.Placeholder()
+                ) * len(user_ids)) # type ignore
+            )
+    result = db.custom_call(
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.NO_ANSWER,
+        variables=variables
+    )
+    if result.is_error:
         return FuncRes(
-            error=str(e),
+            error=str(result.error),
             status=Status.FULL_ERROR,
             message=Message(name="Update Hosts Error",
                             type="error",
@@ -358,7 +366,7 @@ def get_hosts(stueble_id: int) -> FuncRes:
 
     params = ["user_uuid", "first_name", "last_name", "residence"]
 
-    query = f"""SELECT {', '.join(['u.' + i for i in params])} FROM hosts h JOIN users u ON u.id = h.user_id WHERE h.stueble_id = %s"""
+    query = f"""SELECT {', '.join(['u.' + i for i in params])} FROM stueble.hosts h JOIN users u ON u.id = h.user_id WHERE h.stueble_id = %s"""
     result = db.custom_call(
                    query=query,
                    type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,

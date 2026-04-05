@@ -337,7 +337,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
                 for _, value_data in all_conditions.items()])) \
         .format(*[sql.Identifier(key) for key in all_conditions.keys()])
         if order_by is not None:
-            query += SQL(" ORDER BY {} {}").format(sql.Identifier(order_by[0], order_by[1].value))
+            query += SQL(" ORDER BY {col} {direction}").format(col=sql.Identifier(order_by[0]), direction=sql.SQL(order_by[1].value))
         # get data based on answer type
         data = fetch(query=query, type_of_answer=type_of_answer, variables=tuple(i["value"] for i in all_conditions.values()), commit=False)
         if data is None and type_of_answer == ANSWER_TYPE.LIST_ANSWER: data = []
@@ -397,7 +397,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
 def insert(
     table: str,
     values: dict[str, Any] | list[str] | None,
-    returning_column: str | None = None,
+    returning_column: str | sql.SQL | None = None,
     explicit_schema: str | None = None
 ) -> Result[Any, Exception]:
     """
@@ -407,7 +407,7 @@ def insert(
         cursor (Cursor): cursor for interaction with db
         table (str): table to insert into, if empty set all
         values (dict | list): values that should be entered (key: column, value: value), if empty, no conditions, if values is of type list, then list has to contain all values that have to be entered
-        returning_column (int): returns the column; IMPORTANT: returning_column is not being parametrized
+        returning_column (str | sql.SQL | None): returns the column; IMPORTANT: returning_column is not being parametrized
         explicit_schema (str | None): in case an explicit schema is provided ("" is valid), no schema splitting will be done
     Returns:
         Result: result object with data or error
@@ -418,7 +418,7 @@ def insert(
         values = dict()
     if returning_column == "":
         returning_column = None
-    query = ""
+    query = sql.SQL("")
     vals = []
 
     schema = explicit_schema if explicit_schema != "" else None
@@ -443,7 +443,7 @@ def insert(
 
     # add returning_column
     if returning_column is not None:
-        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
+        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column) if isinstance(returning_column, str) else returning_column)
 
     # run query
     data = fetch(query=query, type_of_answer=ANSWER_TYPE.SINGLE_ANSWER if returning_column is not None else ANSWER_TYPE.NO_ANSWER, variables=vals, commit=True)
@@ -457,7 +457,7 @@ def insert(
 # for specific_where conditions must be empty, otherwise conditions will be ignored IMPORTANT what is being ignored differs from the other functions
 def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
     table: str,
-    returning_column: str | None = None,
+    returning_column: str | sql.SQL | None = None,
     columns: dict[str, Any] | None = None,
     conditions: dict[str, Any] | None = None,
     specific_where: SQL | Composed = SQL(""),
@@ -476,7 +476,7 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
                               IMPORTANT what is being ignored differs from the other functions
         specific_set (SQL | Composed): columns must be empty, otherwise columns will be ignored,
                             specifies what should be set
-        returning_column (str): returns the specified column, returns just a single column
+        returning_column (str | sql.SQL | None): returns the specified column, returns just a single column
         explicit_schema (str | None): in case an explicit schema is provided ("" is valid), no schema splitting will be done
     Returns:
         Result: result object with data or error
@@ -508,7 +508,7 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
     # returning part
     if returning_column is not None:
-        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
+        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column) if isinstance(returning_column, str) else returning_column)
 
     # execute query
     data = fetch(query=query, type_of_answer=ANSWER_TYPE.SINGLE_ANSWER if returning_column is not None else ANSWER_TYPE.NO_ANSWER, variables=list(columns.values()) + list(conditions.values()))
@@ -520,7 +520,7 @@ def update(  # pylint: disable=too-many-positional-arguments, too-many-arguments
 def delete(
     table: str,
     conditions: dict[str, Any],
-    returning_column: str | None = None,
+    returning_column: str | sql.SQL | None = None,
     explicit_schema: str | None = None
 ) -> Result[Any, Exception]:
     """
@@ -530,7 +530,7 @@ def delete(
     Args:
         table (str): table to insert into, if empty set all
         conditions (dict): specify from which row to remove the data
-        returning_column (str): returns the specified column, returns just a single value
+        returning_column (str | sql.SQL | None): returns the specified column, returns just a single value
         explicit_schema (str | None): in case an explicit schema is provided ("" is valid), no schema splitting will be done
     Returns:
         Result: result object with data or error
@@ -553,7 +553,7 @@ def delete(
 
     # returning part
     if returning_column is not None:
-        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column))
+        query += SQL(" RETURNING {returning_column}").format(returning_column=sql.Identifier(returning_column) if isinstance(returning_column, str) else returning_column)
 
     data = fetch(query=query, type_of_answer=ANSWER_TYPE.SINGLE_ANSWER if returning_column is not None else ANSWER_TYPE.NO_ANSWER, variables=list(conditions.values()), commit=True)
 

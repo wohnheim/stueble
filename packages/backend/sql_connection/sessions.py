@@ -225,7 +225,7 @@ def get_user(session_id: str, keywords: tuple[str, ...] | list[str] | None = Non
 
     if len(keywords) == 1:
         return FuncRes(
-            data=clean_single_data(result),
+            data=clean_single_data(result.data),
             status=Status.FULL_SUCCESS,
             message=Message(name="Get User Success",
                             type="success",

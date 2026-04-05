@@ -65,6 +65,15 @@ def verify_user():
     """
     # load data
     data = request.get_json()
+
+    user_uuid = data.get("id", None)
+    if user_uuid is None:
+        response = Response(
+            response=json.dumps({"code": 400, "message": "The user id must be specified"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
     session_id = request.cookies.get("SID", None)
     if session_id is None:
         response = Response(
@@ -88,9 +97,8 @@ def verify_user():
             status=403,
             mimetype="application/json")
         return response
-    user_id = result.data["user_id"]
 
-    result = users.update_user(user_id=user_id,
+    result = users.update_user(user_uuid_key=user_uuid,
                                verified=True)
     if result.is_error:
         response = Response(
@@ -99,15 +107,17 @@ def verify_user():
             mimetype="application/json")
         return response
 
-    keywords = ["user_uuid", "first_name", "last_name", "user_role"]
-    result = users.get_user(user_id=user_id, columns=keywords)
+    keywords = ["user_uuid", "first_name", "last_name", "user_role", "id"]
+    result = users.get_user(user_uuid=user_uuid, columns=keywords)
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
             mimetype="application/json")
         return response
-    user_info = {key: value for key, value in zip(keywords, result.data)}
+    user_info = result.data
+
+    user_id = user_info["id"]
 
     result = users.check_user_present(user_id=user_id)
     if result.is_error:
@@ -370,6 +380,9 @@ def search_intern():
         result = db.custom_call(query=query,
                                 type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
                                 variables=variables)
+        
+        if result.data is not None:
+            result._data = [dict(zip(keywords, entry)) for entry in result.data]
 
     if result.is_error:
         response = Response(

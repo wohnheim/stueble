@@ -192,13 +192,31 @@ def guest_list(stueble_id: int | None = None) -> FuncRes:
 
     parameters = {}
 
+    with_statement = sql.SQL("")
+    stueble_info = sql.SQL("")
+
     if stueble_id is None:
-        stueble_info = """(SELECT id FROM stueble.motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE -1) ORDER BY date_of_time ASC LIMIT 1)"""
+        with_statement = sql.SQL("WITH stueble_info AS (SELECT id FROM stueble.motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1)")
+        stueble_info = sql.SQL("(SELECT id FROM stueble_info)")
     else:
-        stueble_info = "%s"
+        stueble_info = sql.SQL("{info}").format(info=sql.Placeholder())
         parameters["variables"] = [stueble_id]
 
-    query = f"""
+    columns = [
+        "first_name",
+        "last_name",
+        "user_role",
+        "user_uuid",
+        "verified",
+        "room",
+        "residence",
+        "present",
+        "invited_by"
+]
+
+    query = sql.SQL("""
+{with_statement}
+
 SELECT 
     first_name, 
     last_name, 
@@ -207,7 +225,7 @@ SELECT
     verified, 
     room, 
     residence, 
-    COALESCE((SELECT event_type FROM stueble.events WHERE user_id = users_user_id AND event_type IN ('arrive', 'leave', 'remove') AND stueble_id = {stueble_info}ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive' AS present, 
+    COALESCE((SELECT event_type FROM stueble.events WHERE user_id = users_user_id AND event_type IN ('arrive', 'leave', 'remove') AND stueble_id = {stueble_info} ORDER BY submitted DESC LIMIT 1), 'leave') = 'arrive' AS present, 
     (SELECT user_uuid FROM users WHERE users.id = invited_by) AS invited_by
 FROM (
     SELECT
@@ -230,7 +248,9 @@ FROM (
 ) AS all_events
 WHERE rn = 1
   AND event_type = 'add';
-    """
+    """).format(with_statement=with_statement,
+                stueble_info=stueble_info
+        )
 
     result = db.custom_call(
         query=query,
@@ -246,21 +266,23 @@ WHERE rn = 1
                             category="Guest List",
                             code=500)
         )
+    
+    result._data = [{k: v for k, v in zip(columns, guest)} for guest in result.data]
 
     infos = []
 
     for guest in result.data:
-        data_pack = {"firstName": guest[0],
-                     "lastName": guest[1],
-                     "extern": guest[2],
-                     "id": guest[3],
-                     "present": guest[7]}
+        data_pack = {"firstName": guest["first_name"],
+                     "lastName": guest["last_name"],
+                     "extern": guest["user_role"] == "extern",
+                     "id": str(guest["user_uuid"]),
+                     "present": guest["present"]}
         if data_pack["extern"] is False:
-            data_pack["roomNumber"] = guest[5]
-            data_pack["residence"] = guest[6]
-            data_pack["verified"] = guest[4]
+            data_pack["roomNumber"] = guest["room"]
+            data_pack["residence"] = guest["residence"]
+            data_pack["verified"] = guest["verified"]
         else:
-            data_pack["invitedBy"] = guest[8]
+            data_pack["invitedBy"] = guest["invited_by"]
         infos.append(data_pack)
 
     return FuncRes(

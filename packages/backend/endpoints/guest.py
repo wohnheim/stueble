@@ -7,6 +7,7 @@ import datetime
 import json
 
 from flask import Blueprint, request, Response
+from psycopg import sql
 
 from backend import hash_pwd as hp, websocket as ws, qr_code as qr
 from backend.datatypes.stueble_types import *
@@ -315,13 +316,21 @@ def attend_stueble():
         # TODO unneccessary
         timestamp = int(datetime.datetime.now().timestamp())
 
-        information = {"id": user_uuid, "timestamp": timestamp, "extern": False}
+        information = {"id": str(user_uuid), "timestamp": timestamp, "extern": False}
 
         signature = hp.create_signature(message=information)
 
+        if signature.is_error:
+            response = Response(
+                response=json.dumps({"code": 500, "message": str(signature.error)}),
+                status=500,
+                mimetype="application/json")
+            return response
+
         data = {"data":
                     information,
-                "signature": signature}
+                "signature": signature.data}
+        
         response = Response(
             response=json.dumps(data),
             status=200,
@@ -476,7 +485,7 @@ def invitee():
             user_role=UserRole.EXTERN,
             first_name=invitee_first_name,
             last_name=invitee_last_name,
-            returning_column="id, user_uuid") # id, user_uuid on purpose like that
+            returning_column=sql.SQL("{id}, {user_uuid}").format(id=sql.Identifier("id"), user_uuid=sql.Identifier("user_uuid"))) # id, user_uuid on purpose like that
 
     else:
         # get user to remove
@@ -492,7 +501,7 @@ def invitee():
             mimetype="application/json")
         return response
     if request.method == "PUT":
-        created_invitee_id = result.data["id"]
+        created_invitee_id = result.data[0] if request.method == "PUT" else result.data["id"]
 
     if request.method == "DELETE":
         possible_users = result.data
@@ -504,10 +513,10 @@ def invitee():
             return response
         users_list = []
         for i in possible_users:
-            query = """
+            query = sql.SQL("""
             SELECT user_id FROM stueble.events
-            WHERE user_id = %s AND stueble_id = %s AND event_type = 'add' AND invited_by = %s
-            ORDER BY submitted DESC LIMIT 1"""
+            WHERE user_id = {user_id} AND stueble_id = {stueble_id} AND event_type = 'add' AND invited_by = {invited_by}
+            ORDER BY submitted DESC LIMIT 1""").format(user_id=sql.Placeholder(), stueble_id=sql.Placeholder(), invited_by=sql.Placeholder())
             result = db.custom_call(query=query,
                                     type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
                                     variables=[i[0], stueble_id, user_id])
@@ -553,8 +562,8 @@ def invitee():
         invitee_id = users_list[0]["invitee_id"]
         invitee_uuid = users_list[0]["invitee_uuid"]
     else:
-        invitee_id = result.data["id"]
-        invitee_uuid = result.data["user_uuid"]
+        invitee_id = result.data[0] if request.method == "PUT" else result.data["id"]
+        invitee_uuid = str(result.data[1]) if request.method == "PUT" else result.data["user_uuid"]
 
     if request.method == "PUT":
         result = events.add_guest(
@@ -574,7 +583,7 @@ def invitee():
             status_code = status_code.split("\n")[0]
             status_code = int(status_code)
         if request.method == "PUT":
-            result = db.delete(table="users", conditions={"id": created_invitee_id}) # type: ignore
+            result = db.delete(table="users", conditions={"id": created_invitee_id})
             if result.is_error:
                 response = Response(
                     response=json.dumps({"code": 500, "message": str(result.error)}),

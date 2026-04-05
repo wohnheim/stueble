@@ -1,3 +1,6 @@
+
+from psycopg import sql
+
 from backend.database import database as db
 from backend.sql_connection.ultimate_functions import clean_single_data
 from backend.datatypes.funcres import FuncRes, Message, Status
@@ -22,16 +25,17 @@ def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> F
     result = db.insert(
         table="stueble.events",
         values=values,
-        returning_column="NOW()")
+        returning_column=sql.SQL("NOW()"))
 
     if result.is_error:
+        res = None
         return FuncRes(
-            error=str(result.error),
+            error=str(result.error) if "; code: " not in str(result.error) else (res := str(result.error).split("; code: ", 1))[0],
             status=Status.FULL_ERROR,
             message=Message(name="Add Guest Error",
                             type="error",
                             category="Add Guest",
-                            code=500)
+                            code=500 if res is None else int(res[1].split("\n")[0]))
         )
     # maybe shouldn't be possible, but still left in
     if result.data is None:
@@ -44,7 +48,7 @@ def add_guest(user_id: int, stueble_id: int, invited_by: int | None = None) -> F
                             code=500)
         )
     return FuncRes(
-        data=clean_single_data(result),
+        data=clean_single_data(result.data),
         status=Status.FULL_SUCCESS,
         message=Message(name="Add Guest Success",
                         type="success",
@@ -64,20 +68,20 @@ def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
     """
     if stueble_id == -1:
         # get all stueble ids where the user is currently added
-        query = f"""
-        INSERT INTO stueble.events (user_id, event_type, stueble_id)
-        SELECT user_id, 'remove', stueble_id FROM
-        (SELECT user_id, stueble_id
-        FROM
-            (SELECT DISTINCT ON (stueble.events.stueble_id) stueble.events.*
+        query = """
+        WITH stuebles AS (
+            SELECT DISTINCT ON (stueble.events.stueble_id) stueble.events.*
             FROM stueble.events
                 LEFT JOIN stueble.motto sm ON sm.id = stueble.events.stueble_id
             WHERE ((sm.date_of_time >= CURRENT_DATE)
-               OR (CURRENT_TIME <= '06:00:00' AND sm.date_of_time = CURRENT_DATE - 1))
-                      AND stueble.events.user_id = %s
-                      AND stueble.events.event_type IN ('add', 'remove')
-            ORDER BY stueble.events.stueble_id, stueble.events.submitted DESC ) AS stuebles
-        WHERE stuebles.event_type = 'add') AS to_remove
+                OR (CURRENT_TIME <= '06:00:00' AND sm.date_of_time = CURRENT_DATE - 1))
+                        AND stueble.events.user_id = %s
+                        AND stueble.events.event_type IN ('add', 'remove')
+            ORDER BY stueble.events.stueble_id, stueble.events.submitted DESC 
+        )
+
+        INSERT INTO stueble.events (user_id, event_type, stueble_id)
+        SELECT user_id, 'remove', stueble_id FROM stuebles
         RETURNING stueble_id;
         """
         result = db.custom_call(
@@ -107,7 +111,8 @@ def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
         result = db.insert(
             table="stueble.events",
             values={"user_id": user_id, "stueble_id": stueble_id, "event_type": "remove"},
-            returning_column="NOW()")
+            returning_column=sql.SQL("NOW()")
+        )
         # maybe shouldn't be possible, but still left in
         if result.is_error:
             return FuncRes(
@@ -128,7 +133,7 @@ def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
                                 code=500)
             )
         return FuncRes(
-            data=clean_single_data(result),
+            data=clean_single_data(result.data),
             status=Status.FULL_SUCCESS,
             message=Message(name="Remove Guest Success",
                             type="success",
@@ -148,9 +153,14 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
         FuncRes: Return object with success status and data containing a boolean indicating if the user is a guest if successful, error message if error occurred
     """
 
-    # TODO: add 6 o'clock handling
     if stueble_id is None:
-        query = """SELECT id FROM stueble.motto WHERE date_of_time >= CURRENT_DATE OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - INTERVAL '1 day') ORDER BY date_of_time ASC LIMIT 1"""
+        query = sql.SQL("""
+                        SELECT id
+                        FROM stueble.motto
+                        WHERE date_of_time >= CURRENT_DATE
+                            OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - INTERVAL '1 day')
+                        ORDER BY date_of_time ASC LIMIT 1
+                    """).format()
         result = db.custom_call(
             query=query,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
@@ -166,17 +176,18 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
             )
         if result.data is None:
             return FuncRes(
-                error="no stueble party_user found",
+                error="no stueble party found",
                 status=Status.FULL_ERROR,
                 message=Message(name="Check Guest Error",
                                 type="error",
                                 category="Check Guest",
-                                code=404)
+                                code=404),
+                user_warning="no stueble party found"
             )
-        stueble_id = result.data["id"]
+        stueble_id = result.data[0]
 
 
-    query = f"""
+    query = sql.SQL("""
             SELECT 'add' =
                    COALESCE((SELECT event_type
                              FROM stueble.events
@@ -185,7 +196,7 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
                                AND event_type IN ('add', 'remove')
                              ORDER BY submitted DESC
                              LIMIT 1), 'remove')
-            """
+            """).format()
     result = db.custom_call(
         query=query,
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
@@ -208,11 +219,12 @@ def check_guest(user_id: int, stueble_id: int | None = None) -> FuncRes:
             message=Message(name="Check Guest Error",
                             type="error",
                             category="Check Guest",
-                            code=404)
+                            code=404),
+            user_warning="user not on guest_list"
         )
 
     return FuncRes(
-        data=clean_single_data(result),
+        data=clean_single_data(result.data),
         status=Status.FULL_SUCCESS,
         message=Message(name="Check Guest Success",
                         type="success",

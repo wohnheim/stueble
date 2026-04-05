@@ -57,7 +57,7 @@ def get_applications(user_id: int) -> Result:
         Result: A Result object containing a list of applications or an error message.
     """
     columns = ["uuid", "date", "motto", "application_priority", "application_group"]
-    query = sql.SQL("WITH a (application_group) AS (SELECT application_group FROM sql.applicants WHERE user_id = {user_id}) \" \
+    query = sql.SQL("WITH a (application_group) AS (SELECT application_group FROM stueble.applicants WHERE user_id = {user_id}) \" \
                     \
                     SELECT {columns} \
                     FROM stueble.applications \

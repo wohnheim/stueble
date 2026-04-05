@@ -30,3 +30,6 @@ pg_data/
 
 # Nix
 result
+
+# Testing
+packages/backend/testing/

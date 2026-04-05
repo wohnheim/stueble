@@ -89,7 +89,7 @@ def add_user(user_role: UserRole,
             )
     if returning_column is not None and ", " not in returning_column:
             response = FuncRes(
-                data=clean_single_data(result.data),
+                data=clean_single_data(result.data) if not ", " in (returning_column if isinstance(returning_column, str) else returning_column.as_string()) else result.data,
                 status=Status.FULL_SUCCESS,
                 message=Message(name="Add User Success",
                                 type="success",
@@ -383,7 +383,7 @@ def get_user(
         )
         
     return FuncRes(
-        data=result.data,
+        data={key: value if key != "user_uuid" else str(value) for key, value in result.data.items()}, # type: ignore
         status=Status.FULL_SUCCESS,
         message=Message(name="Get User Success",
                         type="success",
@@ -403,8 +403,8 @@ def get_invited_friends(user_id: int, stueble_id: int) -> FuncRes:
     """
     
     arguments = ["first_name", "last_name", "user_uuid"]
-    query = f"""
-    SELECT {', '.join(['u.' + i for i in arguments])}
+    query = sql.SQL("""
+    SELECT {columns}
     FROM (SELECT user_id
           FROM (SELECT DISTINCT ON (user_id) *
                 FROM stueble.events
@@ -415,7 +415,9 @@ def get_invited_friends(user_id: int, stueble_id: int) -> FuncRes:
           WHERE latest_event.event_type = 'add'
           ORDER BY user_id) AS invitees
     JOIN users u ON invitees.user_id = u.id;
-    """
+    """).format(
+        columns=sql.SQL(', ').join([sql.Identifier('u') + sql.SQL('.') + sql.Identifier(i) for i in arguments])
+    )
 
     # check how many friends were invited by the user to a specific stueble party
     result = db.custom_call(
@@ -436,7 +438,7 @@ def get_invited_friends(user_id: int, stueble_id: int) -> FuncRes:
 
     if result.is_success and len(result.data) == 0:
         # if no friends were invited, check if user is registered for the specific stueble
-        query = """
+        query = sql.SQL("""
         SELECT 'add' =
         COALESCE((SELECT event_type
         FROM stueble.events
@@ -445,7 +447,7 @@ def get_invited_friends(user_id: int, stueble_id: int) -> FuncRes:
           AND event_type IN ('add', 'remove')
         ORDER BY submitted DESC
         LIMIT 1), 'remove')
-        """
+        """).format()
         result = db.custom_call(
             query=query,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
@@ -693,11 +695,14 @@ def get_users(user_uuids: list[str],
     keywords = list(keywords)
     # users_list = [(i, "email") if isinstance(i, str) and "@" in i else (i, "user_name") for i in information]
 
-    query = f"SELECT {', '.join(keywords)} FROM users WHERE user_uuid IN ({', '.join(['%s' for _ in range(len(user_uuids))])})"
+    query = sql.SQL("SELECT {columns} FROM users WHERE user_uuid IN ({placeholders})").format(
+        columns=sql.SQL(", ").join(sql.Identifier(k) for k in keywords),
+        placeholders=sql.SQL(", ").join(sql.Placeholder() for _ in user_uuids)
+    )
     result = db.custom_call(
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-        variables=tuple(user_uuids))
+        variables=user_uuids)
 
     if result.is_error:
         return FuncRes(
@@ -717,12 +722,14 @@ def get_users(user_uuids: list[str],
                             category="Get Users",
                             code=404)
         )
+
+    data = [dict(zip(keywords, user)) for user in result.data]
     
-    for i in result.data:
+    for i in data:
         i["user_uuid"] = str(i["user_uuid"])
 
     return FuncRes(
-        data=result.data,
+        data=data,
         status=Status.FULL_SUCCESS,
         message=Message(name="Get Users Success",
                         type="success",
@@ -740,10 +747,10 @@ def check_user_guest_list(user_id: int) -> FuncRes:
         FuncRes: whether the user is on the guest list if successful, error otherwise
     """
 
-    query = """SELECT (COALESCE(
+    query = sql.SQL("""SELECT (COALESCE(
   (SELECT event_type
    FROM stueble.events
-   WHERE user_id = %s
+   WHERE user_id = {user_id}
      AND stueble_id = (
        SELECT id
        FROM stueble.motto
@@ -756,7 +763,7 @@ def check_user_guest_list(user_id: int) -> FuncRes:
    LIMIT 1
   ),
   'remove'
-)) != 'remove'"""
+)) != 'remove'""").format(user_id=sql.Placeholder())
 
     result = db.custom_call(
         query=query,
@@ -800,19 +807,21 @@ def check_user_present(user_id: int) -> FuncRes:
         FuncRes: whether the user is currently present if successful, error otherwise
     """
 
-    query = """SELECT COALESCE(
+    query = sql.SQL("""SELECT COALESCE(
             (SELECT event_type
              FROM stueble.events
-             WHERE user_id = 1
+             WHERE user_id = {user_id}
                AND stueble_id = (SELECT id
                                  FROM stueble.motto
                                  WHERE date_of_time >= CURRENT_DATE
-                                    OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - 1)
+                                    OR (CURRENT_TIME < '06:00:00' AND date_of_time = CURRENT_DATE - INTERVAL '1 day')
                                  ORDER BY date_of_time ASC
                                  LIMIT 1)
              ORDER BY submitted DESC
              LIMIT 1),
-            'remove') = 'arrive' AS is_registered"""
+            'remove') = 'arrive' AS is_registered""").format(
+                user_id=sql.Placeholder()
+            )
 
     result = db.custom_call(
         query=query,
