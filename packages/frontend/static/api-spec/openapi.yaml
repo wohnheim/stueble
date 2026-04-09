@@ -6,6 +6,7 @@ tags:
     description: Operations about session management
   - name: websocket
     description: Operations about WebSocket connections.
+
 paths:
   /auth/login:
     post:
@@ -335,7 +336,7 @@ paths:
       security:
         - host_sid: []
 
-  /guests:
+  /stueble/guests:
     get:
       tags:
         - guests
@@ -430,10 +431,10 @@ paths:
       security:
         - guest_sid: []
 
-  /guest:
+  /stueble/guest:
     post:
       tags:
-        - guests
+        - stueble
       summary: Modify a guest.
       description: Modifies properties of a specified guest.
       operationId: modifyGuest
@@ -503,7 +504,7 @@ paths:
       description: |-
         Removes a previously invited friend from the guest list.
         The disinviting person needs to be registered for the stueble.
-      operationId: inviteExtern
+      operationId: disinviteExtern
       requestBody:
         required: true
         description: A JSON string specifying the guest.
@@ -527,9 +528,10 @@ paths:
       security:
         - guest_sid: []
 
-  /hosts:
+  /stueble/hosts:
     get:
       tags:
+        - stueble
         - hosts
       summary: Returns the hosts.
       description: |
@@ -619,6 +621,119 @@ paths:
                 $ref: "#/components/responses/Error"
       security:
         - tutor_sid: []
+
+  /stueble/dates:
+    get:
+      tags:
+        - stueble
+        - application
+      summary: Returns the dates.
+      description: |
+        Fetches the available dates with number of current (not rejected) applications.
+        After the selection by a tutor the number can by zero or one.
+      operationId: getStuebleDates
+      responses:
+        "200":
+          description: Current tutors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "common.yaml#/components/schemas/StuebleDate"
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+
+  /stueble/application:
+    post:
+      tags:
+        - stueble
+        - application
+      summary: Submit application
+      description: |
+        Submit an application for the specified stueble dates.
+      operationId: addApplication
+      requestBody:
+        required: true
+        description: The stueble application that should be added.
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "common.yaml#/components/schemas/StuebleApplicationRequest"
+      responses:
+        "201":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/StuebleApplication"
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+    get:
+      tags:
+        - stueble
+        - application
+      summary: Returns own applications.
+      description: |
+        Fetches all submitted applications.
+      operationId: getApplications
+      responses:
+        "201":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "common.yaml#/components/schemas/StuebleApplication"
+        "401":
+          description: Authentication failure.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
+    delete:
+      tags:
+        - stueble
+        - application
+      summary: Delete application.
+      description:
+        Delete the specified application.
+      operationId: removeApplication
+      requestBody:
+        required: true
+        description: A JSON object containing the identifier of the application that should be removed.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/StuebleApplicationDeletionRequest"
+      responses:
+        "204":
+          description: Application successfully deleted.
+        "401":
+          description: Authentication failure.
+        "404":
+          description: Application not found.
+        "5xx":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/Error"
 
   /tutors:
     get:
@@ -713,9 +828,10 @@ paths:
       security:
         - admin_sid: []
 
-  /motto:
+  /stueble/motto:
     post:
       tags:
+        - stueble
         - motto
       summary: Modify motto.
       description: >

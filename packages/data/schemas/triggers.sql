@@ -1,11 +1,3 @@
-CREATE OR REPLACE FUNCTION set_uuid_hash()
-RETURNS trigger AS $$
-BEGIN
-    NEW.user_uuid := gen_random_uuid();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION set_session_id()
 RETURNS trigger AS $$
 BEGIN
@@ -14,19 +6,6 @@ BEGIN
         NEW.session_id := gen_random_uuid();
     ELSE
         NEW.session_id := OLD.session_id;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION set_reset_code()
-RETURNS trigger AS $$
-BEGIN
-    IF OLD.reset_code IS NULL
-    THEN
-        NEW.reset_code := gen_random_uuid();
-    ELSE
-        NEW.reset_code := OLD.reset_code;
     END IF;
     RETURN NEW;
 END;
@@ -129,10 +108,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE TRIGGER set_uuid_hash_trigger
-    BEFORE INSERT ON users -- only on insert
-    FOR EACH ROW EXECUTE FUNCTION set_uuid_hash();
-
 CREATE OR REPLACE TRIGGER check_user_constants
     BEFORE UPDATE ON users -- only on updates
     FOR EACH ROW EXECUTE FUNCTION check_user_constants();
@@ -144,10 +119,6 @@ CREATE OR REPLACE TRIGGER remove_hosts_trigger
 CREATE OR REPLACE TRIGGER set_session_id_trigger
     BEFORE INSERT OR UPDATE ON sessions
     FOR EACH ROW EXECUTE FUNCTION set_session_id();
-
-CREATE OR REPLACE TRIGGER set_reset_code_trigger
-    BEFORE INSERT ON verification_codes
-    FOR EACH ROW EXECUTE FUNCTION set_reset_code();
 
 CREATE OR REPLACE TRIGGER add_websockets_affected_trigger
     BEFORE INSERT ON websocket_messages

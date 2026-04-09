@@ -1,0 +1,45 @@
+<html lang="de">
+  <body
+    style="
+      background-color: #430101;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <div>
+      <img src="cid:{{.ContentId}}" alt="Stüble Logo" width="150" />
+    </div>
+
+    <h2>Hallo {{.FirstName}} {{.LastName}},</h2>
+    <p>Du hast einen Account für das Stüble erstellt.</p>
+    <p>
+      Um die Registrierung abzuschließen, musst du noch deine Email bestätigen.
+    </p>
+    <br />
+    <div style="text-align: center; margin: 20px 0">
+      <a
+        href="{{.FrontendUrl}}/verify?token={{.VerificationToken}}"
+        style="
+          background-color: #0b9a79;
+          color: #ffffff;
+          box-shadow: 0 0 10px #da6cff;
+
+          display: inline-block;
+          padding: 12px 24px;
+          border-radius: 5px;
+          text-decoration: none;
+          font-family: Arial, sans-serif;
+          font-weight: bold;
+        "
+      >
+        Email bestätigen
+      </a>
+    </div>
+
+    <br />
+    <p>Wir freuen uns auf dich!</p>
+    <p>Dein Stüble-Team</p>
+  </body>
+</html>

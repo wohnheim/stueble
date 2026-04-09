@@ -137,11 +137,43 @@ let
 in
 {
   # Development shell (doesn't contain source code)
-  devShells.default = pkgs.mkShell {
+  devShells.default = pkgs.mkShell (let
+    initDB = pkgs.writeShellScriptBin "init-stueble-db" ''
+      set -e
+
+      if [ ! -e .git ]; then
+          echo "Unsupported working directory. Change working directory to repository root." >&2
+          exit 1
+      fi
+
+      if [ ! -d pg_data ]; then
+          CREATE_SCHEMA=1
+          initdb -A trust 1>/dev/null
+      fi
+
+      if [ "$CREATE_SCHEMA" == "1" ]; then
+          pg_ctl -s -l logs/database.log -o "--unix_socket_directories='$PGHOST'" start
+
+          createdb 1>/dev/null
+          psql -q -f packages/data/schemas/create_tables.sql
+          psql -q -f packages/data/schemas/triggers.sql
+          psql -q -f packages/data/schemas/stueble/create_tables.sql
+          psql -q -f packages/data/schemas/stueble/triggers.sql
+          psql -q -f packages/data/schemas/events/create_tables.sql
+
+          cd packages
+          python -m backend.initialization.add_admins
+          cd ..
+
+          pg_ctl -s stop
+      fi
+    '';
+  in {
     packages = [
       pkgs.overmind
       pkgs.postgresql_18
       pkgs.nginx
+      initDB
 
       virtualenv
       pkgs.uv
@@ -175,7 +207,7 @@ in
       export PGHOST="$PWD"
 
       if [ -e .overmind.sock ]; then
-          if overmind status 1>/dev/null; then
+          if overmind status 1>/dev/null 2>&1; then
               echo $(($(cat .OVERMIND_REF_COUNT) + 1)) > .OVERMIND_REF_COUNT
               SKIP_OVERMIND=1
           else
@@ -189,34 +221,14 @@ in
           set +a
       fi
 
-      if [ ! -d pg_data ]; then 
-          CREATE_SCHEMA=1
-          initdb 1>/dev/null
-      fi
-
       mkdir -p logs
 
-      if [ "$CREATE_SCHEMA" == "1" ]; then
-          pg_ctl -s -l logs/database.log -o "--unix_socket_directories='$PGHOST'" start
-
-          createdb 1>/dev/null
-          psql -q -f packages/data/schemas/create_tables.sql
-          psql -q -f packages/data/schemas/triggers.sql
-          psql -q -f packages/data/schemas/stueble/create_tables.sql
-          psql -q -f packages/data/schemas/stueble/triggers.sql
-          psql -q -f packages/data/schemas/events/create_tables.sql
-
-          cd packages
-          python -m backend.initialization.add_admins
-          cd -
-
-          pg_ctl -s stop
-      fi
+      init-stueble-db
 
       trap "if [ ! -e .OVERMIND_REF_COUNT ] || [ \"\$(cat .OVERMIND_REF_COUNT)\" == '1' ]; then rm -f .OVERMIND_REF_COUNT; test -e '$PWD/.overmind.sock' && overmind quit --socket '$PWD/.overmind.sock'; else echo \$((\$(cat .OVERMIND_REF_COUNT) - 1)) > .OVERMIND_REF_COUNT; fi" EXIT
       if [ "$SKIP_OVERMIND" != "1" ]; then
           overmind start # && echo "1" > .OVERMIND_REF_COUNT
       fi
     '';
-  };
+  });
 }

@@ -9,6 +9,7 @@ import signal
 import sys
 import threading
 import time
+from types import FrameType
 
 from waitress import serve
 
@@ -29,15 +30,15 @@ def run_websocket():
     print(f"Starting WebSocket server in thread {threading.current_thread().name}...")
     asyncio.run(websocket.main())
 
-def signal_handler(sig, frame):
+def signal_handler(_sig: int, _frame: FrameType | None):
     """Handle Ctrl+C gracefully"""
     print('\nShutting down servers...')
-    sys.exit(0)
+    sys.exit(130)
 
 def main():
     """Main function to start both servers in separate threads"""
     # Set up signal handler for graceful shutdown
-    signal.signal(signal.SIGINT, signal_handler)
+    _ = signal.signal(signal.SIGINT, signal_handler)
     
     print("Starting Stueble application with threading...")
     print("SUCCESS: Variables WILL be shared between Flask and WebSocket threads!")

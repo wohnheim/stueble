@@ -1,19 +1,26 @@
 from backend.database import database as db
 from backend import hash_pwd
+import os
 
-pwd_hes = input("Bitte gib ein Passwort für das Administratorenkonto ein: ")
+pwd_admin = os.getenv("ADMIN_PASSWORD")
+interactive = False
 
-if not pwd_hes:
-    raise Exception("Please set pwd_hes")
+if not pwd_admin:
+    pwd_hes = input("Please enter a password for the admin account: ")
+    interactive = True
 
-password_hes = hash_pwd.hash_pwd(pwd_hes)
+if not pwd_admin:
+    raise Exception("Invalid password")
+
+bcrypt_hash = hash_pwd.hash_pwd(pwd_admin)
 result = db.insert(
     table="users",
-    values={"user_role":"admin",  "room": 0, "residence": "altbau", "first_name": "Super", "last_name": "Admin", "email": "tutorenhes@gmail.com", "user_name": "admin", "password_hash": password_hes},
+    values={"user_role":"admin",  "room": 0, "residence": "altbau", "first_name": "Super", "last_name": "Admin", "email": "tutorenhes@gmail.com", "user_name": "admin", "password_hash": bcrypt_hash, "password_algorithm": "bcrypt"},
     returning_column="id")
 if result.is_error:
     raise result.error
 
-print("Admin user added.")
+if interactive:
+    print("Admin user added.")
 
 db.__close_pool()

@@ -1,6 +1,6 @@
 <script lang="ts">
   import ui from "beercss";
-  import { onDestroy, type Snippet } from "svelte";
+  import { onDestroy, untrack, type Snippet } from "svelte";
 
   let {
     header,
@@ -28,7 +28,7 @@
     footerSnippet?: Snippet;
   } = $props();
 
-  let headerVisible = $state(forceHeaderVisible);
+  let headerVisible = $state(untrack(() => forceHeaderVisible));
   let observer: IntersectionObserver;
 
   const inViewport = (e: Element) => {

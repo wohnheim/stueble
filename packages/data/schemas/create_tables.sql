@@ -10,21 +10,32 @@ CREATE TYPE USER_ROLE AS ENUM ('admin', 'tutor', 'host', 'user', 'extern');
 CREATE TYPE RESIDENCE AS ENUM('altbau', 'neubau', 'anbau', 'hirte');
 
 -- table to save users
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
+    user_uuid UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(), -- added for personal references, not as easy to guess as id
     user_role USER_ROLE NOT NULL,
-    room INTEGER CHECK ((user_role = 'extern' AND room IS NULL) OR (user_role != 'extern' AND room > 0 AND user_role != 'admin') OR (user_role = 'admin' AND room = 0)),
-    residence RESIDENCE NULL CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence IS NOT NULL)),
+    room INTEGER CHECK ((user_role = 'extern' AND room IS NULL) OR (user_role != 'extern' AND user_role != 'admin' AND room > 0) OR (user_role = 'admin' AND room = 0)),
+    residence RESIDENCE NULL CHECK ((user_role = 'extern') = (residence IS NULL)),
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-    password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
-    email VARCHAR(255) UNIQUE CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR password_hash is NULL),
+    password_hash VARCHAR(255) CHECK ((user_role = 'extern') = (password_hash IS NULL)),
+    password_salt VARCHAR(64) CHECK ((password_algorithm = 'bcrypt' OR password_hash IS NULL) = (password_salt IS NULL)),
+    password_algorithm VARCHAR(20) CHECK (num_nulls(password_hash, password_algorithm) IN (0, 2)),
+    email VARCHAR(255) CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR (password_hash is NULL AND email is NOT NULL)),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    user_uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    user_name TEXT CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL)),
-    verified BOOLEAN DEFAULT FALSE
+    user_name TEXT CHECK ((user_role = 'extern') = (user_name IS NULL)),
+    verified BOOLEAN DEFAULT FALSE,
+    deleted BOOLEAN DEFAULT FALSE
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_room_residence_key ON users (room, residence) WHERE (user_role != 'extern' AND NOT deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON users (email) WHERE (user_role != 'extern' AND NOT deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS users_user_name_key ON users (user_name) WHERE (user_role != 'extern' AND NOT deleted);
+
+COMMIT;
 
 -- table to save login sessions
 CREATE TABLE IF NOT EXISTS sessions (
@@ -44,20 +55,16 @@ CREATE TABLE IF NOT EXISTS configurations (
 
 -- set default configuration values
 INSERT INTO configurations (key, value) VALUES
-('session_expiration_days', '30'),
 ('maximum_guests', '150'),
 ('maximum_invites_per_user', '2'),
-('maximum_guests_per_tutor', '10'),
-('reset_code_expiration_minutes', '15'),
-('qr_code_expiration_minutes', '10');
+('maximum_guests_per_tutor', '10');
 
 CREATE TABLE IF NOT EXISTS verification_codes (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    additional_data JSONB, -- to store optional changes in users
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    reset_code UUID UNIQUE NOT NULL,
-    additional_data JSONB DEFAULT NULL, -- to store optional changes in users
-    used BOOLEAN DEFAULT FALSE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    expiration_date TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS websocket_messages (
@@ -76,6 +83,3 @@ CREATE TABLE IF NOT EXISTS websockets_affected (
     received BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_DATE
 );
-
-ALTER TABLE users
-ADD CONSTRAINT unique_room_residence UNIQUE (room, residence);
