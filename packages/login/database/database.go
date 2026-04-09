@@ -8,9 +8,8 @@ import (
 )
 
 type DatabasePool struct {
-	Pool    *pgxpool.Pool
-	Context context.Context
-	mutex   sync.Mutex
+	Pool  *pgxpool.Pool
+	mutex sync.Mutex
 
 	verificationCodeTTL int
 }
@@ -20,14 +19,14 @@ func CreateDatabasePool(url string, verificationCodeTTL int) (*DatabasePool, err
 	var pool DatabasePool
 
 	pool.verificationCodeTTL = verificationCodeTTL
-	pool.Context = context.Background()
+	ctx := context.Background()
 
-	pool.Pool, err = pgxpool.New(pool.Context, url)
+	pool.Pool, err = pgxpool.New(ctx, url)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = pool.Pool.Ping(pool.Context); err != nil {
+	if err = pool.Pool.Ping(ctx); err != nil {
 		return nil, err
 	}
 

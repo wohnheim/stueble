@@ -84,13 +84,15 @@ func login(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	ctx := req.Context()
+
 	var info *database.LoginInfo
 	var err error
 	l.User = strings.ToLower(l.User)
 	if IsEmail(l.User) {
-		info, err = sd.DB.GetLoginInfo(&l.User, nil)
+		info, err = sd.DB.GetLoginInfo(ctx, &l.User, nil)
 	} else {
-		info, err = sd.DB.GetLoginInfo(nil, &l.User)
+		info, err = sd.DB.GetLoginInfo(ctx, nil, &l.User)
 	}
 
 	if err != nil {
@@ -117,14 +119,14 @@ func login(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARN: Failed to update password hash from %s: %v\n", info.PasswordAlgorithm, err)
 		} else {
-			err = sd.DB.UpdatePassword(info.Id, hashSalt)
+			err = sd.DB.UpdatePassword(ctx, info.Id, hashSalt)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "WARN: Failed to query database: %v\n", err)
 			}
 		}
 	}
 
-	session, err := sd.Sessions.CreateSession(sd.DB, info.Id)
+	session, err := sd.Sessions.CreateSession(ctx, sd.DB, info.Id)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to create session", nil, true)
 		return
@@ -150,7 +152,7 @@ func logout(w http.ResponseWriter, req *http.Request) {
 
 	http.SetCookie(w, createSecureCookie("", time.Unix(0, 0)))
 
-	removed, err := sd.Sessions.DeleteSession(sd.DB, cookie.Value)
+	removed, err := sd.Sessions.DeleteSession(req.Context(), sd.DB, cookie.Value)
 	if err != nil || !removed {
 		var message string
 		if err != nil {
@@ -181,7 +183,9 @@ func signup(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	conflictingUsers, err := sd.DB.GetConflictingUsers(&s.Email, &s.Username, &s.RoomNumber, &s.Residence)
+	ctx := req.Context()
+
+	conflictingUsers, err := sd.DB.GetConflictingUsers(ctx, &s.Email, &s.Username, &s.RoomNumber, &s.Residence)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 		return
@@ -222,7 +226,7 @@ func signup(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	token, err := sd.DB.AddVerificationCode(&database.SignupInfo{
+	token, err := sd.DB.AddVerificationCode(ctx, &database.SignupInfo{
 		FirstName:         s.FirstName,
 		LastName:          s.LastName,
 		RoomNumber:        s.RoomNumber,
@@ -288,8 +292,10 @@ func verifySignup(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	ctx := req.Context()
+
 	var infos database.SignupInfo
-	found, err := sd.DB.GetAdditionalData(v.Token, &infos)
+	found, err := sd.DB.GetAdditionalData(ctx, v.Token, &infos)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to get cached signup information", nil, true)
 		return
@@ -298,13 +304,13 @@ func verifySignup(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userId, err := sd.DB.CreateUser(&infos, UserRoleUser.String())
+	userId, err := sd.DB.CreateUser(ctx, &infos, UserRoleUser.String())
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 		return
 	}
 
-	session, err := sd.Sessions.CreateSession(sd.DB, userId)
+	session, err := sd.Sessions.CreateSession(ctx, sd.DB, userId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to create session", nil, true)
 		return
@@ -330,7 +336,9 @@ func delete(w http.ResponseWriter, req *http.Request) {
 
 	http.SetCookie(w, createSecureCookie("", time.Unix(0, 0)))
 
-	userId, err := sd.Sessions.GetUserId(sd.DB, cookie.Value)
+	ctx := req.Context()
+
+	userId, err := sd.Sessions.GetUserId(ctx, sd.DB, cookie.Value)
 	if err != nil || userId == nil {
 		var message string
 		if err != nil {
@@ -343,13 +351,13 @@ func delete(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = sd.Sessions.DeleteSessions(sd.DB, *userId)
+	err = sd.Sessions.DeleteSessions(ctx, sd.DB, *userId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to delete sessions", nil, true)
 		return
 	}
 
-	err = sd.DB.DisableUser(*userId)
+	err = sd.DB.DisableUser(ctx, *userId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 		return
@@ -370,7 +378,9 @@ func changeLoginInfo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userId, err := sd.Sessions.GetUserId(sd.DB, cookie.Value)
+	ctx := req.Context()
+
+	userId, err := sd.Sessions.GetUserId(ctx, sd.DB, cookie.Value)
 	if err != nil || userId == nil {
 		var message string
 		if err != nil {
@@ -398,7 +408,7 @@ func changeLoginInfo(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = sd.DB.UpdatePassword(*userId, hashSalt)
+		err = sd.DB.UpdatePassword(ctx, *userId, hashSalt)
 		if err != nil {
 			writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 			return
@@ -411,7 +421,7 @@ func changeLoginInfo(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		conflictingUsers, err := sd.DB.GetConflictingUsers(nil, &c.Username, nil, nil)
+		conflictingUsers, err := sd.DB.GetConflictingUsers(ctx, nil, &c.Username, nil, nil)
 		if err != nil {
 			writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 			return
@@ -422,7 +432,7 @@ func changeLoginInfo(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = sd.DB.UpdateUsername(*userId, strings.ToLower(c.Username))
+		err = sd.DB.UpdateUsername(ctx, *userId, strings.ToLower(c.Username))
 		if err != nil {
 			writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 			return
@@ -445,13 +455,15 @@ func resetPassword(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	ctx := req.Context()
+
 	var info *database.LoginInfo
 	var err error
 	r.User = strings.ToLower(r.User)
 	if IsEmail(r.User) {
-		info, err = sd.DB.GetLoginInfo(&r.User, nil)
+		info, err = sd.DB.GetLoginInfo(ctx, &r.User, nil)
 	} else {
-		info, err = sd.DB.GetLoginInfo(nil, &r.User)
+		info, err = sd.DB.GetLoginInfo(ctx, nil, &r.User)
 	}
 
 	if err != nil {
@@ -462,13 +474,13 @@ func resetPassword(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := sd.DB.GetUser(info.Id)
+	user, err := sd.DB.GetUser(ctx, info.Id)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 		return
 	}
 
-	token, err := sd.DB.AddVerificationCode(info.Id)
+	token, err := sd.DB.AddVerificationCode(ctx, info.Id)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to create verification code", nil, true)
 		return
@@ -524,8 +536,10 @@ func resetPasswordConfirmation(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	ctx := req.Context()
+
 	var userId int
-	found, err := sd.DB.GetAdditionalData(r.Token, &userId)
+	found, err := sd.DB.GetAdditionalData(ctx, r.Token, &userId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to get user identifier", nil, true)
 		return
@@ -540,19 +554,19 @@ func resetPasswordConfirmation(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = sd.DB.UpdatePassword(userId, hashSalt)
+	err = sd.DB.UpdatePassword(ctx, userId, hashSalt)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 		return
 	}
 
-	err = sd.Sessions.DeleteSessions(sd.DB, userId)
+	err = sd.Sessions.DeleteSessions(ctx, sd.DB, userId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to delete sessions", nil, true)
 		return
 	}
 
-	session, err := sd.Sessions.CreateSession(sd.DB, userId)
+	session, err := sd.Sessions.CreateSession(ctx, sd.DB, userId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to create session", nil, true)
 		return

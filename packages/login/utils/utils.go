@@ -1,10 +1,5 @@
 package utils
 
-type ErrorMessage struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
 func OptionalDereference[T any](ptr *T, fallback T) T {
 	if ptr == nil {
 		return fallback

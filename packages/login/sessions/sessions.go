@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"errors"
 	"log"
 	"time"
@@ -18,7 +19,7 @@ type Session struct {
 	ExpirationDate time.Time
 }
 
-func (s *Sessions) CreateSession(pool *database.DatabasePool, id int) (*Session, error) {
+func (s *Sessions) CreateSession(ctx context.Context, pool *database.DatabasePool, id int) (*Session, error) {
 	if pool == nil {
 		log.Panic("Assertion failed: pool needs to be defined")
 	}
@@ -30,7 +31,7 @@ func (s *Sessions) CreateSession(pool *database.DatabasePool, id int) (*Session,
 	`
 
 	var session Session
-	err := pool.Pool.QueryRow(pool.Context, sql, id, s.TTL).Scan(&session.SessionId, &session.ExpirationDate)
+	err := pool.Pool.QueryRow(ctx, sql, id, s.TTL).Scan(&session.SessionId, &session.ExpirationDate)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +39,7 @@ func (s *Sessions) CreateSession(pool *database.DatabasePool, id int) (*Session,
 	return &session, nil
 }
 
-func (s *Sessions) GetUserId(pool *database.DatabasePool, sessionId string) (*int, error) {
+func (s *Sessions) GetUserId(ctx context.Context, pool *database.DatabasePool, sessionId string) (*int, error) {
 	sql := `
 		SELECT user_id 
 		FROM sessions
@@ -46,7 +47,7 @@ func (s *Sessions) GetUserId(pool *database.DatabasePool, sessionId string) (*in
 	`
 
 	var userId *int
-	err := pool.Pool.QueryRow(pool.Context, sql, sessionId).Scan(&userId)
+	err := pool.Pool.QueryRow(ctx, sql, sessionId).Scan(&userId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -58,13 +59,13 @@ func (s *Sessions) GetUserId(pool *database.DatabasePool, sessionId string) (*in
 	return userId, nil
 }
 
-func (s *Sessions) DeleteSession(pool *database.DatabasePool, sessionId string) (bool, error) {
+func (s *Sessions) DeleteSession(ctx context.Context, pool *database.DatabasePool, sessionId string) (bool, error) {
 	sql := `
 		DELETE FROM sessions
 		WHERE session_id = $1
 	`
 
-	ct, err := pool.Pool.Exec(pool.Context, sql, sessionId)
+	ct, err := pool.Pool.Exec(ctx, sql, sessionId)
 	if err != nil {
 		return false, err
 	}
@@ -72,12 +73,12 @@ func (s *Sessions) DeleteSession(pool *database.DatabasePool, sessionId string) 
 	return ct.RowsAffected() == 1, nil
 }
 
-func (s *Sessions) DeleteSessions(pool *database.DatabasePool, userId int) error {
+func (s *Sessions) DeleteSessions(ctx context.Context, pool *database.DatabasePool, userId int) error {
 	sql := `
 		DELETE FROM sessions
 		WHERE user_id = $1
 	`
 
-	_, err := pool.Pool.Exec(pool.Context, sql, userId)
+	_, err := pool.Pool.Exec(ctx, sql, userId)
 	return err
 }
