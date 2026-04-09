@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/jhillyerd/enmime"
-	"github.com/wohnheim/stueble/cache"
 	"github.com/wohnheim/stueble/database"
 	"github.com/wohnheim/stueble/sessions"
 	"github.com/wohnheim/stueble/utils"
@@ -18,12 +17,12 @@ import (
 /* Essential connections and data */
 
 type SharedData struct {
-	DB         *database.DatabasePool
-	Redis      *cache.RedisClient
-	SMTPSender *enmime.SMTPSender
-	SMTPBase   enmime.MailBuilder
-	Templates  *template.Template
-	Sessions   *sessions.Sessions
+	DB          *database.DatabasePool
+	SMTPSender  *enmime.SMTPSender
+	SMTPBase    enmime.MailBuilder
+	Templates   *template.Template
+	Sessions    *sessions.Sessions
+	FrontendUrl string
 }
 
 var sd *SharedData

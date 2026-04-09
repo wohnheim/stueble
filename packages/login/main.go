@@ -25,15 +25,13 @@ const envSessionTTL = envPrefix + "SESSION_TTL"
 // Verification Code Time-To-Live in minutes
 const envVerificationCodeTTL = envPrefix + "VERIFICATION_CODE_TTL"
 
+// Frontend URL used in email links
+const envFrontendUrl = envPrefix + "FRONTEND_URL"
+
 const envHost = envPrefix + "HOST"
 const envHTTPPort = envPrefix + "HTTP_PORT"
 const envWebSocketPort = envPrefix + "WEBSOCKET_PORT"
 const envDatabaseUrl = envPrefix + "DATABASE_URL"
-
-const envRedisAddress = envPrefix + "REDIS_ADDR"
-const envRedisUsername = envPrefix + "REDIS_USERNAME"
-const envRedisPassword = envPrefix + "REDIS_PASSWORD"
-const envRedisDatabase = envPrefix + "REDIS_DB"
 
 const envSMTPHost = envPrefix + "SMTP_HOST"
 const envSMTPPort = envPrefix + "SMTP_PORT"
@@ -56,6 +54,11 @@ func main() {
 		log.Fatalf("Missing %s environment variable\n", envVerificationCodeTTL)
 	}
 
+	frontendUrl := os.Getenv(envFrontendUrl)
+	if len(frontendUrl) == 0 {
+		log.Fatalf("Missing %s environment variable\n", envFrontendUrl)
+	}
+
 	/* HTTP */
 	httpPort, err := strconv.Atoi(os.Getenv(envHTTPPort))
 	if err != nil {
@@ -72,20 +75,6 @@ func main() {
 	if len(databaseUrl) == 0 {
 		log.Fatalf("Missing %s environment variable\n", envDatabaseUrl)
 	}
-
-	/* Redis */
-	/* redisAddress := os.Getenv(envRedisAddress)
-	if len(redisAddress) == 0 {
-		log.Fatalf("Missing %s environment variable\n", envRedisAddress)
-	}
-
-	redisDatabase, err := strconv.Atoi(os.Getenv(envRedisDatabase))
-	if err != nil {
-		log.Fatalf("Missing %s environment variable\n", envRedisDatabase)
-	}
-
-	redisUsername := os.Getenv(envRedisUsername)
-	redisPassword := os.Getenv(envRedisPassword) */
 
 	/* SMTP */
 	smtpHost := os.Getenv(envSMTPHost)
@@ -119,11 +108,6 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v\n", err)
 	}
 
-	/* redisClient, err := cache.CreateRedisClient(redisAddress, redisUsername, redisPassword, redisDatabase)
-	if err != nil {
-		log.Fatalf("Failed to connect to redis: %v\n", err)
-	} */
-
 	templates, err := templates.ParseTemplates()
 	if err != nil {
 		log.Fatalf("Failed to parse templates: %v\n", err)
@@ -131,15 +115,15 @@ func main() {
 
 	endpoints.InitializeSharedData(&endpoints.SharedData{
 		DB: databasePool,
-		// Redis:     redisClient,
-		Templates: templates,
 		SMTPSender: enmime.NewSMTP(
 			fmt.Sprintf("%s:%d", smtpHost, smtpPort),
 			smtp.PlainAuth("", smtpUsername, smtpPassword, smtpHost)),
-		SMTPBase: enmime.Builder().From("Stüble-Team", smtpFrom),
+		SMTPBase:  enmime.Builder().From("Stüble-Team", smtpFrom),
+		Templates: templates,
 		Sessions: &sessions.Sessions{
 			TTL: sessionTTL,
 		},
+		FrontendUrl: frontendUrl,
 	})
 	endpoints.RegisterAuthEndpoints()
 

@@ -242,7 +242,7 @@ func signup(w http.ResponseWriter, req *http.Request) {
 		FirstName:         s.FirstName,
 		LastName:          s.LastName,
 		ContentId:         "stueble_logo",
-		FrontendUrl:       "https://stueble.pages.dev",
+		FrontendUrl:       sd.FrontendUrl,
 		VerificationToken: *token,
 	}
 
@@ -478,7 +478,7 @@ func resetPassword(w http.ResponseWriter, req *http.Request) {
 		FirstName:         user.FirstName,
 		LastName:          user.LastName,
 		ContentId:         "stueble_logo",
-		FrontendUrl:       "https://stueble.pages.dev",
+		FrontendUrl:       sd.FrontendUrl,
 		VerificationToken: *token,
 	}
 
