@@ -124,7 +124,7 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]])
         )
     
     current_group_hash = "-".join(sorted(hosts))
-    query = sql.SQL("SELECT application_group FROM sql.applicants WHERE group_hash = {current_group}").format(current_group=sql.Placeholder())
+    query = sql.SQL("SELECT application_group FROM stueble.applicants WHERE group_hash = {current_group}").format(current_group=sql.Placeholder())
     result = db.custom_call(
             query=query,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
@@ -150,7 +150,7 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]])
                                  user_uuid = sql.Placeholder(),
                                  group=sql.Placeholder(),
                                  group_hash=sql.Placeholder())
-    application = lambda : sql.SQL("({motto}, {date}, {application_priority}, a.application_group)").format(
+    application = lambda : sql.SQL("({motto}, {date}::date, {application_priority})").format(
         motto=sql.Placeholder(),
         date=sql.Placeholder(),
         application_priority=sql.Placeholder())
@@ -160,7 +160,9 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]])
     INSERT INTO stueble.applicants (user_id, application_group, group_hash) VALUES {values}
     RETURNING application_group)
 
-    INSERT INTO stueble.applications (motto, date, application_priority, application_group) VALUES {applications}
+    INSERT INTO stueble.applications (motto, date, application_priority, application_group)
+    SELECT v.motto, v.date, v.application_priority, a.application_group FROM a \
+    CROSS JOIN (VALUES {applications}) AS v(motto, date, application_priority)
     RETURNING date, uuid;
     """).format(
         values=sql.SQL(", ").join(value() for _ in hosts),

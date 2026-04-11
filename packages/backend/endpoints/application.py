@@ -65,34 +65,36 @@ def send_applications():
     Register for multiple dates using an application for throwing the stueble party.
     """
 
-    data = request.form
+    data = request.get_json()
 
-    keys = ["motto", "hosts", "dates"]
+    motto = data.get("motto", None)
+    hosts = data.get("hosts", None)
+    dates = data.get("dates", None)
 
-    if data is None:
+    if motto is None:
         return Response(
-                response=json.dumps({"code": 400, "message": "The data must be specified"}),
-                status=400,
-                mimetype="application/json"
-        )
-
-    try:
-        data = {key: data[key] for key in keys}
-    except KeyError as e:
-        return Response(
-            response=json.dumps({"code": 400, "message": f"{e.args[0]} must be specified"}),
+            response=json.dumps({"code": 400, "message": "Motto must be specified"}),
             status=400,
             mimetype="application/json"
         )
 
-    if any(not isinstance(i, tuple) for i in data["dates"]):
+    if hosts is None:
         return Response(
-                response=json.dumps({"code": 400, "message": "Dates must be a list of tuples containing date and application_priority"}),
-                status=400,
-                mimetype="application/json"
+            response=json.dumps({"code": 400, "message": "The hosts must be specified"}),
+            status=400,
+            mimetype="application/json"
         )
 
-    response = applications.send_application(motto=data["motto"], hosts=data["hosts"], dates=data["dates"]) # type: ignore
+    if dates is None or isinstance(dates, list) is False or all(isinstance(d, list) and len(d) == 2 for d in dates) is False:
+        return Response(
+            response=json.dumps({"code": 400, "message": "The dates (a list of tuples containing date and application_priority) must be specified"}),
+            status=400,
+            mimetype="application/json"
+        )
+
+    dates = list(map(lambda d: (d[0], d[1]), dates))
+
+    response = applications.send_application(motto=motto, hosts=hosts, dates=dates) # type: ignore
     
     if response.is_error:
         return Response(
