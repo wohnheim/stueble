@@ -11,7 +11,7 @@ from backend.sql_connection import users
 from backend.database import database as db
 from backend.sql_connection.common_functions import check_permissions
 from backend.datatypes.stueble_types import UserRole
-
+from backend.sql_connection import applications as applics
 
 tutor = Blueprint("tutor", __name__)
 
@@ -343,13 +343,39 @@ def submit_application_selection():
             mimetype="application/json")
         return response
 
-    query = sql.SQL("INSERT INTO stueble.dates (application_id) VALUES ({values}) ON CONFLICT (application_id) DO UPDATE SET application_id = EXCLUDED.application_id").format(values=sql.SQL(', ').join(sql.Placeholder() * len(clean_dates)))
+    result = db.select(
+        table="stueble.dates",
+        columns=["application_id"],
+        specific_where=sql.SQL("application_id IN ({application_ids})").format(application_ids=sql.SQL(', ').join(sql.Placeholder() * len(application_uuids))),
+        variables=[i["new_application_id"] for i in data]
+    )
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+    no_informing = set(i["application_id"] for i in result.data)  # application ids that are already in the database, so no informing is needed
+    informing = [i for i in data if i["new_application_id"] not in no_informing]  # application ids that are not in the database, so informing is needed
+
+    query = sql.SQL("INSERT INTO stueble.dates (application_id) VALUES {values} ON CONFLICT (application_id) DO UPDATE SET application_id = EXCLUDED.application_id").format(values=sql.SQL(', ').join(sql.SQL("(%s)") * len(data)))
 
     result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=[i["new_application_id"] for i in data])
 
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+
+    response = applics.send_application_confirmation(application_uuids=application_uuids)
+    if response.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(response.error)}),
             status=500,
             mimetype="application/json")
         return response

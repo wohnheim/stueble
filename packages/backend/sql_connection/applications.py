@@ -313,44 +313,72 @@ def delete_application(application_uuid: int, user_id: int) -> FuncRes:
                         code=204)
     )
 
-
-def send_application_confirmation(application_uuids: list[str], user_id: int) -> FuncRes:
+def send_application_confirmation(application_uuids: list[str]) -> FuncRes:
     """
     Send a confirmation for a granted application for the stueble.
 
     Args:
         application_uuids (list[str]): The UUIDs of the applications to confirm.
-        user_id (int): The id of the user sending the confirmation.
     Returns:
         FuncRes: A FuncRes object containing a success message or an error message.
     """
 
-    result = templates.stueble_applications(user_id=user_id, application_uuids=application_uuids)
+    query = sql.SQL("SELECT u.id, string_agg(DISTINCT a.application_uuid::text, ',) AS application_uuids \
+                    FROM stueble.applications a \
+                    JOIN stueble.applicants ap ON a.application_group = ap.application_group \
+                    JOIN users u ON ap.user_id = u.id \
+                    WHERE a.uuid IN ({application_uuids}) \
+                    GROUP BY u.id").format(sql.SQL(', ').join(sql.Placeholder() * len(application_uuids)))
 
+    result = db.custom_call(
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+        variables=application_uuids
+    )
     if result.is_error:
         return FuncRes(
             error=result.error,
             status=Status.FULL_ERROR,
-            message=Message(name="Get Application Template Error",
+            message=Message(name="Get Application Users Error",
                             type="error",
                             category="Send Application Confirmation",
-                            code=500 if result.message is None else result.message.code)
-        )
+                            code=500)        )
     
     data = result.data
+    if data is None:
+        data = []
     
-    result = mail.send_mail(recipient=data["recipient"], subject=data["subject"], body=data["body"], images=data["images"])
+    data = [{"user_id": entry[0], "application_uuids": entry[1].split(",")} for entry in data]
 
-    if result.is_error:
-        return FuncRes(
-            error=result.error,
-            status=Status.FULL_ERROR,
-            message=Message(name="Send Confirmation Email Error",
-                            type="error",
-                            category="Send Application Confirmation",
-                            code=500 if result.message is None else result.message.code),
-            user_warning="Failed to send confirmation email, but the application was confirmed successfully."
-        )
+    for entry in data:
+        user_id = entry["user_id"]
+        applic_uuids = entry["application_uuids"]
+        result = templates.stueble_applications(user_id=user_id, application_uuids=applic_uuids)
+
+        if result.is_error:
+            return FuncRes(
+                error=result.error,
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Application Template Error",
+                                type="error",
+                                category="Send Application Confirmation",
+                                code=500 if result.message is None else result.message.code)
+            )
+        
+        data = result.data
+        
+        result = mail.send_mail(recipient=data["recipient"], subject=data["subject"], body=data["body"], images=data["images"])
+
+        if result.is_error:
+            return FuncRes(
+                error=result.error,
+                status=Status.FULL_ERROR,
+                message=Message(name="Send Confirmation Email Error",
+                                type="error",
+                                category="Send Application Confirmation",
+                                code=500 if result.message is None else result.message.code),
+                user_warning="Failed to send confirmation email, but the application was confirmed successfully."
+            )
     
     return FuncRes(
         status=Status.FULL_SUCCESS,
