@@ -65,9 +65,9 @@ def send_applications():
     Register for multiple dates using an application for throwing the stueble party.
     """
 
-    data = request.form
+    data = request.get_json()
 
-    keys = ["motto", "hosts", "dates"]
+    keys = ["motto", "hosts", "dates", "description", "image"]
 
     if data is None:
         return Response(
@@ -76,23 +76,31 @@ def send_applications():
                 mimetype="application/json"
         )
 
-    try:
-        data = {key: data[key] for key in keys}
-    except KeyError as e:
+    if any(key not in keys for key in data):
         return Response(
-            response=json.dumps({"code": 400, "message": f"{e.args[0]} must be specified"}),
-            status=400,
-            mimetype="application/json"
+                response=json.dumps({"code": 400, "message": f"Only the following keys are allowed: {keys}"}),
+                status=400,
+                mimetype="application/json"
         )
-
-    if any(not isinstance(i, tuple) for i in data["dates"]):
+    if any(key not in data for key in ["motto", "hosts", "dates"]):
         return Response(
-                response=json.dumps({"code": 400, "message": "Dates must be a list of tuples containing date and application_priority"}),
+                response=json.dumps({"code": 400, "message": "The keys motto, hosts and dates must be specified"}),
                 status=400,
                 mimetype="application/json"
         )
 
-    response = applications.send_application(motto=data["motto"], hosts=data["hosts"], dates=data["dates"]) # type: ignore
+    if any(not isinstance(i, tuple) and not isinstance(i, list) for i in data["dates"]):
+        return Response(
+                response=json.dumps({"code": 400, "message": "Dates must be a list of tuples / list containing date, application_priority"}),
+                status=400,
+                mimetype="application/json"
+        )
+    data["dates"] = [tuple(i) for i in data["dates"]]
+    
+    description = data.get("description", None)
+    image = data.get("image", None)
+
+    response = applications.send_application(motto=data["motto"], hosts=data["hosts"], dates=data["dates"], description=description, image=image) # type: ignore
     
     if response.is_error:
         return Response(

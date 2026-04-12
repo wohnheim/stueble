@@ -1,5 +1,7 @@
 import enum
 import json
+import os
+from dotenv import load_dotenv
 from typing import Annotated, Any, Literal
 from psycopg import sql
 from psycopg.sql import Composed
@@ -9,6 +11,9 @@ from backend.database import database as db
 from backend.datatypes.funcres import FuncRes, Status, Message
 from backend.sql_connection.ultimate_functions import clean_single_data
 
+# load environment variables
+env_file_path = os.path.expanduser("~/.env")
+load_dotenv(env_file_path)
 
 def add_user(user_role: UserRole,
              first_name: str,
@@ -559,17 +564,23 @@ def confirm_verification_code(reset_code: str, additional_data: bool = False, ex
         columns.append("additional_data")
 
     arguments = {}
-    if expiration_minutes is not None:
-        arguments["specific_where"] = sql.SQL("reset_code = {reset_code} AND used = FALSE AND created_at >= NOW() - ({expiration_minutes} * INTERVAL '1 minute')").format(
-            reset_code=sql.Placeholder(),
-            expiration_minutes=sql.Placeholder()
+    exp_mins_config = os.environ.get("RESET_CODE_EXPIRATION_MINUTES", None)
+    if exp_mins_config is None:
+        return FuncRes(
+            error="Invalid result data",
+            status=Status.FULL_ERROR,
+            message=Message(name="Confirm Verification Code Error",
+                            type="error",
+                            category="Confirm Verification Code",
+                            code=500)
         )
-        arguments["variables"] = (reset_code, expiration_minutes,)
-    else:
-        arguments["specific_where"] = sql.SQL("reset_code = {reset_code} AND created_at >= NOW() - ((SELECT value::int FROM configurations WHERE key = 'reset_code_expiration_minutes') * INTERVAL '1 minute') AND used = FALSE").format(
-            reset_code=sql.Placeholder()
-        )
-        arguments["variables"] = (reset_code,)
+
+    exp_mins_config = int(exp_mins_config)
+    arguments["specific_where"] = sql.SQL("reset_code = {reset_code} AND used = FALSE AND created_at >= NOW() - ({expiration_minutes} * INTERVAL '1 minute')").format(
+        reset_code=sql.Placeholder(),
+        expiration_minutes=sql.Placeholder()
+    )
+    arguments["variables"] = (reset_code, expiration_minutes if expiration_minutes is not None else exp_mins_config)
     result = db.select(
         table="verification_codes",
         columns=columns,

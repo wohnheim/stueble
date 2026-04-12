@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 import io
 
-env_file_path = os.path.expanduser("~/stueble/packages/backend/.env")
+env_file_path = os.path.expanduser("~/.env")
 load_dotenv(env_file_path)
 
 EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS") or "stuebleheshirte@gmail.com"

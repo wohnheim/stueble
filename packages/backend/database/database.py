@@ -2,7 +2,8 @@
 Database interaction module
 
 This module provides functions to connect to a PostgreSQL database and perform basic operations such as
-selecting, inserting, updating, and deleting records. It also includes decorators for cursor management and error handling."""
+selecting, inserting, updating, and deleting records. It also includes decorators for cursor management and error handling.
+"""
 
 from collections.abc import Callable
 from enum import Enum
@@ -22,8 +23,9 @@ from psycopg_pool import ConnectionPool
 from backend.datatypes.result import Result
 from backend.database.pool import create_pool, get_cursor, close_cursor, close_pool
 
-
-load_dotenv()
+# load environment variables
+env_file_path = os.path.expanduser("~/.env")
+load_dotenv(env_file_path)
 
 USER = os.getenv("PGUSER")  # (like the linux user name!)
 PASSWORD = os.getenv("PGPASSWORD")

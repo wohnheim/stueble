@@ -201,10 +201,10 @@ in
 
           createdb 1>/dev/null
           psql -q -f packages/data/schemas/create_tables.sql
-          psql -q -f packages/data/schemas/triggers.sql
           psql -q -f packages/data/schemas/stueble/create_tables.sql
-          psql -q -f packages/data/schemas/stueble/triggers.sql
           psql -q -f packages/data/schemas/events/create_tables.sql
+          psql -q -f packages/data/schemas/triggers.sql
+          psql -q -f packages/data/schemas/stueble/triggers.sql
 
           cd packages
           python -m backend.initialization.add_admins

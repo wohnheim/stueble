@@ -40,6 +40,10 @@ set_key(env_file_path, "HOST", "localhost")
 set_key(env_file_path, "PORT", "5432")
 set_key(env_file_path, "DBNAME", "stueble_data")
 
+set_key(env_file_path, "SESSION_EXPIRATION_DAYS", "90")
+set_key(env_file_path, "RESET_CODE_EXPIRATION_MINUTES", "15")
+set_key(env_file_path, "QR_CODE_EXPIRATION_MINUTES", "10")
+
 inputted_data = input("Enter the password for the postgres user 'stueble': ")
 set_key(env_file_path, "PASSWORD", inputted_data)
 

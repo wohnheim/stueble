@@ -1,11 +1,3 @@
-CREATE OR REPLACE FUNCTION set_uuid_hash()
-RETURNS trigger AS $$
-BEGIN
-    NEW.user_uuid := gen_random_uuid();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION set_session_id()
 RETURNS trigger AS $$
 BEGIN
@@ -128,10 +120,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-CREATE OR REPLACE TRIGGER set_uuid_hash_trigger
-    BEFORE INSERT ON users -- only on insert
-    FOR EACH ROW EXECUTE FUNCTION set_uuid_hash();
 
 CREATE OR REPLACE TRIGGER check_user_constants
     BEFORE UPDATE ON users -- only on updates

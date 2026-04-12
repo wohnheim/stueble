@@ -17,14 +17,18 @@ CREATE TABLE IF NOT EXISTS users (
     residence RESIDENCE NULL CHECK ((user_role = 'extern' AND residence IS NULL) OR (user_role != 'extern' AND residence IS NOT NULL)),
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-    password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
-    email VARCHAR(255) UNIQUE CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR password_hash is NULL),
+    password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR (user_role != 'extern' AND password_hash IS NOT NULL)),
+    email VARCHAR(255) CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR (email IS NULL AND user_role = 'extern')),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    user_uuid UUID UNIQUE NOT NULL, -- added for personal references, not as easy to guess as id
+    user_uuid UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(), -- added for personal references, not as easy to guess as id
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_name TEXT CHECK ((user_role = 'extern' AND user_name IS NULL) OR (user_role != 'extern' AND user_name IS NOT NULL)),
-    verified BOOLEAN DEFAULT FALSE
+    verified BOOLEAN DEFAULT FALSE,
+    deleted BOOLEAN DEFAULT FALSE
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_room_residence ON users (room, residence) WHERE deleted IS FALSE AND user_role <> USER_ROLE('extern');
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_user_name ON users (user_name) WHERE deleted IS FALSE AND user_role <> USER_ROLE('extern');
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email) WHERE deleted IS FALSE AND user_role <> USER_ROLE('extern');
 
 -- table to save login sessions
 CREATE TABLE IF NOT EXISTS sessions (
@@ -44,17 +48,17 @@ CREATE TABLE IF NOT EXISTS configurations (
 
 -- set default configuration values
 INSERT INTO configurations (key, value) VALUES
-('session_expiration_days', '30'),
-('maximum_guests', '150'),
+('maximum_guests_per_stueble', '150'),
 ('maximum_invites_per_user', '2'),
-('maximum_guests_per_tutor', '10'),
-('reset_code_expiration_minutes', '15'),
-('qr_code_expiration_minutes', '10');
+('maximum_invites_per_host', '3'),
+('maximum_invites_per_tutor', '10'),
+('application_deadline_winter_semester', '2024-10-01T23:59:59Z'),
+('application_deadline_summer_semester', '2025-03-31T23:59:59Z');
 
 CREATE TABLE IF NOT EXISTS verification_codes (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    reset_code UUID UNIQUE NOT NULL,
+    reset_code UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
     additional_data JSONB DEFAULT NULL, -- to store optional changes in users
     used BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -74,8 +78,5 @@ CREATE TABLE IF NOT EXISTS websockets_affected (
     message_id INTEGER REFERENCES websocket_messages(id) NOT NULL,
     session_id INTEGER REFERENCES sessions(id) NOT NULL,
     received BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_DATE
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE users
-ADD CONSTRAINT unique_room_residence UNIQUE (room, residence);

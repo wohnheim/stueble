@@ -1,5 +1,6 @@
+import os
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
-from typing import Literal, overload
 from psycopg import sql
 
 import pytz
@@ -8,6 +9,9 @@ from backend.database import database as db
 from backend.datatypes.funcres import FuncRes, Status, Message
 from backend.sql_connection.ultimate_functions import clean_single_data
 
+# load environment variables
+env_file_path = os.path.expanduser("~/.env")
+load_dotenv(env_file_path)
 
 def create_session(user_id: int) -> FuncRes:
     """
@@ -20,17 +24,8 @@ def create_session(user_id: int) -> FuncRes:
     """
 
     # load the configuration variable for session expiration time in days from table configurations
-    expiration_time = db.select(columns=["value"], table="configurations", conditions={"key": "session_expiration_days"}, type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
-    if expiration_time.is_error:
-        return FuncRes(
-            error=str(expiration_time.error),
-            status=Status.FULL_ERROR,
-            message=Message(name="Create Session Error",
-                            type="error",
-                            category="Create Session",
-                            code=500)
-        )
-    elif expiration_time.data is None:
+    expiration_time = os.environ.get("SESSION_EXPIRATION_DAYS", None)
+    if expiration_time is None:
         return FuncRes(
             error="Invalid result data",
             status=Status.FULL_ERROR,
@@ -39,8 +34,8 @@ def create_session(user_id: int) -> FuncRes:
                             category="Create Session",
                             code=500)
         )
-
-    expiration_time = int(expiration_time.data["value"])
+    
+    expiration_time = int(expiration_time)
 
     # calculate expiration date
     tz = pytz.timezone("Europe/Berlin")

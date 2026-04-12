@@ -17,6 +17,7 @@ from backend.database import database as db
 from backend.mail_assets import templates
 from backend.sql_connection.common_functions import check_permissions
 from backend.sql_connection.signup_validation import validate_user_data
+from backend.temporary import verified_signup
 
 
 auth = Blueprint("auth", __name__)
@@ -213,6 +214,20 @@ def signup_data():
     user_info["residence"] = Residence(user_info["residence"])
     check_info = user_info.copy()
     del check_info["password"]
+
+    #---------------------------------------------------------------------------------------#
+
+    # TODO: this is only temporary, remove afterwards
+    token = request.args.get("token", None)
+    if token == "2xIAGtRsTNS3mzWY2SdR":
+        user_info["password_hash"] = hashed_password = hp.hash_pwd(user_info["password"])
+        del user_info["password"]
+        return verified_signup(
+            **user_info
+        )
+
+    #---------------------------------------------------------------------------------------#
+
     # check whether user data is unique
     result = validate_user_data(**check_info)
     if result.is_error:
