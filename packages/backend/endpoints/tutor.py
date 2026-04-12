@@ -358,7 +358,7 @@ def submit_application_selection():
         return response
     
     no_informing = set(i["application_id"] for i in result.data)  # application ids that are already in the database, so no informing is needed
-    informing = [i for i in data if i["new_application_id"] not in no_informing]  # application ids that are not in the database, so informing is needed
+    informing = [i["new_application_id"] for i in data if i["new_application_id"] not in no_informing]  # application ids that are not in the database, so informing is needed
 
     query = sql.SQL("INSERT INTO stueble.dates (application_id) VALUES {values} ON CONFLICT (application_id) DO UPDATE SET application_id = EXCLUDED.application_id").format(values=sql.SQL(', ').join(sql.SQL("(%s)") * len(data)))
 
@@ -372,7 +372,7 @@ def submit_application_selection():
         return response
     
 
-    response = applics.send_application_confirmation(application_uuids=application_uuids)
+    response = applics.send_application_confirmation(application_ids=informing)
     if response.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(response.error)}),

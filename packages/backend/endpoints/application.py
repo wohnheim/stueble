@@ -170,3 +170,73 @@ def delete_application():
     return Response(
         status=204
     )
+
+@applic.route("", methods=["PATCH"])
+def update_application():
+    """
+    Update an application.
+    """
+    
+    data = request.get_json()
+    application_uuid = data.get("id", None)
+
+    if application_uuid is None:
+        return Response(
+            response=json.dumps({"code": 400, "message": "The id must be specified"}),
+            status=400,
+            mimetype="application/json"
+        )
+    
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 401, "message": "The session id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # check permissions
+    result = check_permissions(session_id=session_id, required_role=UserRole.USER)
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result.error)}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result.data["allowed"] is False:
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+    
+    user_id = result.data["user_id"]
+
+    keys = ["motto", "hosts", "date", "description", "image", "id"]
+    if any(key not in keys for key in data):
+        return Response(
+                response=json.dumps({"code": 400, "message": f"Only the following keys are allowed: {keys}"}),
+                status=400,
+                mimetype="application/json"
+        )
+    
+    result = applications.update_application(
+        application_uuid=application_uuid,
+        user_id=user_id,
+        motto=data.get("motto", None),
+        hosts=data.get("hosts", None),
+        date=data.get("date", None),
+        description=data.get("description", None),
+        image=data.get("image", None)
+    )
+
+    if result.is_error:
+        return Response(
+            response=json.dumps({"code": result.message.code if result.message is not None else 500, "message": str(result.user_warning)}),
+            status=result.message.code if result.message is not None else 500,
+            mimetype="application/json"
+        )
+    
+    return Response(
+        status=204
+    )

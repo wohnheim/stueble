@@ -343,7 +343,6 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- TODO: delete this trigger, as only for some groups it will be changed
 CREATE OR REPLACE FUNCTION update_application_group()
 RETURNS trigger AS $$
 DECLARE new_group_hash TEXT;
