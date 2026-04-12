@@ -12,6 +12,7 @@
   import Settings from "$lib/pages/Settings.svelte";
   import Invite from "$lib/pages/Invite.svelte";
   import Credits from "$lib/pages/Credits.svelte";
+  import Application from "$lib/pages/Application.svelte";
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
@@ -199,6 +200,8 @@
   {/if}
 {:else if ui_object.routing.path.main == "wirte"}
   <Guests />
+{:else if ui_object.routing.path.main == "anmeldung"}
+  <Application />
 {:else if ui_object.routing.path.main == "einstellungen"}
   <Settings />
 {:else if ui_object.routing.path.main == "credits"}

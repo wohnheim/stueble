@@ -16,10 +16,11 @@
   onMount(() => {
     ui_object.largeDialog?.addEventListener("close", () => {
       if (
-        ui_object.routing.path.main == "einstellungen" &&
+        (ui_object.routing.path.main == "einstellungen" ||
+          ui_object.routing.path.main == "anmeldung") &&
         ui_object.routing.path.sub !== undefined
       )
-        ui_object.routing.changePath({ main: "einstellungen" });
+        ui_object.routing.changePath({ main: ui_object.routing.path.main });
 
       if (hostsPage)
         setTimeout(() => {
@@ -37,7 +38,8 @@
     {#if ui_object.routing.path.sub == "wirte"}
       <Hosts
         title={"Wirt*innen"}
-        addFunction={apiClient("http").addHosts}
+        addFunction={async (hosts) =>
+          await apiClient("http").addHosts(hosts.map((s) => s.id))}
         removeFunction={apiClient("http").removeHosts}
         addToDatabase={database.addHosts}
         removeFromDatabase={database.deleteHosts}
@@ -50,7 +52,8 @@
     {:else}
       <Hosts
         title={"Tutor*innen"}
-        addFunction={apiClient("http").addTutors}
+        addFunction={async (tutors) =>
+          await apiClient("http").addTutors(tutors.map((s) => s.id))}
         removeFunction={apiClient("http").removeTutors}
         addToDatabase={database.addTutors}
         removeFromDatabase={database.deleteTutors}
@@ -61,6 +64,27 @@
         bind:searchResultsUnfiltered={hostsSearchResultsUnfiltered}
       />
     {/if}
+  {:else if ui_object.routing.path.main == "anmeldung" && ui_object.routing.path.sub == "wirte"}
+    <Hosts
+      title={"Wirt*innen für die Stüble-Termine"}
+      addFunction={async (hosts) => {
+        ui_object.applicationHosts.push(...hosts);
+        return hosts;
+      }}
+      removeFunction={async (hosts) => {
+        ui_object.applicationHosts = ui_object.applicationHosts.filter(
+          (h) => hosts.findIndex((a) => a == h.id) == -1,
+        );
+        return true;
+      }}
+      addToDatabase={async (_) => {}}
+      removeFromDatabase={async (_) => {}}
+      elements={ui_object.applicationHosts}
+      bind:page={hostsPage}
+      bind:selectedUnfiltered={hostsSelectedUnfiltered}
+      bind:searchInput={hostsSearchInput}
+      bind:searchResultsUnfiltered={hostsSearchResultsUnfiltered}
+    />
   {/if}
 </dialog>
 

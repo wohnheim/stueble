@@ -463,6 +463,20 @@ class HTTPClient {
     return false;
   }
 
+  /* Dates */
+
+  async getDates() {
+    const res = await fetch("/api/stueble/dates");
+
+    if (res.ok) {
+      const raw = await res.json<string[]>();
+      return raw.map((d) => new Date(d));
+    }
+
+    await HTTPClient.parseError(res, "Fehler beim Abfragen der Termine");
+    throw new Error(res.status.toString());
+  }
+
   /* Applications */
 
   async getApplication() {

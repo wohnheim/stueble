@@ -40,6 +40,17 @@
   {/if}
 
   <a
+    class={ui_object.routing.path.main == "anmeldung" ? "active" : ""}
+    onclick={() =>
+      ui_object.routing.changePath({
+        main: "anmeldung",
+      })}
+  >
+    <i>assignment_add</i>
+    <span>Anmeldung</span>
+  </a>
+
+  <a
     class={ui_object.routing.path.main == "einstellungen" ? "active" : ""}
     onclick={() =>
       ui_object.routing.changePath({

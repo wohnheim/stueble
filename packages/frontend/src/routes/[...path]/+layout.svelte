@@ -161,7 +161,7 @@
 
 {#if $overlay}
   <!-- Dialogs -->
-  {#if ui_object.routing.path.main == "einstellungen"}
+  {#if ui_object.routing.path.main == "einstellungen" || ui_object.routing.path.main == "anmeldung"}
     <LargeDialog />
   {/if}
   <Dialog />

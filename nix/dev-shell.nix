@@ -13,6 +13,7 @@ let
   backendPort = 3012;
   websocketPort = 3013;
   databasePort = 3014;
+  goBackendPort = 3015;
 
   # Python
 
@@ -115,17 +116,22 @@ let
         server_name stueble.localhost;
 
         location / {
-          proxy_pass http://localhost:${builtins.toString frontendPort};
+          proxy_pass http://127.0.0.1:${builtins.toString frontendPort};
           include ${recommendedProxyConfig};
         }
 
         location /api/ {
-          proxy_pass http://localhost:${builtins.toString backendPort}/;
+          proxy_pass http://127.0.0.1:${builtins.toString backendPort}/;
+          include ${recommendedProxyConfig};
+        }
+
+        location /api/auth/ {
+          proxy_pass http://127.0.0.1:${builtins.toString goBackendPort}/auth/;
           include ${recommendedProxyConfig};
         }
 
         location /api/websocket {
-          proxy_pass http://localhost:${builtins.toString websocketPort};
+          proxy_pass http://127.0.0.1:${builtins.toString websocketPort};
           proxy_http_version 1.1;
           proxy_set_header Upgrade $http_upgrade;
           proxy_set_header Connection $connection_upgrade;
