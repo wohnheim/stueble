@@ -3,6 +3,7 @@ import { pack, unpack } from "msgpackr";
 import { derived, get, readable, writable } from "svelte/store";
 
 import type {
+  Application,
   Config,
   GuestExtern,
   GuestIntern,
@@ -444,7 +445,7 @@ class HTTPClient {
   /* Motto */
 
   async modifyMotto(motto?: string, description?: string, date?: Date) {
-    if (motto === undefined && description == undefined) return false;
+    console.assert(motto !== undefined || description !== undefined);
 
     const res = await fetch("/api/stueble/motto", {
       method: "POST",
@@ -459,6 +460,55 @@ class HTTPClient {
     if (res.ok) return true;
 
     await HTTPClient.parseError(res, "Fehler bei der Änderung des Mottos");
+    return false;
+  }
+
+  /* Applications */
+
+  async getApplication() {
+    const res = await fetch("/api/stueble/applications");
+
+    if (res.ok) return await res.json<Application[]>();
+
+    await HTTPClient.parseError(res, "Fehler beim Abfragen der Anmeldungen");
+    throw new Error(res.status.toString());
+  }
+
+  async submitApplication(
+    motto: string,
+    hosts: string[],
+    dates: [Date, number][],
+  ) {
+    console.assert(hosts.length > 0 && dates.length > 0);
+
+    const res = await fetch("/api/stueble/applications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        motto,
+        hosts,
+        dates: dates.map((date) => [date[0].toISOString(), date[1]]),
+      }),
+    });
+
+    if (res.ok) return true;
+
+    await HTTPClient.parseError(res, "Fehler beim Übertragen der Anmeldung");
+    return false;
+  }
+
+  async deleteApplication(id: string) {
+    const res = await fetch("/api/stueble/applications", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id,
+      }),
+    });
+
+    if (res.ok) return true;
+
+    await HTTPClient.parseError(res, "Fehler bei Löschung der Anmeldung");
     return false;
   }
 
