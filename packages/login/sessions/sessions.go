@@ -19,6 +19,13 @@ type Session struct {
 	ExpirationDate time.Time
 }
 
+// TODO parse into UserRole Enum
+type SessionInfo struct {
+	Id       string `db:"session_id"`
+	UserId   int    `db:"user_id"`
+	UserRole string `db:"user_role"`
+}
+
 func (s *Sessions) CreateSession(ctx context.Context, pool *database.DatabasePool, id int) (*Session, error) {
 	if pool == nil {
 		log.Panic("Assertion failed: pool needs to be defined")
@@ -39,24 +46,25 @@ func (s *Sessions) CreateSession(ctx context.Context, pool *database.DatabasePoo
 	return &session, nil
 }
 
-func (s *Sessions) GetUserId(ctx context.Context, pool *database.DatabasePool, sessionId string) (*int, error) {
+func (s *Sessions) GetSessionInfo(ctx context.Context, pool *database.DatabasePool, sessionId string) (*SessionInfo, error) {
 	sql := `
-		SELECT user_id 
+		SELECT session_id, user_id, user_role
 		FROM sessions
+		JOIN users ON sessions.user_id = users.id
 		WHERE session_id = $1
 	`
 
-	var userId *int
-	err := pool.Pool.QueryRow(ctx, sql, sessionId).Scan(&userId)
+	rows, _ := pool.Pool.Query(ctx, sql, sessionId)
+	info, err := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByName[SessionInfo])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 
-		return userId, err
+		return &info, err
 	}
 
-	return userId, nil
+	return &info, nil
 }
 
 func (s *Sessions) DeleteSession(ctx context.Context, pool *database.DatabasePool, sessionId string) (bool, error) {

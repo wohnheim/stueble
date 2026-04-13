@@ -400,8 +400,8 @@ func delete(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 
-	userId, err := sd.Sessions.GetUserId(ctx, sd.DB, cookie.Value)
-	if err != nil || userId == nil {
+	session, err := sd.Sessions.GetSessionInfo(ctx, sd.DB, cookie.Value)
+	if err != nil || session == nil {
 		var message string
 		if err != nil {
 			message = err.Error()
@@ -413,13 +413,13 @@ func delete(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = sd.Sessions.DeleteSessions(ctx, sd.DB, *userId)
+	err = sd.Sessions.DeleteSessions(ctx, sd.DB, session.UserId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to delete sessions", nil, true)
 		return
 	}
 
-	err = sd.DB.DisableUser(ctx, *userId)
+	err = sd.DB.DisableUser(ctx, session.UserId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 		return
@@ -442,8 +442,8 @@ func changeLoginInfo(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 
-	userId, err := sd.Sessions.GetUserId(ctx, sd.DB, cookie.Value)
-	if err != nil || userId == nil {
+	session, err := sd.Sessions.GetSessionInfo(ctx, sd.DB, cookie.Value)
+	if err != nil || session == nil {
 		var message string
 		if err != nil {
 			message = err.Error()
@@ -470,7 +470,7 @@ func changeLoginInfo(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = sd.DB.UpdatePassword(ctx, *userId, hashSalt)
+		err = sd.DB.UpdatePassword(ctx, session.UserId, hashSalt)
 		if err != nil {
 			writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 			return
@@ -494,7 +494,7 @@ func changeLoginInfo(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = sd.DB.UpdateUsername(ctx, *userId, strings.ToLower(c.Username))
+		err = sd.DB.UpdateUsername(ctx, session.UserId, strings.ToLower(c.Username))
 		if err != nil {
 			writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
 			return
@@ -648,12 +648,36 @@ func signupToken(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	valid := func(s *SignupTokenRequest) bool { return s.TokenTTL > 0 }
-	if !parseJSONData(w, req, &s, valid) {
+	cookie, err := req.Cookie("SID")
+	if err != nil {
+		writeJSONError(w, err, http.StatusUnauthorized, "Missing session identifier", nil, false)
 		return
 	}
 
 	ctx := req.Context()
+
+	session, err := sd.Sessions.GetSessionInfo(ctx, sd.DB, cookie.Value)
+	if err != nil || session == nil {
+		var message string
+		if err != nil {
+			message = err.Error()
+		} else {
+			message = "Invalid session identifier"
+		}
+
+		writeJSONError(w, err, http.StatusUnauthorized, message, nil, false)
+		return
+	}
+
+	if session.UserRole != "admin" {
+		writeJSONError(w, nil, http.StatusForbidden, "Admin permissions are required", nil, false)
+		return
+	}
+
+	valid := func(s *SignupTokenRequest) bool { return s.TokenTTL > 0 }
+	if !parseJSONData(w, req, &s, valid) {
+		return
+	}
 
 	token, expirationDate, err := sd.DB.AddVerificationCode(ctx, s.TokenTTL, "signup-token")
 	if err != nil {
