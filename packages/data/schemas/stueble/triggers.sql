@@ -291,6 +291,10 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION add_hosts()
 RETURNS trigger AS $$
 BEGIN
+IF (SELECT user_role FROM users WHERE id = NEW.user_id) = 'admin'
+THEN
+    RAISE EXCEPTION 'Admins are not allowed to apply for a stueble';
+END IF;
 IF (SELECT date_of_time FROM stueble.motto WHERE id = NEW.id) = (SELECT MIN(date_of_time)
                         FROM (
                             SELECT date_of_time
@@ -421,8 +425,13 @@ BEFORE INSERT OR UPDATE ON stueble.events
 FOR EACH ROW
 EXECUTE FUNCTION event_guest_change();
 
+# NOTE: DO NOT CHANGE THIS NAME AS IT WOULD CHANGE THE ORDER OF EXECUTION
+CREATE OR REPLACE TRIGGER aa_update_applicants_trigger
+    BEFORE UPDATE ON stueble.applicants
+    FOR EACH ROW EXECUTE FUNCTION update_applicants();
+
 CREATE OR REPLACE TRIGGER add_hosts
-    AFTER INSERT OR UPDATE ON stueble.applicants
+    AFTER INSERT ON stueble.applicants
     FOR EACH ROW EXECUTE FUNCTION add_hosts();
 
 CREATE OR REPLACE TRIGGER delete_applicants_trigger
@@ -441,9 +450,6 @@ CREATE OR REPLACE TRIGGER del_insert_applicants
     AFTER INSERT OR DELETE ON stueble.applicants
     FOR EACH ROW EXECUTE FUNCTION update_application_group();
 
-CREATE OR REPLACE TRIGGER update_applicants_trigger
-    BEFORE UPDATE ON stueble.applicants
-    FOR EACH ROW EXECUTE FUNCTION update_applicants();
 
 CREATE OR REPLACE TRIGGER check_deletion_change_trigger
     BEFORE UPDATE OR DELETE ON stueble.applications
