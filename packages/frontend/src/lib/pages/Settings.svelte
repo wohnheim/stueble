@@ -153,14 +153,14 @@
           if (!ui_object.config) return;
 
           const res = await apiClient("http").modifyConfig({
-            maximumGuests: Number.parseInt(
+            maximumGuestsPerStueble: Number.parseInt(
               await ui_object.openEditDialog(
                 {
                   title: "Maximale Personenanzahl",
                   placeholder: "150",
                   type: "number",
                 },
-                ui_object.config.maximumGuests.toString(),
+                ui_object.config.maximumGuestsPerStueble.toString(),
               ),
             ),
           });
@@ -174,7 +174,7 @@
         <div>
           <p id="title">Maximale Personenanzahl</p>
           <p id="subtitle">
-            {ui_object.config?.maximumGuests ?? ""}
+            {ui_object.config?.maximumGuestsPerStueble ?? ""}
           </p>
         </div>
       </Button>
