@@ -3,6 +3,8 @@
   import { onMount } from "svelte";
 
   import { apiClient } from "$lib/api/client";
+  import { settings } from "$lib/lib/settings.svelte";
+  import { database } from "$lib/lib/database.svelte";
 
   import Snackbar from "$lib/components/Snackbar.svelte";
 
@@ -16,7 +18,15 @@
       result = await apiClient("http").verifyAccount(token);
 
       loading = false;
-      if (result) location.href = "/";
+      if (result) {
+        localStorage.setItem("loggedIn", "true");
+
+        await settings.init();
+        await settings.clear();
+        await database.init();
+        await database.clear();
+        location.href = "/";
+      }
     }
   });
 </script>
