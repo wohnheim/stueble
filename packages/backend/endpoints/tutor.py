@@ -11,7 +11,7 @@ from backend.sql_connection import users
 from backend.database import database as db
 from backend.sql_connection.common_functions import check_permissions
 from backend.datatypes.stueble_types import UserRole
-
+from backend.sql_connection import applications as applics
 
 tutor = Blueprint("tutor", __name__)
 
@@ -164,6 +164,7 @@ def update_tutors():
             mimetype="application/json")
         return response
 
+    
     # NOTE: unneccessary due to trigger
     user_ids = result.data[0]
     query = sql.SQL("DELETE FROM stueble.hosts WHERE user_id IN ({user_ids})").format(user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
@@ -213,3 +214,173 @@ def update_tutors():
         status=201,
         mimetype="application/json")
     return response
+
+
+@tutor.route("/stueble/dates", methods=["GET"])
+def get_stueble_applications():
+    """
+    Get stueble applications for a date.
+    """
+    
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 401, "message": "The session id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # check permissions, since only admins can change user role
+    result = check_permissions(session_id=session_id, required_role=UserRole.TUTOR)
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result.error)}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result.data["allowed"] is False:
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    data = request.get_json()
+    date = data.get("date", None)
+
+    query = sql.SQL("""
+        SELECT uuid, motto, date_of_time, application_priority, (SELECT group_hash FROM stueble.application_groups WHERE id = application_group LIMIT 1) AS members
+        FROM stueble.applications applications
+        {where_date}
+        """).format(where_date=sql.SQL("WHERE date_of_time = {date}").format(date=sql.Placeholder()) if date is not None else sql.SQL(""))
+    
+    result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, variables=[date] if date is not None else [])
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+    if result.data is None:
+        response = Response(
+            response=json.dumps({"code": 404, "message": "No applications found"}),
+            status=404,
+            mimetype="application/json")
+        return response
+
+    cols = ["application_id", "motto", "date", "application_priority", "members"]
+    data = [dict(zip(cols, i)) for i in result.data]
+    for i in data:
+        i["members"] = i["members"].split(":")
+
+    response = Response(
+        response=json.dumps(data),
+        status=200,
+        mimetype="application/json")
+    return response
+
+
+@tutor.route("/stueble/dates", methods=["POST"])
+def submit_application_selection():
+    """
+    Saves the selection of stueble applications and makes it public
+    """
+
+    session_id = request.cookies.get("SID", None)
+    if session_id is None:
+        response = Response(
+            response=json.dumps({"code": 401, "message": "The session id must be specified"}),
+            status=401,
+            mimetype="application/json")
+        return response
+
+    # check permissions, since only admins can change user role
+    result = check_permissions(session_id=session_id, required_role=UserRole.TUTOR)
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 401, "message": str(result.error)}),
+            status=401,
+            mimetype="application/json")
+        return response
+    if result.data["allowed"] is False:
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role tutor"}),
+            status=403,
+            mimetype="application/json")
+        return response
+
+    data = request.get_json()
+    application_uuids = data.get("application_ids", None)
+
+    if not application_uuids:
+        response = Response(
+            response=json.dumps({"code": 403, "message": "application_ids must be specified"}),
+            status=403,
+            mimetype="application/json")
+        return response
+    
+    query = sql.SQL("SELECT id, date_of_time FROM stueble.applications WHERE uuid IN ({application_uuids})").format(application_uuids=sql.SQL(', ').join(sql.Placeholder() * len(application_uuids)))
+    result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.LIST_ANSWER, variables=application_uuids)
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+    if result.data is None:
+        result._data = []
+
+    data = [{"new_application_id": i[0], "date": i[1].strftime("%Y-%m-%d")} for i in result.data]
+
+    if len(data) != len(set(i["date"] for i in data)):
+        response = Response(
+            response=json.dumps({"code": 400, "message": "Some applications have the same date"}),
+            status=400,
+            mimetype="application/json")
+        return response
+
+    result = db.select(
+        table="stueble.dates",
+        columns=["application_id"],
+        specific_where=sql.SQL("application_id IN ({application_ids})").format(application_ids=sql.SQL(', ').join(sql.Placeholder() * len(application_uuids))),
+        variables=[i["new_application_id"] for i in data]
+    )
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+    no_informing = set(i["application_id"] for i in result.data)  # application ids that are already in the database, so no informing is needed
+    informing = [i["new_application_id"] for i in data if i["new_application_id"] not in no_informing]  # application ids that are not in the database, so informing is needed
+
+    query = sql.SQL("INSERT INTO stueble.dates (application_id) VALUES {values} ON CONFLICT (application_id) DO UPDATE SET application_id = EXCLUDED.application_id").format(values=sql.SQL(', ').join(sql.SQL("(%s)") * len(data)))
+
+    result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=[i["new_application_id"] for i in data])
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+
+    response = applics.send_application_confirmation(application_ids=informing)
+    if response.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(response.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+    return Response(
+        response=json.dumps({"code": 200, "message": "Application selection submitted successfully", "data": data}),
+        status=200,
+        mimetype="application/json")

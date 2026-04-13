@@ -56,12 +56,19 @@ export const hostOrTutor = z.object({
 
 export type HostOrTutor = z.infer<typeof hostOrTutor>;
 
+export const application = z.object({
+  id: uuid,
+  date: z.iso.date(),
+  motto: z.string(),
+  applicationPriority: z.uint32(),
+  applicationGroup: z.uint32(),
+});
+
+export type Application = z.infer<typeof application>;
+
 export const config = z.object({
   maximumGuests: z.int32(),
-  sessionExpirationDays: z.int32(),
   maximumInvitesPerUser: z.int32(),
-  resetCodeExpirationMinutes: z.int32(),
-  qrCodeExpirationMinutes: z.int32(),
 });
 
 export type Config = z.infer<typeof config>;
@@ -92,11 +99,15 @@ export const stuebleStatus = z.object({
     registrationStartsAt: z.iso.datetime().optional(),
     registered: z.boolean(),
     present: z.boolean(),
-    invitedGuests: z.optional(z.array(z.object({
-      id: z.string(),
-      firstName: z.string(),
-      lastName: z.string()
-    }))),
+    invitedGuests: z.optional(
+      z.array(
+        z.object({
+          id: z.string(),
+          firstName: z.string(),
+          lastName: z.string(),
+        }),
+      ),
+    ),
   }),
   // reqId,
 });

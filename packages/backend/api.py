@@ -121,6 +121,32 @@ def config():
 Stueble dates
 """
 
+@app.route("/stueble/dates", methods=["GET"])
+def get_available_dates():
+    """
+    Get the available dates for stueble
+    """
+
+    result = db.select(
+        table="stueble.available_dates",
+        columns=["date_of_time"],
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER
+    )
+
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500, "message": str(result.error)}),
+            status=500,
+            mimetype="application/json")
+        return response
+    
+    data = sorted([entry["date_of_time"].isoformat() for entry in result.data])
+    return Response(
+        response=json.dumps(data),
+        status=200,
+        mimetype="application/json")
+
+
 @app.route("/stueble/stueble_dates", methods=["GET"])
 def stueble_dates():
     """

@@ -1,14 +1,15 @@
 import ui from "beercss";
 import z from "zod";
 
-import type {
-  Capabilities,
-  Config,
-  GuestExtern,
-  GuestIntern,
-  QRCodeData,
-  StuebleStatus as StuebleStatusUnparsed,
-  User,
+import {
+  type Capabilities,
+  type Config,
+  type GuestExtern,
+  type GuestIntern,
+  type HostOrTutor,
+  type QRCodeData,
+  type StuebleStatus as StuebleStatusUnparsed,
+  type User,
 } from "$lib/api/types";
 import type { Overwrite } from "$lib/lib/utils";
 import { Routing } from "$lib/lib/routing.svelte";
@@ -33,6 +34,13 @@ const routeHost = z.object({
 
 export type RouteHost = z.infer<typeof routeHost>;
 
+const routeApplication = z.object({
+  main: z.enum(["anmeldung"]),
+  sub: z.enum(["wirte"]).optional(),
+});
+
+export type RouteApplication = z.infer<typeof routeApplication>;
+
 const routeSettings = z.object({
   main: z.enum(["einstellungen"]),
   sub: z.enum(["wirte", "tutoren"]).optional(),
@@ -40,7 +48,13 @@ const routeSettings = z.object({
 
 export type RouteSettings = z.infer<typeof routeSettings>;
 
-const routes = z.union([routesTop, routeMain, routeHost, routeSettings]);
+const routes = z.union([
+  routesTop,
+  routeMain,
+  routeHost,
+  routeApplication,
+  routeSettings,
+]);
 
 export type Routes = z.infer<typeof routes>;
 
@@ -79,6 +93,12 @@ class UI {
 
   // Navigation
   routing = new Routing(routes, { main: "start" });
+
+  // Application
+  applicationHosts = $state<HostOrTutor[]>([
+    { id: "123", firstName: "Quentin", lastName: "Frey", residence: "hirte" },
+    { id: "124", firstName: "Leon", lastName: "Gattermeyer", residence: "altbau" },
+  ]);
 
   // Persistent properties (using IndexedDB)
   publicKey = $state<CryptoKey>();

@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) CHECK ((user_role = 'extern') = (password_hash IS NULL)),
     password_salt VARCHAR(64) CHECK ((password_algorithm = 'bcrypt' OR password_hash IS NULL) = (password_salt IS NULL)),
     password_algorithm VARCHAR(20) CHECK (num_nulls(password_hash, password_algorithm) IN (0, 2)),
-    email VARCHAR(255) CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR (password_hash is NULL AND email is NOT NULL)),
+    email VARCHAR(255) CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR (user_role = 'extern' AND email IS NULL)),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     user_name TEXT CHECK ((user_role = 'extern') = (user_name IS NULL)),
@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS users (
     deleted BOOLEAN DEFAULT FALSE
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS users_room_residence_key ON users (room, residence) WHERE (user_role != 'extern' AND NOT deleted);
-CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON users (email) WHERE (user_role != 'extern' AND NOT deleted);
-CREATE UNIQUE INDEX IF NOT EXISTS users_user_name_key ON users (user_name) WHERE (user_role != 'extern' AND NOT deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_room_residence ON users (room, residence) WHERE (user_role != 'extern' AND NOT deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_user_name ON users (user_name) WHERE (user_role != 'extern' AND NOT deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email) WHERE (user_role != 'extern' AND NOT deleted);
 
 COMMIT;
 
@@ -55,9 +55,12 @@ CREATE TABLE IF NOT EXISTS configurations (
 
 -- set default configuration values
 INSERT INTO configurations (key, value) VALUES
-('maximum_guests', '150'),
+('maximum_guests_per_stueble', '150'),
 ('maximum_invites_per_user', '2'),
-('maximum_guests_per_tutor', '10');
+('maximum_invites_per_host', '3'),
+('maximum_invites_per_tutor', '10'),
+('application_deadline_winter_semester', '2024-10-01T23:59:59Z'),
+('application_deadline_summer_semester', '2025-03-31T23:59:59Z');
 
 CREATE TABLE IF NOT EXISTS verification_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -81,5 +84,5 @@ CREATE TABLE IF NOT EXISTS websockets_affected (
     message_id INTEGER REFERENCES websocket_messages(id) NOT NULL,
     session_id INTEGER REFERENCES sessions(id) NOT NULL,
     received BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_DATE
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );

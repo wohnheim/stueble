@@ -7,7 +7,9 @@ from psycopg_pool import ConnectionPool
 from psycopg import Cursor
 
 
-load_dotenv()
+# load environment variables
+env_file_path = os.path.expanduser("~/.env")
+load_dotenv(env_file_path)
 
 USER = os.getenv("PGUSER")
 PASSWORD = os.getenv("PGPASSWORD")

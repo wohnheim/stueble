@@ -1,5 +1,11 @@
 import io
 from pathlib import Path
+from typing import Annotated
+from psycopg import sql
+
+from backend.datatypes.funcres import FuncRes, Status, Message
+from backend.database import database as db
+from backend.sql_connection import users
 
 file_path = Path(__file__).resolve().parent
 
@@ -42,3 +48,222 @@ def stueble_guest(invitee_first_name: str, invitee_last_name: str, first_name: s
 </body>
 </html>"""
     return {"subject": subject, "body": html_template, "images": image_data}
+
+def stueble_applications(user_id: int | str,
+                         application_ids: Annotated[list[int] | None, "Explicit with application_uuids"] = None,
+                         application_uuids: Annotated[list[str] | None, "Explicit with application_uuids"] = None
+                         ) -> FuncRes:
+    """
+    Returns the email template for confirming a user's application for a Stüble event.
+
+    Args:
+        user_id (int | str): The ID of the user.
+        application_ids (list[int] | None): A list of application IDs for the granted stueble applications
+        application_uuids (list[str] | None): A list of application UUIDs for the granted stueble applications
+
+    Returns:
+        dict: A dictionary containing the subject, body, and images for the email.
+    """
+
+    if application_ids is None and application_uuids is None:
+        response = FuncRes(
+            error="Either application_ids or application_uuids must be provided",
+            status=Status.FULL_ERROR,
+            message=Message(
+                name="Stueble Applications Error",
+                type="error",
+                code=400
+            )
+        )
+        return response
+
+    result = users.get_user(user_id=user_id, # type: ignore
+                            columns=["first_name", "last_name", "user_uuid", "email"],
+                            type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER)
+    if result.is_error:
+        raise ValueError(f"User with id {user_id} not found")
+    first_name = result.data["first_name"]
+    last_name = result.data["last_name"]
+    recipient = result.data["email"]
+
+    stueble_logo = file_path / "images" / "favicon_150.png"
+    image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
+
+    subject = "Deine Stüble-Termine als Wirt"
+
+    result = db.select(
+        table="stueble.motto",
+        columns=["motto", "description", "date_of_time", "id"],
+        specific_where=sql.SQL("{col} IN ({ids})").format(
+            col=sql.Identifier("id" if application_ids is not None else "uuid"),
+            ids=sql.SQL(', ').join(sql.Placeholder() * len(application_ids if application_ids is not None else application_uuids))), # type: ignore
+        variables=[str(i) for i in application_ids] if application_ids else application_uuids
+        )
+    
+    if result.is_error:
+        response = FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(
+                name="Stueble Applications Error",
+                type="error",
+                code=500
+            )
+        )
+        return response
+    
+    if result.data is None or len(result.data) != len(application_ids if application_ids is not None else application_uuids): # type: ignore
+        response = FuncRes(
+            error="Not all applications were found",
+            status=Status.FULL_ERROR,
+            message=Message(
+                name="Stueble Applications Error",
+                type="error",
+                code=404
+            )
+        )
+        return response
+
+    stueble_events = result.data
+    
+    stueble_ids = set(i["id"] for i in result.data)
+
+    query = sql.SQL("""
+    SELECT first_name, last_name, stueble_id
+    FROM stueble.hosts
+    JOIN users ON stueble.hosts.user_id = users.id
+    WHERE stueble_id IN ({ids})
+""").format(ids=sql.SQL(', ').join(sql.Placeholder() * len(stueble_ids)))
+
+    result = db.custom_call(
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+        variables=[str(i) for i in stueble_ids]
+    )
+
+    if result.is_error:
+        response = FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(
+                name="Stueble Hosts Error",
+                type="error",
+                code=500
+            )
+        )
+        return response
+
+    for i in stueble_events:
+        i["hosts"] = [(host["first_name"], host["last_name"]) for host in result.data if host["stueble_id"] == i["id"]]
+
+    def block(first_block: bool, motto: str, description: str, hosts: list[tuple[str, str]]) -> str:
+        """
+        Returns the HTML block for a stueble event.
+        
+        Args:
+            first_block (bool): Whether this is the first block (for styling purposes).
+            motto (str): The motto of the stueble event.
+            description (str): The description of the stueble event.
+            hosts (list[tuple[str, str]]): A list of hosts for the stueble event, where each host is a tuple of (first_name, last_name).
+        Returns:
+            str: The HTML block for the stueble event."""
+        
+        return f"""
+	<!-- Stüble Termin Block 1 -->
+		<div class="mx-auto max-w-3xl rounded-2xl border-2 p-6 px-15 {' mt-8' if first_block is False else ''}
+			border-teal-300 bg-emerald-400/15 shadow-[inset_0_0_20px_#000000]">
+			<h2 class="mb-8 text-2xl font-bold text-gray-200 text-center">20.02.2026</h2>
+
+			<!-- Stüble Motto -->
+			<div class="mr-14 font-normal px-10 mb-10">
+				<p class="font-bold text-white-200 text-xl mb-3">Details</p>
+				<div class="grid grid-cols-[auto,1fr] gap-y-1 gap-x-10">
+					<p>Motto: </p>
+					<p>{motto}</p>
+					<p>Beschreibung: </p>
+					<p>{description}</p>
+
+				</div>
+
+			</div>
+
+			<!-- Stüble Wirte -->
+			<div class="mr-5 font-normal px-10 mb-10">
+				<p class="font-bold text-white-200 text-xl mb-2">Stüble-Wirte</p>
+				<ul class="list-disc text-left text-gray-300 ml-5">
+					{"\n".join(f'<li>{host[0]} {host[1]}</li>' for host in hosts)}
+				</ul>
+			</div>
+		</div>
+		"""
+
+    body = f"""
+<!DOCTYPE html>
+
+<head>
+	<meta charset="utf-8">
+	<html lang="de">
+
+	</html>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<title>Bewerbung auf Stüble-Termine</title>
+</head>
+
+<body class="bg-slate-800 font-medium text-gray-200">
+	 <div class="flex items-center justify-center mt-7">
+            <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
+    </div>
+	<div class="mx-auto mb-10 max-w-3xl
+			p-10 text-lg">
+		Hallo {first_name} {last_name},<br/><br/>
+		Dir wurden folgende Stüble-Termine als Wirt zugeteilt.<br/>
+		Zusätzlich darfst Du deswegen das gesamte Semester über 3 anstatt 2 Gäste zu Stüble-Terminen einladen.<br/><br/>
+		Wir freuen uns auf Dich.<br/>
+		Dein Tutoren-Team
+		
+		<br/><br/>
+
+		<span class="text-xs">Falls ein Fehler vorliegt oder Du Dich nicht mit einer Gruppe auf ein Stüble beworben hast, teile das bitte umgehend den Tutoren unter <a class="text-blue-400 underline" href="mailto:tutorenhes+stuebleapplication@gmail.com">tutorenhes@gmail.com</a> mit.</span>
+</div>
+    {"\n".join(block(first_block=index == 0, motto=event["motto"], description=event["description"], hosts=event["hosts"]) for index, event in enumerate(stueble_events))}
+</body>
+"""
+   
+    return FuncRes(
+        data={"recipient": recipient, "subject": subject, "body": body, "images": image_data},
+        status=Status.FULL_SUCCESS,
+        message=Message(
+            name="Stueble Application Success",
+            type="success",
+            code=200
+        )
+    )
+
+def inform_overwritten_user(first_name: str, last_name: str):
+    """
+    Returns the email template for informing a user whose account has been overwritten due to a new user registering with the same room and residence as well as a overwriter token.
+
+    Args:
+        first_name (str): First name of the user.
+        last_name (str): Last name of the user.
+        reset_token (str): The reset token for password resetting.
+    Returns:
+        dict: A dictionary containing the subject, body, and images for the email.
+    """
+    stueble_logo = file_path / "images" / "favicon_150.png"
+    image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
+
+    subject = "Passwort zurücksetzen"
+    body = f"""<html lang="de">
+        <body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
+            <div>
+                <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
+        </div>
+            <h2>Hallo {first_name} {last_name},</h2>
+            <p>Eine neue Person hat sich für dein Zimmer registriert. <br/><br/>Falls Du dennoch im kommenden Semester in diesem Zimmer wohnst, setze dich umgehend mit den Tutoren in Verbindung:<br/> <a class="text-blue-400 underline" href="mailto:tutorenhes+falsyOverwrittenAccount@gmail.com">tutorenhes@gmail.com</a></p>
+        </br>
+        </br>
+        <p>Dein Stüble-Team</p>
+        </body>
+        </html>"""
+    return {"subject": subject, "body": body, "images": image_data}

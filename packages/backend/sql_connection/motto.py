@@ -115,29 +115,109 @@ def get_info(date: date | None=None) -> FuncRes:
                         code=200)
     )
 
+
+@DeprecationWarning
 def create_stueble(date: date  | None, motto: str,
-                   shared_apartment: str | None = None, description: str | None = None) -> FuncRes:
+                   applicants_uuids: list[str], description: str | None = None) -> FuncRes:
     """
     creates a new entry in the table stueble.motto
 
     Args:
         date (datetime.date | None): date for which the motto is valid
         motto (str): motto for the stueble party
-        shared_apartment (str): shared apartment for the stueble party, can be None
+        applicants_uuids (list[str]): list of applicant IDs for the stueble party
         description (str): description for the stueble party
     Returns:
         FuncRes: id for success, error else
     """
 
+    current_group_hash = ":".join(sorted(applicants_uuids))
+
+    query = sql.SQL("""SELECT a.id
+            FROM stueble.applicants a
+            JOIN stueble.application_groups g ON a.application_group = g.id
+            WHERE g.group_hash = {group_hash}""").format(group_hash=sql.Placeholder())
+
+    result = db.custom_call(
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+        variables=[current_group_hash]
+    )
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Stueble Error",
+                            type="error",
+                            category="Create Stueble",
+                            code=500)
+        )
+    
+    if result.data is None:
+        query = sql.SQL("INSERT INTO stueble.applicants (user_id, application_group) VALUES {rows} RETURNING id").format(
+            rows=sql.SQL(", ").join([
+                sql.SQL("(SELECT id FROM users WHERE user_uuid = {user_uuid}), (SELECT id FROM stueble.application_groups WHERE group_hash = {group_hash})").format(
+                    user_uuid=sql.Placeholder(), group_hash=sql.Placeholder()) for i in applicants_uuids]))
+        variables = [e for i in applicants_uuids for e in (i, current_group_hash)]
+        result = db.custom_call(
+            query=query,
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+            variables=variables
+        )
+        if result.is_error:
+            return FuncRes(
+                error=str(result.error),
+                status=Status.FULL_ERROR,
+                message=Message(name="Create Stueble Error",
+                                type="error",
+                                category="Create Stueble",
+                                code=500)
+            )
+        if result.data is None or len(result.data) != len(applicants_uuids):
+            return FuncRes(
+                error="one or more applicant UUIDs are invalid",
+                status=Status.FULL_ERROR,
+                message=Message(name="Create Stueble Error",
+                                type="error",
+                                category="Create Stueble",
+                                code=400)
+            )
+        
+    query = sql.SQL("SELECT DISTINCT application_group FROM stueble.application_groups WHERE group_hash = {group_hash} ORDER BY application_group DESC LIMIT 1").format(group_hash=sql.Placeholder())
+    result = db.custom_call(
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+        variables=[current_group_hash]
+    )
+    if result.is_error:
+        return FuncRes(
+            error=str(result.error),
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Stueble Error",
+                            type="error",
+                            category="Create Stueble",
+                            code=500)
+        )
+    if result.data is None:
+        return FuncRes(
+            error="failed to retrieve application group",
+            status=Status.FULL_ERROR,
+            message=Message(name="Create Stueble Error",
+                            type="error",
+                            category="Create Stueble",
+                            code=500)
+        )
+    
+    application_group = result.data
+
     arguments: dict[str, Any] = {"date_of_time": date, "motto": motto}
-    if shared_apartment is not None:
-        arguments["shared_apartment"] = shared_apartment
+    arguments["application_group"] = application_group
     if description is not None:
         arguments["description"] = description
 
     if arguments["date_of_time"] is None:
         del arguments["date_of_time"]
-        query = f"""INSERT INTO stueble.motto (date_of_time, {', '.join(arguments.keys())})
+        query = f"""INSERT INTO stueble.applications (date_of_time, {', '.join(arguments.keys())})
         VALUES (CURRENT_DATE + (10 - EXTRACT(DOW FROM CURRENT_DATE)) %% 7 * INTERVAL '1 day', {', '.join('%s' for _ in range(len(arguments)))})
         RETURNING id"""
         result = db.custom_call(
@@ -170,6 +250,11 @@ def create_stueble(date: date  | None, motto: str,
                             category="Create Stueble",
                             code=500)
         )
+    
+    """result = db.insert(
+        table="stueble.dates",
+
+    )"""
     return FuncRes(
             data=clean_single_data(result.data),
             status=Status.FULL_SUCCESS,

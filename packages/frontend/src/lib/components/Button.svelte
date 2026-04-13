@@ -36,6 +36,10 @@
     color: var(--on-background);
   }
 
+  #common.border {
+    box-sizing: content-box;
+  }
+
   #common.notClickable {
     height: 70px;
     padding: 0 20px;

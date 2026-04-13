@@ -16,6 +16,7 @@ from functools import wraps
 from enum import Enum
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
+from psycopg import sql
 
 from backend.sql_connection.common_functions import check_permissions
 from backend.datatypes.stueble_types import UserRole, VerificationMethod, valid_verification_method, get_leq_roles
@@ -27,7 +28,8 @@ from backend import hash_pwd as hp
 from backend.basic_functions import snake_to_camel_case
 
 # load environment variables
-load_dotenv("~/stueble/packages/backend/.env")
+env_file_path = os.path.expanduser("~/.env")
+load_dotenv(env_file_path)
 
 HOST = os.getenv("HOST") or "127.0.0.1"
 WS_PORT = os.getenv("WS_PORT") or 3001
@@ -355,6 +357,8 @@ async def handle_ws(websocket):
                     await send(websocket=websocket, event="error", data={"code": "400",
                         "message": "resId must be specified"})
                 # await acknowledgement(websocket=websocket, res_id=res_id)
+            elif event == "stueble_selection":
+                    await stueble_selection(websocket=websocket, msg=data)
     except:
         pass
     finally:
@@ -889,6 +893,84 @@ async def status(user_id: Annotated[str | int | None, "Explicit with user_uuid"]
                         code=200)
     )
 
+async def stueble_selection(websocket, msg):
+    """
+    handle stueble selection draft
+
+    Args:
+        websocket: websocket connection
+        msg (dict): the message from the client
+    """
+
+    # check permissions
+    session_id = parse_cookies(headers=websocket.request.headers).get("SID", None)
+    if session_id is None:
+        await send(websocket=websocket, event="error", data=
+            {"code": "401",
+            "message": "missing SID cookie"})
+        return
+    result = check_permissions(session_id=session_id, required_role=UserRole.TUTOR)
+    if result.is_error:
+        await send(websocket=websocket, event="error", data=
+            {"code": "401",
+            "message": str(result.error)})
+        return
+    if result.data["allowed"] is False:
+        await send(websocket=websocket, event="error", data=
+            {"code": "403",
+            "message": "invalid permissions, need role tutor or above"})
+        return
+    
+    user_id = result.data["user_id"]
+    name = result.data["first_name"] + " " + result.data["last_name"]
+
+    selection = msg.data
+    if not isinstance(selection, dict):
+        await send(websocket=websocket, event="error", data=
+            {"code": "400",
+             "message": "data must be a dictionary of uuids and booleans"})
+        return
+    
+    query = sql.SQL("INSERT INTO stueble.draft_dates_selection (application_id, selected, changed_by) \
+                    VALUES {data} \
+                    ON CONFLICT (application_id) DO UPDATE SET selected = EXCLUDED.selected, changed_by = EXCLUDED.changed_by, changed_at = CURRENT_TIMESTAMP)").format(
+        data=sql.SQL(",").join(sql.SQL("((SELECT id FROM stueble.applications WHERE uuid = {uuid}), {selected}, {user_id})").format(
+            uuid=sql.Placeholder(),
+            selected=sql.Placeholder(),
+            user_id=sql.Placeholder()
+        ))
+    )
+
+    result = db.custom_call(
+        query=query,
+        variables=[e for i in selection.items() for e in i + (user_id,)],
+        type_of_answer=db.ANSWER_TYPE.NO_ANSWER
+    )
+    if result.is_error:
+        pass
+
+    await update_stueble_selection_draft(data={**selection, "changedBy": name})
+    return
+
+async def update_stueble_selection_draft(data):
+    """
+    updates the stueble selection draft for all tutors
+
+    Args:
+        data (dict): the data to update, a dictionary of application uuids, selected booleans and changed by user (first_name <space> last_name)
+    """
+    query = sql.SQL("SELECT session_id FROM sessions JOIN users ON sessions.user_id = users.id WHERE users.user_role >= 'tutor'").format()
+    result = db.custom_call(
+        query=query,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER
+    )
+    if result.is_error:
+        return
+    session_ids = [i[0] for i in result.data]
+    for sid in session_ids:
+        websocket = get_websocket_by_sid(sid=sid)
+        if websocket is not None:
+            asyncio.run(send(websocket=websocket, event="stueble_selection", data=data))
 
 # Start server
 async def main():

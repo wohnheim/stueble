@@ -25,7 +25,7 @@
     title: string;
     subtitle?: string;
     elements: HostOrTutor[];
-    addFunction: (ids: string[], date?: Date) => Promise<HostOrTutor[] | null>;
+    addFunction: (ids: HostOrTutor[], date?: Date) => Promise<HostOrTutor[] | null>;
     removeFunction: (ids: string[], date?: Date) => Promise<boolean>;
     addToDatabase: (hosts: HostOrTutor[]) => Promise<void>;
     removeFromDatabase: (ids: string[]) => Promise<void>;
@@ -114,7 +114,7 @@
   };
 
   const add = async () => {
-    const res = await addFunction(selected.map((s) => s.id));
+    const res = await addFunction(selected);
     if (res != null) await addToDatabase(res);
 
     selectedUnfiltered = [];
@@ -218,7 +218,7 @@
   }
 
   #search.field > a#right-button {
-    inset: 50% 0.4rem auto auto;
+    inset: 0.5rem 0.4rem auto auto;
   }
 
   #right-button {

@@ -282,22 +282,6 @@ def search_intern():
             mimetype="application/json")
         return response
 
-    # check permissions, since only hosts can see guests
-
-    result = check_permissions(session_id=session_id, required_role=UserRole.HOST)
-    if result.is_error:
-        response = Response(
-            response=json.dumps({"code": 401, "message": str(result.error)}),
-            status=401,
-            mimetype="application/json")
-        return response
-    if result.data["allowed"] is False:
-        response = Response(
-            response=json.dumps({"code": 401, "message": "invalid permissions, need at least role host"}),
-            status=401,
-            mimetype="application/json")
-        return response
-
     # load data
     data = request.args.to_dict()
 

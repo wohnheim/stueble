@@ -6,6 +6,8 @@ from email.mime.text import MIMEText
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+
+@DeprecationWarning
 def create_message(sender, to, subject, message_text):
     """Create a MIME email message."""
     message = MIMEText(message_text)
@@ -15,6 +17,8 @@ def create_message(sender, to, subject, message_text):
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
     return {"raw": raw}
 
+
+@DeprecationWarning
 def send_message(service, user_id, message):
     """Send an email message."""
     try:
@@ -25,6 +29,8 @@ def send_message(service, user_id, message):
         print(f"An error occurred: {error}")
         return None
 
+
+@DeprecationWarning
 def send_mail(recipient: Email, subject: str, body: str):
   """Shows basic usage of the Gmail API.
   Lists the user's Gmail labels.
