@@ -33,3 +33,4 @@ result
 
 # Testing
 packages/backend/testing/
+docker/
