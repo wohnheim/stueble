@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/wohnheim/stueble/database"
+	"github.com/wohnheim/backend/database"
 )
 
 type Sessions struct {
