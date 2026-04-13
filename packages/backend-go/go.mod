@@ -1,4 +1,4 @@
-module github.com/wohnheim/stueble
+module github.com/wohnheim/backend
 
 go 1.25.5
 

@@ -9,10 +9,10 @@ import (
 	"strconv"
 
 	"github.com/jhillyerd/enmime"
-	"github.com/wohnheim/stueble/database"
-	"github.com/wohnheim/stueble/endpoints"
-	"github.com/wohnheim/stueble/sessions"
-	"github.com/wohnheim/stueble/templates"
+	"github.com/wohnheim/backend/database"
+	"github.com/wohnheim/backend/endpoints"
+	"github.com/wohnheim/backend/sessions"
+	"github.com/wohnheim/backend/templates"
 )
 
 // Constants & Global variables

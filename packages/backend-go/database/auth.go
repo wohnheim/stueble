@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/wohnheim/stueble/passwordHashing"
+	"github.com/wohnheim/backend/passwordHashing"
 )
 
 type LoginInfo struct {

@@ -9,7 +9,7 @@
     pname = "backend-go";
     version = "0.1";
 
-    src = ../packages/login;
+    src = ../packages/backend-go;
 
     vendorHash = "sha256-KloM9UlIzup855HHvCc9EQzCZkDDTJCGPHkBmJsRFho=";
   };

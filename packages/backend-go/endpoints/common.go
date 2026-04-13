@@ -9,9 +9,9 @@ import (
 	"os"
 
 	"github.com/jhillyerd/enmime"
-	"github.com/wohnheim/stueble/database"
-	"github.com/wohnheim/stueble/sessions"
-	"github.com/wohnheim/stueble/utils"
+	"github.com/wohnheim/backend/database"
+	"github.com/wohnheim/backend/sessions"
+	"github.com/wohnheim/backend/utils"
 )
 
 /* Essential connections and data */

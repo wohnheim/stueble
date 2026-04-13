@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wohnheim/stueble/database"
-	"github.com/wohnheim/stueble/passwordHashing"
-	"github.com/wohnheim/stueble/templates"
-	"github.com/wohnheim/stueble/utils"
+	"github.com/wohnheim/backend/database"
+	"github.com/wohnheim/backend/passwordHashing"
+	"github.com/wohnheim/backend/templates"
+	"github.com/wohnheim/backend/utils"
 )
 
 type LoginRequest struct {
