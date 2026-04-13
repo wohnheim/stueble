@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS error_logs (
 
 CREATE TABLE IF NOT EXISTS stueble.application_groups (
     id SERIAL PRIMARY KEY,
-    group_hash TEXT UNIQUE NOT NULL
+    group_hash TEXT UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS stueble.applicants (

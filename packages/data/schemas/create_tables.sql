@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_name TEXT NOT NULL,
     password_hash VARCHAR(255) CHECK ((user_role = 'extern') = (password_hash IS NULL)),
     password_salt VARCHAR(64) CHECK ((password_algorithm = 'bcrypt' OR password_hash IS NULL) = (password_salt IS NULL)),
-    password_algorithm VARCHAR(20) CHECK (num_nulls(password_hash, password_algorithm) IN (0, 2)),
+    password_algorithm VARCHAR(20) CHECK (num_nulls(password_hash, password_algorithm) IN (0, 2)) DEFAULT 'bcrypt',
     email VARCHAR(255) CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR (user_role = 'extern' AND email IS NULL)),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -65,9 +65,11 @@ INSERT INTO configurations (key, value) VALUES
 CREATE TABLE IF NOT EXISTS verification_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     additional_data JSONB, -- to store optional changes in users
+    reset_code UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    expiration_date TIMESTAMPTZ
+    expiration_date TIMESTAMPTZ,
+    used BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS websocket_messages (

@@ -8,8 +8,10 @@ from psycopg import sql
 from backend.database import database as db
 from backend.datatypes.funcres import FuncRes, Message, Status
 from backend.datatypes.result import Result
+from backend.sql_connection import users
 from backend.mail_assets import templates
 from backend.google_functions import email as mail
+from backend.datatypes.stueble_types import UserRole
 
 
 def get_application_count(date: dt.date | None = None) -> FuncRes:
@@ -81,7 +83,7 @@ def get_applications(user_id: int) -> Result:
     return result
 
 
-def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]], description: str | None = None, image: str | None = None) -> FuncRes:
+def send_application(motto: str, hosts: list[str] | None, dates: list[tuple[str, int]], description: str | None = None, image: str | None = None, automatic_priorities: bool = False) -> FuncRes:
     """
     Send an application for the stueble. The application will be sent for all specified dates and priorities.
 
@@ -91,75 +93,116 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]],
         dates (list[tuple[str, int]]): A list of tuples containing the date and application_priority for the application.
         description (str | None): The description of the application.
         image (str | None): The image of the application.
+        automatic_priorities (bool): Whether to automatically set priorities for the application. If True, all priorities have to be set to -1
 
     Returns:
         FuncRes: A FuncRes object containing a success message or an error message.
     """
-
-    query = sql.SQL("SELECT user_uuid \
-                    FROM users \
-                    WHERE user_uuid IN ({hosts}) AND user_role != 'extern'").format(
-                        hosts=sql.SQL(", ").join(sql.Placeholder() * len(hosts))
-                        )
-    result = db.custom_call(
-        query=query,
-        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-        variables=hosts
-    )
-
-    if result.is_error:
-        return FuncRes(
-            error=result.error,
-            status=Status.FULL_ERROR,
-            message=Message(name="Get Hosts Error",
-                            type="error",
-                            category="Send Application",
-                            code=500),
-            user_warning=str(result.error)
+    if hosts is not None:
+        query = sql.SQL("SELECT user_uuid \
+                        FROM users \
+                        WHERE user_uuid IN ({hosts}) AND user_role != 'extern'").format(
+                            hosts=sql.SQL(", ").join(sql.Placeholder() * len(hosts))
+                            )
+        result = db.custom_call(
+            query=query,
+            type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
+            variables=hosts
         )
-    
-    found_users = [str(i[0]) for i in result.data]
-    if len(found_users) != len(hosts):
-        return FuncRes(
-            error=ValueError("Not all specified hosts were found or some hosts are extern users."),
-            status=Status.FULL_ERROR,
-            message=Message(name="Get Hosts Error",
-                            type="error",
-                            category="Send Application",
-                            code=400),
-            user_warning="Some hosts not found or are extern users"
+
+        if result.is_error:
+            return FuncRes(
+                error=result.error,
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Hosts Error",
+                                type="error",
+                                category="Send Application",
+                                code=500),
+                user_warning=str(result.error)
+            )
+        
+        found_users = [str(i[0]) for i in result.data]
+        if len(found_users) != len(hosts):
+            return FuncRes(
+                error=ValueError("Not all specified hosts were found or some hosts are extern users."),
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Hosts Error",
+                                type="error",
+                                category="Send Application",
+                                code=400),
+                user_warning="Some hosts not found or are extern users"
+            )
+        
+        current_group_hash = ":".join(sorted(hosts))
+        query = sql.SQL("WITH ins AS ( \
+                            INSERT INTO stueble.application_groups (group_hash) \
+                            VALUES ({group_hash}) \
+                            ON CONFLICT (group_hash) DO NOTHING \
+                            RETURNING id) \
+                        SELECT id FROM ins \
+                        UNION ALL \
+                        SELECT id FROM stueble.application_groups \
+                        WHERE group_hash = {group_hash} AND NOT EXISTS (SELECT 1 FROM ins)").format(
+            group_hash=sql.Placeholder()
         )
-    
-    current_group_hash = ":".join(sorted(hosts))
-    query = sql.SQL("WITH ins AS ( \
-                        INSERT INTO stueble.application_groups (group_hash) \
-                        VALUES ({group_hash}) \
-                        ON CONFLICT (group_hash) DO NOTHING \
-                        RETURNING id) \
-                    SELECT id FROM ins \
-                    UNION ALL \
-                    SELECT id FROM stueble.application_groups \
-                    WHERE group_hash = {group_hash} AND NOT EXISTS (SELECT 1 FROM ins)").format(
-        group_hash=sql.Placeholder()
-    )
-    result = db.custom_call(
+        result = db.custom_call(
+                query=query,
+                type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
+                variables=[current_group_hash, current_group_hash]
+        )
+
+        if result.is_error:
+            return FuncRes(
+                error=result.error,
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Hosts Error",
+                                type="error",
+                                category="Send Application",
+                                code=500),
+                user_warning=str(result.error)
+            )
+        
+        group = result.data[0]
+    else:
+        query = sql.SQL("INSERT INTO stueble.application_groups (group_hash) VALUES (NULL) RETURNING id").format()
+        result = db.custom_call(
+                query=query,
+                type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER
+        )
+        if result.is_error:
+            return FuncRes(
+                error=result.error,
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Hosts Error",
+                                type="error",
+                                category="Send Application",
+                                code=500),
+                user_warning=str(result.error)
+            )
+        group = result.data[0]
+
+    if automatic_priorities is True:
+        query = sql.SQL("SELECT COALESCE(MAX(application_priority), 0) FROM stueble.applications WHERE application_group = {group}").format(
+            group=sql.Placeholder()
+        )
+        result = db.custom_call(
             query=query,
             type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
-            variables=[current_group_hash, current_group_hash]
-    )
-
-    if result.is_error:
-        return FuncRes(
-            error=result.error,
-            status=Status.FULL_ERROR,
-            message=Message(name="Get Hosts Error",
-                            type="error",
-                            category="Send Application",
-                            code=500),
-            user_warning=str(result.error)
+            variables=[group]
         )
-    
-    group = result.data[0]
+        if result.is_error:
+            return FuncRes(
+                error=result.error,
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Priorities Error",
+                                type="error",
+                                category="Send Application",
+                                code=500),
+                user_warning=str(result.error)
+            )
+        
+        max_priority = result.data[0] if result.data[0] is not None else 0
+        dates = [(date, max_priority + i + 1) for i, (date, _) in enumerate(dates)]
 
     def applicant():
         return sql.SQL("((SELECT id \
@@ -180,19 +223,17 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]],
 
     # TODO: insert of application group above is not needed as already performed here
     query = sql.SQL("""
-    WITH a AS (
-    INSERT INTO stueble.applicants (user_id, application_group) VALUES {values} ON CONFLICT DO NOTHING)
-
+    {applic_insert}
     INSERT INTO stueble.applications (motto, date_of_time, application_priority, application_group, description, image) VALUES {applications}
-    RETURNING date_of_time, uuid;
+    RETURNING date_of_time, uuid, id;
     """).format(
-        values=sql.SQL(", ").join(applicant() for _ in hosts),
+        applic_insert=sql.SQL("WITH a AS (INSERT INTO stueble.applicants (user_id, application_group) VALUES {values} ON CONFLICT DO NOTHING) ").format(values=sql.SQL(", ").join(applicant() for _ in hosts)) if hosts is not None else sql.SQL("").format(),
         applications=sql.SQL(", ").join(application(group) for _ in dates)
     )
     result = db.custom_call(
             query=query,
             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-            variables=[str(e) for i in found_users for e in [i, group]] + [
+            variables=([str(e) for i in found_users for e in [i, group]] if hosts is not None else []) + [ # type: ignore
                     str(e) for i in dates for e in [motto, i[0], i[1], group] + ([description] if description is not None else []) + ([image] if image is not None else [])
                     ]
     )
@@ -208,7 +249,7 @@ def send_application(motto: str, hosts: list[str], dates: list[tuple[str, int]],
             user_warning=str(result.error)
         )
     
-    data = [{"date": entry[0].isoformat(), "id": str(entry[1])} for entry in result.data]
+    data = [{"date": entry[0].isoformat(), "id": str(entry[1]), "application_id": str(entry[2])} for entry in result.data]
     return FuncRes(
         data=data,
         status=Status.FULL_SUCCESS,
@@ -280,15 +321,28 @@ def delete_application(application_uuid: int, user_id: int) -> FuncRes:
         )
     
     if result.data is None:
-        return FuncRes(
-            error=ValueError("User not entitled to delete this application."),
-            status=Status.FULL_ERROR,
-            message=Message(name="Get Applicant Error",
-                            type="error",
-                            category="Delete Application",
-                            code=403),
-            user_warning="Not entitled to delete this application"
-        )
+        result = users.get_user(user_id=user_id, columns=["user_role"])
+        if result.is_error:
+            return FuncRes(
+                error=result.error,
+                status=Status.FULL_ERROR,
+                message=Message(name="Get User Error",
+                                type="error",
+                                category="Delete Application",
+                                code=500),
+                user_warning=str(result.error)
+            )
+        user_role = result.data["user_role"]
+        if user_role < UserRole.TUTOR:
+            return FuncRes(
+                error=ValueError("User not entitled to delete this application."),
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Applicant Error",
+                                type="error",
+                                category="Delete Application",
+                                code=403),
+                user_warning="Not entitled to delete this application"
+            )
 
     result = db.delete(
         table="stueble.applications",
@@ -356,7 +410,7 @@ def update_application(
             user_warning="Failed to retrieve application information"
         )
     
-    application_group = result.data
+    application_group = result.data["application_group"]
 
     if application_group is None:
         return FuncRes(
@@ -388,15 +442,28 @@ def update_application(
         )
 
     if result.data is None:
-        return FuncRes(
-            error=ValueError("User not entitled to change this application."),
-            status=Status.FULL_ERROR,
-            message=Message(name="Get Applicant Error",
-                            type="error",
-                            category="Update Application",
-                            code=403),
-            user_warning="Not entitled to change this application"
-        )
+        result = users.get_user(user_id=user_id, columns=["user_role"])
+        if result.is_error:
+            return FuncRes(
+                error=result.error,
+                status=Status.FULL_ERROR,
+                message=Message(name="Get User Error",
+                                type="error",
+                                category="Delete Application",
+                                code=500),
+                user_warning=str(result.error)
+            )
+        user_role = result.data["user_role"]
+        if UserRole(user_role) < UserRole.TUTOR:
+            return FuncRes(
+                error=ValueError("User not entitled to change this application."),
+                status=Status.FULL_ERROR,
+                message=Message(name="Get Applicant Error",
+                                type="error",
+                                category="Update Application",
+                                code=403),
+                user_warning="Not entitled to change this application"
+            )
 
     if date is not None:
         result = db.select(
@@ -571,7 +638,7 @@ def send_application_confirmation(application_uuids: Annotated[list[str] | None,
             user_warning="Either application_uuids or application_ids must be provided, but not both."
         )
 
-    query = sql.SQL("SELECT u.id, string_agg(DISTINCT a.application_uuid::text, ',) AS application_uuids \
+    query = sql.SQL("SELECT u.id, string_agg(DISTINCT a.uuid::text, ',') AS application_uuids \
                     FROM stueble.applications a \
                     JOIN stueble.applicants ap ON a.application_group = ap.application_group \
                     JOIN users u ON ap.user_id = u.id \
@@ -618,7 +685,7 @@ def send_application_confirmation(application_uuids: Annotated[list[str] | None,
         
         data = result.data
         
-        result = mail.send_mail(recipient=data["recipient"], subject=data["subject"], body=data["body"], images=data["images"])
+        result = mail.send_mail(recipient=data["recipient"], subject=data["subject"], body=data["body"], images=data["images"], html=True)
 
         if result.is_error:
             return FuncRes(

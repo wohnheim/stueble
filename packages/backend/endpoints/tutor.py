@@ -273,7 +273,7 @@ def get_stueble_applications():
     cols = ["application_id", "motto", "date", "application_priority", "members"]
     data = [dict(zip(cols, i)) for i in result.data]
     for i in data:
-        i["members"] = i["members"].split(":")
+        i["members"] = i["members"].split(":") if i["members"] is not None else []
 
     response = Response(
         response=json.dumps(data),

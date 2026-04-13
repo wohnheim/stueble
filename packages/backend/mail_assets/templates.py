@@ -6,6 +6,7 @@ from psycopg import sql
 from backend.datatypes.funcres import FuncRes, Status, Message
 from backend.database import database as db
 from backend.sql_connection import users
+from backend.datatypes.stueble_types import Email
 
 file_path = Path(__file__).resolve().parent
 
@@ -97,7 +98,8 @@ def stueble_applications(user_id: int | str,
         specific_where=sql.SQL("{col} IN ({ids})").format(
             col=sql.Identifier("id" if application_ids is not None else "uuid"),
             ids=sql.SQL(', ').join(sql.Placeholder() * len(application_ids if application_ids is not None else application_uuids))), # type: ignore
-        variables=[str(i) for i in application_ids] if application_ids else application_uuids
+        variables=[str(i) for i in application_ids] if application_ids else application_uuids,
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER
         )
     
     if result.is_error:
@@ -154,7 +156,7 @@ def stueble_applications(user_id: int | str,
         return response
 
     for i in stueble_events:
-        i["hosts"] = [(host["first_name"], host["last_name"]) for host in result.data if host["stueble_id"] == i["id"]]
+        i["hosts"] = [(host[0], host[1]) for host in result.data if host[2] == i["id"]]
 
     def block(first_block: bool, motto: str, description: str, hosts: list[tuple[str, str]]) -> str:
         """
@@ -169,7 +171,7 @@ def stueble_applications(user_id: int | str,
             str: The HTML block for the stueble event."""
         
         return f"""
-	<!-- Stüble Termin Block 1 -->
+<!-- Stüble Termin Block 1 -->
 		<div class="mx-auto max-w-3xl rounded-2xl border-2 p-6 px-15 {' mt-8' if first_block is False else ''}
 			border-teal-300 bg-emerald-400/15 shadow-[inset_0_0_20px_#000000]">
 			<h2 class="mb-8 text-2xl font-bold text-gray-200 text-center">20.02.2026</h2>
@@ -194,7 +196,6 @@ def stueble_applications(user_id: int | str,
 					{"\n".join(f'<li>{host[0]} {host[1]}</li>' for host in hosts)}
 				</ul>
 			</div>
-		</div>
 		"""
 
     body = f"""
@@ -209,28 +210,30 @@ def stueble_applications(user_id: int | str,
 	<title>Bewerbung auf Stüble-Termine</title>
 </head>
 
-<body class="bg-slate-800 font-medium text-gray-200">
-	 <div class="flex items-center justify-center mt-7">
-            <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
-    </div>
-	<div class="mx-auto mb-10 max-w-3xl
-			p-10 text-lg">
-		Hallo {first_name} {last_name},<br/><br/>
-		Dir wurden folgende Stüble-Termine als Wirt zugeteilt.<br/>
-		Zusätzlich darfst Du deswegen das gesamte Semester über 3 anstatt 2 Gäste zu Stüble-Terminen einladen.<br/><br/>
-		Wir freuen uns auf Dich.<br/>
-		Dein Tutoren-Team
-		
-		<br/><br/>
-
-		<span class="text-xs">Falls ein Fehler vorliegt oder Du Dich nicht mit einer Gruppe auf ein Stüble beworben hast, teile das bitte umgehend den Tutoren unter <a class="text-blue-400 underline" href="mailto:tutorenhes+stuebleapplication@gmail.com">tutorenhes@gmail.com</a> mit.</span>
-</div>
+<body style="background-color:#1e293b; color:#e5e7eb; font-weight:500;">
+  <div style="display:flex; align-items:center; justify-content:center; margin-top:1.75rem;">
+    <img src='cid:{image_data[0]["name"]}' alt="Stüble Logo" width="150" />
+  </div>
+  <div style="margin:0 auto 2.5rem auto; max-width:768px; padding:2.5rem; font-size:1.125rem;">
+    Hallo {first_name} {last_name},<br/><br/>
+    Dir wurden folgende Stüble-Termine als Wirt zugeteilt.<br/>
+    Zusätzlich darfst Du deswegen das gesamte Semester über 3 anstatt 2 Gäste zu Stüble-Terminen einladen.<br/><br/>
+    Wir freuen uns auf Dich.<br/>
+    Dein Tutoren-Team <br/><br/>
+    <span style="font-size:12px;">
+      Falls ein Fehler vorliegt oder Du Dich nicht mit einer Gruppe auf ein Stüble beworben hast, teile das bitte umgehend den Tutoren unter
+      <a href="mailto:tutorenhes+stuebleapplication@gmail.com" style="color:#60a5fa; text-decoration:underline;">
+        tutorenhes@gmail.com
+      </a> mit.
+    </span>
+  </div>
+</body>
     {"\n".join(block(first_block=index == 0, motto=event["motto"], description=event["description"], hosts=event["hosts"]) for index, event in enumerate(stueble_events))}
 </body>
 """
    
     return FuncRes(
-        data={"recipient": recipient, "subject": subject, "body": body, "images": image_data},
+        data={"recipient": Email(recipient), "subject": subject, "body": body, "images": image_data},
         status=Status.FULL_SUCCESS,
         message=Message(
             name="Stueble Application Success",
@@ -238,3 +241,90 @@ def stueble_applications(user_id: int | str,
             code=200
         )
     )
+
+
+def confirm_email(first_name: str, last_name: str, verification_token: str) -> dict:
+    """
+    Returns the email template for confirming a user's email address.
+    Args:
+        first_name (str): First name of the user.
+        last_name (str): Last name of the user.
+        verification_token (str): The verification token for email confirmation.
+    Returns:
+        dict: A dictionary containing the subject, body, and images for the email.
+    """
+    stueble_logo = file_path / "images" / "favicon_150.png"
+    image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
+
+    subject = "Neuer Benutzeraccount für das Stüble"
+    body = f"""<html lang="de">
+    <body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
+        <div>
+            <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
+    </div>
+        <h2>Hallo {first_name} {last_name},</h2>
+        <p>Du hast einen Account für das Stüble erstellt.</p>
+        <p>Um die Registrierung abzuschließen, musst du noch deine Email bestätigen.</p>
+        </br>
+        <div style="text-align:center; margin: 20px 0;">
+      <a href="https://stueble.pages.dev/verify?token={verification_token}"
+         style="
+           background-color: #0b9a79;
+           color: #ffffff;
+           padding: 12px 24px;
+           text-decoration: none;
+           border-radius: 5px;
+           display: inline-block;
+           font-weight: bold;
+           box-shadow: 0 0 10px #da6cff;
+           font-family: Arial, sans-serif;
+         ">
+        Email bestätigen
+      </a>
+    </div>
+
+        </br>
+        <p>Wir freuen uns auf dich!</p>
+        <p>Dein Stüble-Team</p>
+    </body>
+    </html>"""
+    return {"subject": subject, "body": body, "images": image_data}
+
+def reset_password(first_name: str, last_name: str, reset_token: str):
+    """
+    """
+    stueble_logo = file_path / "images" / "favicon_150.png"
+    image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
+
+    subject = "Passwort zurücksetzen"
+    body = f"""<html lang="de">
+        <body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
+            <div>
+                <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
+        </div>
+            <h2>Hallo {first_name} {last_name},</h2>
+            <p>hier kannst du ein neues Passwort setzen:</p>
+        </br>
+        <div style="text-align:center; margin: 20px 0;">
+      <a href="https://stueble.pages.dev/setup/password-reset?token={reset_token}"
+         style="
+           background-color: #0b9a79;
+           color: #ffffff;
+           padding: 12px 24px;
+           text-decoration: none;
+           border-radius: 5px;
+           display: inline-block;
+           font-weight: bold;
+           box-shadow: 0 0 10px #da6cff;
+           font-family: Arial, sans-serif;
+         ">
+        Passwort zurücksetzen
+      </a>
+    </div>
+        <p>Falls du keine Passwort-Zurücksetzung angefordert hast, wende dich bitte umgehend an das Tutoren-Team.</p>
+        </br>
+        <p>Wir freuen uns auf dich!</p>
+        <p>Dein Stüble-Team</p>
+        </body>
+        </html>"""
+    return {"subject": subject, "body": body, "images": image_data}

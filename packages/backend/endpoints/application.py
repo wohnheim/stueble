@@ -70,13 +70,6 @@ def send_applications():
 
     keys = ["motto", "hosts", "dates", "description", "image"]
 
-    if motto is None:
-        return Response(
-            response=json.dumps({"code": 400, "message": "Motto must be specified"}),
-            status=400,
-            mimetype="application/json"
-        )
-
     if any(key not in keys for key in data):
         return Response(
                 response=json.dumps({"code": 400, "message": f"Only the following keys are allowed: {keys}"}),

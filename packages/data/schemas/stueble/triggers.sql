@@ -384,6 +384,7 @@ BEGIN
     THEN
         RAISE EXCEPTION 'Applications,that have been selected for a stueble date, cannot be deleted or moved from one date to another; code: 400';
     END IF;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -394,6 +395,7 @@ BEGIN
     THEN
         RAISE EXCEPTION 'Date of time for application cannot be changed to a date of time that is already selected for a stueble date; code: 400';
     END IF;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
