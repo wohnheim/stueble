@@ -1,8 +1,7 @@
 from datetime import date
 from typing import Annotated, Any, Literal
 
-from psycopg import DatabaseError
-from psycopg import Cursor, sql
+from psycopg import sql
 
 from backend.database import database as db
 from backend.sql_connection.ultimate_functions import clean_single_data
@@ -339,7 +338,7 @@ def update_stueble(date: date | None, **kwargs) -> FuncRes:
                             code=200)
     )
 
-
+@DeprecationWarning
 def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: Annotated[list[int] | tuple[int] | None, "Explicit with user_uuid"] = None,
                  user_uuids: Annotated[list[str] | tuple[str] | None, "Explicit with user_id"] = None) -> FuncRes:
     """
@@ -402,7 +401,7 @@ def update_hosts(stueble_id: str, method: Literal["add", "remove"], user_ids: An
 
     if method == "add":
         variables = [e for user_id in user_ids for e in (user_id, stueble_id)] # type: ignore
-        query = sql.SQL("INSERT INTO stueble.hosts (user_id, stueble_id) VALUES {vars}").format(
+        query = sql.SQL("UPDATE users INTO stueble.hosts (user_id, stueble_id) VALUES {vars}").format(
             vars=sql.SQL(', ').join(sql.SQL("({user_id}, {stueble_id})").format(
                 user_id=sql.Placeholder(),
                 stueble_id=sql.Placeholder()

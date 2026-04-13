@@ -165,17 +165,6 @@ def update_tutors():
         return response
 
     
-    # NOTE: unneccessary due to trigger
-    user_ids = result.data[0]
-    query = sql.SQL("DELETE FROM stueble.hosts WHERE user_id IN ({user_ids})").format(user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
-    result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=user_ids)
-    if result.is_error:
-        response = Response(
-            response=json.dumps({"code": 500, "message": str(result.error)}),
-            status=500,
-            mimetype="application/json")
-        return response
-
     query = sql.SQL("SELECT id FROM sessions WHERE user_id IN ({user_ids})").format(user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
     result = db.custom_call(
         query=query,

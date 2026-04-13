@@ -168,19 +168,18 @@ def update_hosts():
             status=404,
             mimetype="application/json")
         return response
-    stueble_id = result.data["stueble_id"]
+    application_id = result.data["stueble_id"]
 
-    # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
-    result = users.get_users(user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role"])
+    # application_id is the id of the current stueble, therefore also delete the host priviledges from users
+    result = users.get_users(user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role", "id"])
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
             status=500,
             mimetype="application/json")
         return response
-    hosts_data = result.data
-    print(hosts_data, flush=True)
-    hosts_data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in hosts_data if i["user_role"] == ('user' if request.method == "PUT" else 'host')]
+    user_ids = [i["id"] for i in result.data]
+    hosts_data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"]} for i in result.data if i["user_role"] == ('user' if request.method == "PUT" else 'host')]
     if len(hosts_data) != len(user_uuids):
         response = Response(
             response=json.dumps({"code": 404, "message": "Tutoren, Admins und Hosts können nicht zu Hosts gemacht werden"}),
@@ -188,7 +187,25 @@ def update_hosts():
             mimetype="application/json")
         return response
 
-    result = motto.update_hosts(stueble_id=stueble_id, method="add" if request.method == "PUT" else "remove", user_uuids=user_uuids)
+    if request.method == "PUT":
+        query = sql.SQL("SELECT id, {application_group} \
+                        INTO stueble.applicants (user_id, application_group) \
+                        FROM users \
+                        WHERE user_uuid IN ({user_uuids})").format(
+                            application_group=sql.Placeholder(),
+                            user_uuids=sql.SQL(', ').join(sql.Placeholder() * len(user_uuids))
+                        )
+        variables = [application_id] + user_uuids
+    else:
+        query = sql.SQL("WITH selected_users AS (SELECT id FROM users WHERE user_uuid IN ({user_uuids})) \
+                        DELETE FROM stueble.applicants \
+                        WHERE user_id IN (SELECT id FROM selected_users) AND application_group = {application_group}").format(
+                            application_group=sql.Placeholder(),
+                            user_uuids=sql.SQL(', ').join(sql.Placeholder() * len(user_uuids))
+                        )
+        variables = user_uuids + [application_id]
+
+    result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=variables)
 
     if result.is_error:
         response = Response(
@@ -196,8 +213,6 @@ def update_hosts():
             status=500,
             mimetype="application/json")
         return response
-
-    user_ids = result.data
 
     # stueble_id is the id of the current stueble, therefore also delete the host priviledges from users
     if request.method == "DELETE":

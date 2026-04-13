@@ -41,9 +41,9 @@ BEGIN
     THEN
         RETURN NEW;
     END IF;
-    DELETE FROM stueble.hosts
+    DELETE FROM stueble.applicants
     WHERE user_id = NEW.id
-      AND stueble_id = (
+      AND application_group = (
         SELECT id
         FROM stueble.motto
         WHERE ((date_of_time >= CURRENT_DATE)

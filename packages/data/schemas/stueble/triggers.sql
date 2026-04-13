@@ -348,7 +348,7 @@ RETURNS trigger AS $$
 DECLARE new_group_hash TEXT;
 DECLARE new_group_id INTEGER;
 BEGIN
-    SELECT string_agg(user_uuid::text, '-' ORDER BY user_uuid) INTO new_group_hash
+    SELECT string_agg(user_uuid::text, ':' ORDER BY user_uuid) INTO new_group_hash
     FROM users
     WHERE id IN (SELECT user_id FROM stueble.applicants WHERE application_group = OLD.application_group AND user_id IS NOT NULL); -- deleted user_id will be NULL
 

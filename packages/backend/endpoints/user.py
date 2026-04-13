@@ -4,6 +4,7 @@ User management
 
 import asyncio
 import json
+from typing import Any
 
 from flask import Blueprint, request, Response
 
@@ -325,9 +326,10 @@ def search_intern():
 
     keywords = ["first_name", "last_name", "user_uuid", "residence"]
     negated_conditions = {"user_role": "extern"}
+    conditions: dict[str, Any] = {"deleted": False}
     # search user_name
     if "username" in data:
-        conditions = {"user_name": data["username"]}
+        conditions["user_name"] = data["username"]
         result = db.select(
             table="users",
             columns=keywords,
@@ -337,7 +339,7 @@ def search_intern():
 
     # search user_uuid
     elif "id" in data:
-        conditions = {"user_uuid":data["id"]}
+        conditions["user_uuid"] = data["id"]
         result = db.select(
             table="users",
             columns=keywords,
@@ -347,7 +349,7 @@ def search_intern():
 
     # search email
     elif "email" in data:
-        conditions = {"email": data["email"]}
+        conditions["email"] = data["email"]
         negated_conditions = {"user_role": "extern"}
         result = db.select(
             table="users",
@@ -358,7 +360,8 @@ def search_intern():
 
     # search room AND residence
     elif "room" in data and "residence" in data:
-        conditions = {key: value for key, value in data.items() if key in ["room", "residence"]}
+        for key in ["room", "residence"]:
+            conditions[key] = data[key]
         result = db.select(
             table="users",
             columns=keywords,

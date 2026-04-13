@@ -104,9 +104,7 @@ def send_applications():
         )
 
     return Response(
-        response=json.dumps(response.data),
-        status=200,
-        mimetype="application/json"
+        status=204,
     )
 
 
