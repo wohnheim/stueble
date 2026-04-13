@@ -51,6 +51,7 @@
 
         imports = [
           ./nix/backend.nix
+          ./nix/backend-go.nix
           ./nix/dev-shell.nix
         ];
       };
