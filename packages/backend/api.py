@@ -9,7 +9,6 @@ from flask import Flask, Response, request
 from psycopg import sql
 
 from backend.endpoints import (
-    auth,
     guest,
     tutor,
     host,
@@ -31,7 +30,6 @@ from backend.basic_functions import camel_to_snake_case, snake_to_camel_case
 
 # initialize flask app
 app = Flask(__name__)
-app.register_blueprint(auth.auth, url_prefix="/auth")
 app.register_blueprint(user.user, url_prefix="/user")
 app.register_blueprint(tutor.tutor, url_prefix="/tutors")
 
