@@ -297,6 +297,24 @@ def search_intern():
     # allowed keys to search for a user
     allowed_keys = ["first_name", "last_name", "room", "residence", "email", "id", "username"]
 
+    result = check_permissions(session_id=session_id, required_role=UserRole.USER)
+    if result.is_error:
+        response = Response(
+            response=json.dumps({"code": 500 if result.message is None else result.message.code, "message": str(result.error)}),
+            status=500 if result.message is None else result.message.code,
+            mimetype="application/json")
+        return response
+    if result.data["allowed"] is False:
+        response = Response(
+            response=json.dumps({"code": 403, "message": "invalid permissions, need role user or above"}),
+            status=403,
+            mimetype="application/json")
+        return response
+    if result.data["user_role"] == UserRole.USER:
+        allowed_keys.remove("email")
+        allowed_keys.remove("room")
+        allowed_keys.remove("residence")
+
     # if no key was specified return error
     if any(key not in allowed_keys for key in data.keys()):
         response = Response(
