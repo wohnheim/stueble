@@ -95,10 +95,7 @@ class UI {
   routing = new Routing(routes, { main: "start" });
 
   // Application
-  applicationHosts = $state<HostOrTutor[]>([
-    { id: "123", firstName: "Quentin", lastName: "Frey", residence: "hirte" },
-    { id: "124", firstName: "Leon", lastName: "Gattermeyer", residence: "altbau" },
-  ]);
+  applicationHosts = $state<HostOrTutor[]>([]);
 
   // Persistent properties (using IndexedDB)
   publicKey = $state<CryptoKey>();
