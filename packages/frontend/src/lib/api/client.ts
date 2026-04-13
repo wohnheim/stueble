@@ -99,6 +99,7 @@ class HTTPClient {
     email: string,
     password: string,
     username: string,
+    token: string,
   ) {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
@@ -108,6 +109,7 @@ class HTTPClient {
         email,
         password,
         username,
+        token,
         privacyPolicy: true,
       }),
     });

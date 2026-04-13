@@ -42,12 +42,13 @@
   let emailInput = $state<HTMLInputElement>();
 
   let privacyPolicy = $state(false);
-  let passwordResetTokenInputDisabled = $state(false);
+  let tokenInputDisabled = $state(false);
 
   /* Input validation */
 
   let registerButtonDisabled = $derived(
-    ui_object.userParams.firstName == "" ||
+    token == "" ||
+      ui_object.userParams.firstName == "" ||
       ui_object.userParams.lastName == "" ||
       ui_object.userParams.email == "" ||
       !emailInput?.validity.valid ||
@@ -119,6 +120,7 @@
       ui_object.userParams.email,
       ui_object.userParams.password,
       ui_object.userParams.username,
+      token,
     );
 
     if (res) routing.changePath({ main: "setup", sub: "email" });
@@ -160,7 +162,7 @@
         token = tmpToken;
 
         resetStage = "reset-password";
-        passwordResetTokenInputDisabled = true;
+        tokenInputDisabled = true;
       }
     }
   });
@@ -304,7 +306,7 @@
             >
               <input
                 bind:value={token}
-                disabled={passwordResetTokenInputDisabled}
+                disabled={tokenInputDisabled}
                 onchange={() => (tokenValid = !!token)}
                 onfocusout={() => (tokenValid = !!token)}
               />
@@ -351,6 +353,28 @@
         {:else}
           <h5>Registrieren</h5>
           <div class="space"></div>
+
+          <div
+            class="max field border round label {tokenValid
+              ? ''
+              : 'invalid suffix'}"
+          >
+            <input
+              bind:value={token}
+              disabled={tokenInputDisabled}
+              onchange={() => (tokenValid = !!token)}
+              onfocusout={() => (tokenValid = !!token)}
+            />
+            <!-- svelte-ignore a11y_label_has_associated_control -->
+            <label>Registrierungstoken von den Tutoren</label>
+            {#if !tokenValid}
+              <i>error</i>
+              <span class="error"
+                >Ein Token wird benötigt um Spam zu verhindern. Wende dich an
+                die Tutoren für einen neuen Token.</span
+              >
+            {/if}
+          </div>
 
           <div
             class="field border label {firstNameValid ? '' : 'invalid suffix'}"
