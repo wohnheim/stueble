@@ -1,0 +1,35 @@
+<html lang="de">
+  <body
+    style="
+      background-color: #430101;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <div>
+      <img src="cid:{{.ContentId}}" alt="Stüble Logo" width="150" />
+    </div>
+
+    <h2>Hallo {{.FirstName}} {{.LastName}},</h2>
+    <p>
+      dein Account wurde deaktiviert, da sich eine andere Person mit deiner
+      Zimmernummer registriert hat.
+    </p>
+    <p>
+      Falls Du noch immer in diesem Zimmer wohnst, kontaktiere bitte die
+      folgende E-Mail-Adresse um deinen Account zu reaktivieren:
+    </p>
+
+    <a
+      href="mailto:tutorenhes+falsyOverwrittenAccount@gmail.com"
+      style="color: #007DDD"
+    >
+      tutorenhes@gmail.com
+    </a>
+
+    <br />
+    <p>Dein Stüble-Team</p>
+  </body>
+</html>

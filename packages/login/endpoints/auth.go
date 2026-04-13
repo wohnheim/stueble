@@ -3,6 +3,7 @@ package endpoints
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/mail"
@@ -29,6 +30,7 @@ type SignupRequest struct {
 	Username   string `json:"username"`
 	Email      string `json:"email"`
 	Password   string `json:"password"`
+	Token      string `json:"token"`
 	// Property to prevent manual registration without accepting the privacy policy
 	PrivacyPolicy bool `json:"privacyPolicy"`
 }
@@ -52,6 +54,15 @@ type ResetPasswordRequest struct {
 type ResetPasswordConfirmRequest struct {
 	Token    string `json:"token"`
 	Password string `json:"password"`
+}
+
+type SignupTokenRequest struct {
+	TokenTTL int `json:"token_ttl"`
+}
+
+type SignupTokenResponse struct {
+	Token          string `json:"token"`
+	ExpirationDate string `json:"expiration_date"`
 }
 
 func IsEmail(email string) bool {
@@ -177,13 +188,23 @@ func signup(w http.ResponseWriter, req *http.Request) {
 	}
 
 	valid := func(s *SignupRequest) bool {
-		return len(s.FirstName) != 0 && len(s.LastName) != 0 && len(s.Username) != 0 && IsEmail(s.Email) && len(s.Password) != 0 && utils.CheckMapKey(residenceNameReverse, s.Residence) && s.PrivacyPolicy
+		return len(s.FirstName) != 0 && len(s.LastName) != 0 && len(s.Username) != 0 && IsEmail(s.Email) && len(s.Password) != 0 && len(s.Token) != 0 && utils.CheckMapKey(residenceNameReverse, s.Residence) && s.PrivacyPolicy
 	}
 	if !parseJSONData(w, req, &s, valid) {
 		return
 	}
 
 	ctx := req.Context()
+
+	var additionalData string
+	found, err := sd.DB.GetAdditionalData(ctx, false, s.Token, &additionalData)
+	if err != nil {
+		writeJSONError(w, err, http.StatusInternalServerError, "Failed to validate verification token", nil, true)
+		return
+	} else if !found || len(additionalData) < 3 || additionalData[1:len(additionalData)-1] != "signup-token" {
+		writeJSONError(w, err, http.StatusUnauthorized, "Invalid verification token", nil, false)
+		return
+	}
 
 	conflictingUsers, err := sd.DB.GetConflictingUsers(ctx, &s.Email, &s.Username, &s.RoomNumber, &s.Residence)
 	if err != nil {
@@ -194,15 +215,16 @@ func signup(w http.ResponseWriter, req *http.Request) {
 	lenConflictingUsers := len(conflictingUsers)
 	if lenConflictingUsers != 0 {
 		var conflicts []string
+		var roomConflict *database.ConflictingUser
 
-		roomConflict := false
+		roomConflict = nil
 		emailConflict := false
 		usernameConflict := false
 
 		for i := range lenConflictingUsers {
-			if !roomConflict && s.RoomNumber == conflictingUsers[i].Room && s.Residence == conflictingUsers[i].Residence {
-				roomConflict = true
-				conflicts = append(conflicts, "roomNumber")
+			if roomConflict == nil && s.RoomNumber == conflictingUsers[i].Room && s.Residence == conflictingUsers[i].Residence {
+				roomConflict = &conflictingUsers[i]
+				continue
 			}
 
 			if !emailConflict && s.Email == conflictingUsers[i].Email {
@@ -216,8 +238,48 @@ func signup(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		writeJSONError(w, err, http.StatusBadRequest, "Failed to create account. Conflicting entries exist.", conflicts, false)
-		return
+		if emailConflict || usernameConflict {
+			writeJSONError(w, err, http.StatusBadRequest, "Failed to create account. Conflicting entries exist.", conflicts, false)
+			return
+		} else {
+			err = sd.DB.DisableUser(ctx, roomConflict.Id)
+			if err != nil {
+				writeJSONError(w, err, http.StatusInternalServerError, "Failed to query database", nil, true)
+				return
+			}
+
+			templateData := templates.OverwrittenUserTemplateData{
+				FirstName: roomConflict.FirstName,
+				LastName:  roomConflict.LastName,
+				ContentId: "stueble_logo",
+			}
+
+			var buffer bytes.Buffer
+			err = sd.Templates.ExecuteTemplate(&buffer, "overwritten-user-info.html", &templateData)
+			if err != nil {
+				writeJSONError(w, err, http.StatusInternalServerError, "Failed to execute template", nil, true)
+				return
+			}
+
+			var icon []byte
+			icon, err = templates.AssetFiles.ReadFile("assets/stueble_150.png")
+			if err != nil {
+				writeJSONError(w, err, http.StatusInternalServerError, "Failed to read image file", nil, true)
+				return
+			}
+
+			msg := sd.SMTPBase.
+				To(fmt.Sprintf("%s %s", roomConflict.FirstName, roomConflict.LastName), roomConflict.Email).
+				Subject("Stüble-Benutzeraccount deaktiviert").
+				AddInline(icon, "image/png", "image.png", templateData.ContentId).
+				HTML(buffer.Bytes())
+
+			err = msg.Send(sd.SMTPSender)
+			if err != nil {
+				writeJSONError(w, err, http.StatusInternalServerError, "Failed to send overwritten user info email", nil, true)
+				return
+			}
+		}
 	}
 
 	hashSalt, err := passwordHashing.GenerateHash([]byte(s.Password), nil)
@@ -226,7 +288,7 @@ func signup(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	token, err := sd.DB.AddVerificationCode(ctx, &database.SignupInfo{
+	token, _, err := sd.DB.AddVerificationCode(ctx, -1, &database.SignupInfo{
 		FirstName:         s.FirstName,
 		LastName:          s.LastName,
 		RoomNumber:        s.RoomNumber,
@@ -295,7 +357,7 @@ func verifySignup(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	var infos database.SignupInfo
-	found, err := sd.DB.GetAdditionalData(ctx, v.Token, &infos)
+	found, err := sd.DB.GetAdditionalData(ctx, true, v.Token, &infos)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to get cached signup information", nil, true)
 		return
@@ -480,7 +542,7 @@ func resetPassword(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	token, err := sd.DB.AddVerificationCode(ctx, info.Id)
+	token, _, err := sd.DB.AddVerificationCode(ctx, -1, info.Id)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to create verification code", nil, true)
 		return
@@ -539,7 +601,7 @@ func resetPasswordConfirmation(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	var userId int
-	found, err := sd.DB.GetAdditionalData(ctx, r.Token, &userId)
+	found, err := sd.DB.GetAdditionalData(ctx, true, r.Token, &userId)
 	if err != nil {
 		writeJSONError(w, err, http.StatusInternalServerError, "Failed to get user identifier", nil, true)
 		return
@@ -578,14 +640,49 @@ func resetPasswordConfirmation(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func signupToken(w http.ResponseWriter, req *http.Request) {
+	var s SignupTokenRequest
+
+	if req.Method != "PUT" {
+		http.NotFound(w, req)
+		return
+	}
+
+	valid := func(s *SignupTokenRequest) bool { return s.TokenTTL > 0 }
+	if !parseJSONData(w, req, &s, valid) {
+		return
+	}
+
+	ctx := req.Context()
+
+	token, expirationDate, err := sd.DB.AddVerificationCode(ctx, s.TokenTTL, "signup-token")
+	if err != nil {
+		writeJSONError(w, err, http.StatusInternalServerError, "Failed to create verification code", nil, true)
+		return
+	}
+
+	response := SignupTokenResponse{
+		Token:          *token,
+		ExpirationDate: expirationDate.Format(time.RFC3339),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
+}
+
 func RegisterAuthEndpoints() {
-	http.HandleFunc("/login", login)
-	http.HandleFunc("/logout", logout)
-	http.HandleFunc("/signup", signup)
-	http.HandleFunc("/verify_signup", verifySignup)
-	http.HandleFunc("/delete", delete)
-	http.HandleFunc("/change_password", changeLoginInfo)
-	http.HandleFunc("/change_username", changeLoginInfo)
-	http.HandleFunc("/reset_password", resetPassword)
-	http.HandleFunc("/reset_password_confirm", resetPasswordConfirmation)
+	const prefix = "/auth"
+
+	http.HandleFunc(prefix+"/login", login)
+	http.HandleFunc(prefix+"/logout", logout)
+	http.HandleFunc(prefix+"/signup", signup)
+	http.HandleFunc(prefix+"/verify_signup", verifySignup)
+	http.HandleFunc(prefix+"/delete", delete)
+	http.HandleFunc(prefix+"/change_password", changeLoginInfo)
+	http.HandleFunc(prefix+"/change_username", changeLoginInfo)
+	http.HandleFunc(prefix+"/reset_password", resetPassword)
+	http.HandleFunc(prefix+"/reset_password_confirm", resetPasswordConfirmation)
+
+	http.HandleFunc(prefix+"/signup_token", signupToken)
 }

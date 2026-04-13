@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/wohnheim/stueble/passwordHashing"
@@ -30,6 +31,9 @@ type User struct {
 }
 
 type ConflictingUser struct {
+	Id           int     `db:"id"`
+	FirstName    string  `db:"first_name" `
+	LastName     string  `db:"last_name"`
 	Email        string  `db:"email"`
 	Username     string  `db:"user_name"`
 	Room         int32   `db:"room"`
@@ -147,7 +151,7 @@ func (p *DatabasePool) GetConflictingUsers(ctx context.Context, email *string, u
 		log.Panic("Assertion failed: Only unique key combination needs to be defined")
 	}
 
-	sql := "SELECT email, user_name, room, residence, password_hash FROM users WHERE deleted IS FALSE AND (0=1"
+	sql := "SELECT id, first_name, last_name, email, user_name, room, residence, password_hash FROM users WHERE deleted IS FALSE AND (0=1"
 	var args []any
 	argPos := 1
 
@@ -211,35 +215,51 @@ func (p *DatabasePool) DeleteUser(ctx context.Context, id int) error {
 	return err
 }
 
-func (p *DatabasePool) AddVerificationCode(ctx context.Context, v any) (*string, error) {
+func (p *DatabasePool) AddVerificationCode(ctx context.Context, ttl int, v any) (*string, *time.Time, error) {
+	if ttl < 0 {
+		ttl = p.verificationCodeTTL
+	}
+
 	sql := `
 		INSERT INTO verification_codes (additional_data, expiration_date)
 		VALUES ($1, NOW() + ($2 * INTERVAL '1 minute'))
-		RETURNING id
+		RETURNING id, expiration_date
 	`
 
 	vJson, err := json.Marshal(v)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var code string
-	row := p.Pool.QueryRow(ctx, sql, vJson, p.verificationCodeTTL)
-	err = row.Scan(&code)
+	var expirationDate time.Time
+	row := p.Pool.QueryRow(ctx, sql, vJson, ttl)
+	err = row.Scan(&code, &expirationDate)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &code, nil
+	return &code, &expirationDate, nil
 }
 
+// TODO: Split into Get and Delete functions
+// TBC: Storing Multi-Use Column in DB
 // This function can return a nil value without error.
-func (p *DatabasePool) GetAdditionalData(ctx context.Context, token string, dest any) (bool, error) {
-	sql := `
-		DELETE FROM verification_codes
-		WHERE id = $1
-		RETURNING additional_data
-	`
+func (p *DatabasePool) GetAdditionalData(ctx context.Context, delete bool, token string, dest any) (bool, error) {
+	var sql string
+	if delete {
+		sql = `
+			DELETE FROM verification_codes
+			WHERE id = $1
+			RETURNING additional_data
+		`
+	} else {
+		sql = `
+			SELECT additional_data
+			FROM verification_codes
+			WHERE id = $1
+		`
+	}
 
 	err := p.Pool.QueryRow(ctx, sql, token).Scan(dest)
 	if err != nil {

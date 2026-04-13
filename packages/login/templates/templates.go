@@ -13,6 +13,12 @@ type ConfirmationTemplateData struct {
 	VerificationToken string
 }
 
+type OverwrittenUserTemplateData struct {
+	FirstName string
+	LastName  string
+	ContentId string
+}
+
 //go:embed assets/*
 var AssetFiles embed.FS
 
