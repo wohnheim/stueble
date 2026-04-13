@@ -70,6 +70,7 @@
   </div>
 
   <button
+    id="send-button"
     class="center"
     disabled={ui_object.userParams.firstName == "" ||
       ui_object.userParams.lastName == "" ||
@@ -101,5 +102,9 @@
 <style>
   .centered-text {
     text-align: center;
+  }
+
+  #send-button {
+    margin-top: 32px;
   }
 </style>

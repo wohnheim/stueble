@@ -259,8 +259,10 @@
             {/if}
           </div>
 
-          <button class="large" disabled={loginButtonDisabled} onclick={login}
-            >Anmelden</button
+          <button
+            class="large top-margin"
+            disabled={loginButtonDisabled}
+            onclick={login}>Anmelden</button
           >
 
           <div class="max top-margin secondary-text">
@@ -341,7 +343,7 @@
           {/if}
 
           <button
-            class="large"
+            class="large top-margin"
             disabled={resetButtonDisabled}
             onclick={resetStage == "request-token"
               ? passwordReset
@@ -375,6 +377,8 @@
               >
             {/if}
           </div>
+
+          <p>Persönliche Daten</p>
 
           <div
             class="field border label {firstNameValid ? '' : 'invalid suffix'}"
@@ -532,7 +536,7 @@
             {/if}
           </div>
 
-          <label class="checkbox left-margin bottom-margin">
+          <label class="checkbox left-margin bottom-margin top-margin">
             <input bind:checked={privacyPolicy} type="checkbox" />
             <span class="wrap"
               >Ich stimme der Nutzung meiner Daten zur Verifikation der

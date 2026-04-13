@@ -63,7 +63,7 @@
       }}
     >
       <i>assignment_add</i>
-      <span>Anmeldung</span>
+      <span>Stüble veranstalten</span>
     </li>
 
     <div class="divider"></div>
