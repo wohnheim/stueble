@@ -351,7 +351,7 @@ class HTTPClient {
   /* Hosts */
 
   async getHosts() {
-    const res = await fetch("/api/stueble/guests");
+    const res = await fetch("/api/stueble/hosts");
 
     if (res.ok) return await res.json<HostOrTutor[]>();
 
@@ -360,7 +360,7 @@ class HTTPClient {
   }
 
   async addHosts(hosts: string[], date?: Date) {
-    const res = await fetch("/api/stueble/guests", {
+    const res = await fetch("/api/stueble/hosts", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -379,7 +379,7 @@ class HTTPClient {
   }
 
   async removeHosts(hosts: string[], date?: Date) {
-    const res = await fetch("/api/stueble/guests", {
+    const res = await fetch("/api/stueble/hosts", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

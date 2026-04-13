@@ -67,8 +67,10 @@ export const application = z.object({
 export type Application = z.infer<typeof application>;
 
 export const config = z.object({
-  maximumGuests: z.int32(),
+  maximumGuestsPerStueble: z.int32(),
   maximumInvitesPerUser: z.int32(),
+  maximumInvitesPerHost: z.int32(),
+  maximumInvitesPerTutor: z.int32(),
 });
 
 export type Config = z.infer<typeof config>;

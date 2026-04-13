@@ -2,11 +2,11 @@
   import { apiClient } from "$lib/api/client";
   import type { HostOrTutor } from "$lib/api/types";
   import { ui_object, WohnheimType } from "$lib/lib/UI.svelte";
+  import { findAndRemove } from "$lib/lib/utils";
 
   import Button from "$lib/components/Button.svelte";
   import Fullscreen from "$lib/components/Fullscreen.svelte";
   import HostComponent from "$lib/components/buttons/Host.svelte";
-  import { findAndRemove } from "$lib/lib/utils";
   import Avatar from "$lib/components/Avatar.svelte";
 
   let {
@@ -25,7 +25,10 @@
     title: string;
     subtitle?: string;
     elements: HostOrTutor[];
-    addFunction: (ids: HostOrTutor[], date?: Date) => Promise<HostOrTutor[] | null>;
+    addFunction: (
+      ids: HostOrTutor[],
+      date?: Date,
+    ) => Promise<HostOrTutor[] | null>;
     removeFunction: (ids: string[], date?: Date) => Promise<boolean>;
     addToDatabase: (hosts: HostOrTutor[]) => Promise<void>;
     removeFromDatabase: (ids: string[]) => Promise<void>;
