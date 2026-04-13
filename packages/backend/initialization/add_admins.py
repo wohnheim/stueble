@@ -5,11 +5,11 @@ import os
 pwd_admin = os.getenv("ADMIN_PASSWORD")
 interactive = False
 
-if not pwd_admin:
-    pwd_hes = input("Please enter a password for the admin account: ")
+if pwd_admin is None:
+    pwd_admin = input("Please enter a password for the admin account: ")
     interactive = True
 
-if not pwd_admin:
+if pwd_admin is None:
     raise Exception("Invalid password")
 
 bcrypt_hash = hash_pwd.hash_pwd(pwd_admin)
