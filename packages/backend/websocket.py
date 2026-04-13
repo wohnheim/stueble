@@ -975,6 +975,7 @@ async def update_stueble_selection_draft(data):
 # Start server
 async def main():
     async with websockets.serve(handle_ws, HOST, int(WS_PORT), ping_interval=25, ping_timeout=20, close_timeout=9):
+        print(f"WebSocket-Server is listening on {HOST}:{WS_PORT}")
         await asyncio.Future()
 
 if __name__ == "__main__":

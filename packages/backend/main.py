@@ -22,12 +22,11 @@ PORT = os.getenv("PORT") or 3000
 
 def run_flask():
     """Run the Flask API server in separate thread"""
-    print(f"Starting Flask API server in thread {threading.current_thread().name}...")
+    print(f"HTTP-Server is listening on {HOST}:{PORT}")
     serve(api.app, host=HOST, port=PORT)
 
 def run_websocket():
     """Run the WebSocket server in separate thread"""
-    print(f"Starting WebSocket server in thread {threading.current_thread().name}...")
     asyncio.run(websocket.main())
 
 def signal_handler(_sig: int, _frame: FrameType | None):
@@ -39,27 +38,21 @@ def main():
     """Main function to start both servers in separate threads"""
     # Set up signal handler for graceful shutdown
     _ = signal.signal(signal.SIGINT, signal_handler)
-    
-    print("Starting Stueble application with threading...")
-    print("SUCCESS: Variables WILL be shared between Flask and WebSocket threads!")
-    
+
+    print("Starting Stueble application...")
+
     # Create threads (daemon=True means they'll exit when main program exits)
     flask_thread = threading.Thread(target=run_flask, name="Flask-Server", daemon=True)
     websocket_thread = threading.Thread(target=run_websocket, name="WebSocket-Server", daemon=True)
     db_listener_thread = threading.Thread(target=ws_runner.run_listener, name="DB-Listener", daemon=True)
 
-    # Start both threads
+    # Start threads
     flask_thread.start()
     websocket_thread.start()
     db_listener_thread.start()
-    
-    print(f"Flask server started in thread: {flask_thread.name}")
-    print(f"WebSocket server started in thread: {websocket_thread.name}")
-    print(f"DB listener started in thread: {db_listener_thread.name}")
-    print("Both servers started. Press Ctrl+C to stop.")
-    
+
     # Keep main thread alive
-    while flask_thread.is_alive() or websocket_thread.is_alive() or db_listener_thread.is_alive():
+    while flask_thread.is_alive() and websocket_thread.is_alive() and db_listener_thread.is_alive():
         time.sleep(1)
 
 if __name__ == "__main__":
