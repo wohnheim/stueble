@@ -217,7 +217,7 @@ def signup_data():
 
     #---------------------------------------------------------------------------------------#
 
-    # TODO: this is only temporary, remove afterwards
+    # TODO: this is only temporary, remove afterwards, since it allows overwriting of old accounts
     token = request.args.get("token", None)
     if token == "2xIAGtRsTNS3mzWY2SdR":
         user_info["password_hash"] = hashed_password = hp.hash_pwd(user_info["password"])

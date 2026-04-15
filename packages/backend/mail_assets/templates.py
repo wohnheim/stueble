@@ -328,3 +328,32 @@ def reset_password(first_name: str, last_name: str, reset_token: str):
         </body>
         </html>"""
     return {"subject": subject, "body": body, "images": image_data}
+    
+def inform_overwritten_user(first_name: str, last_name: str):
+    """
+    Returns the email template for informing a user whose account has been overwritten due to a new user registering with the same room and residence as well as a overwriter token.
+
+    Args:
+        first_name (str): First name of the user.
+        last_name (str): Last name of the user.
+        reset_token (str): The reset token for password resetting.
+    Returns:
+        dict: A dictionary containing the subject, body, and images for the email.
+    """
+    stueble_logo = file_path / "images" / "favicon_150.png"
+    image_data = ({"name": "stueble_logo", "value": stueble_logo}, )
+
+    subject = "Passwort zurücksetzen"
+    body = f"""<html lang="de">
+        <body style="background-color: #430101; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #ffffff;">
+            <div>
+                <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
+        </div>
+            <h2>Hallo {first_name} {last_name},</h2>
+            <p>Eine neue Person hat sich für dein Zimmer registriert. <br/><br/>Falls Du dennoch im kommenden Semester in diesem Zimmer wohnst, setze dich umgehend mit den Tutoren in Verbindung:<br/> <a class="text-blue-400 underline" href="mailto:tutorenhes+falsyOverwrittenAccount@gmail.com">tutorenhes@gmail.com</a></p>
+        </br>
+        </br>
+        <p>Dein Stüble-Team</p>
+        </body>
+        </html>"""
+    return {"subject": subject, "body": body, "images": image_data}

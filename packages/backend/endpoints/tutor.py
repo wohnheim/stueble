@@ -101,7 +101,8 @@ def update_tutors():
 
     # clean result data
     tutors_data = result.data
-    tutors_data = [{"id": i["user_uuid"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"], "user_role": UserRole(i["user_role"]), "user_uuid": i["user_uuid"]} for i in tutors_data]
+    tutors_data = [{"id": i["id"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"], "user_role": UserRole(i["user_role"]), "user_uuid": i["user_uuid"]} for i in tutors_data]
+    user_ids = [i["id"] for i in tutors_data]
 
     # check, whether all users were found
     if len(tutors_data) != len(user_uuids):
@@ -139,7 +140,7 @@ def update_tutors():
         # set new role
         new_role = UserRole.TUTOR
         # remove wrong users from tutor list
-        tutors_data = [{key: value for key, value in i.items() if key != "user_role"} for i in tutors_data if i["user_role"] == UserRole.USER or i["user_role"] == UserRole.HOST]
+        tutors_data = [{key: value for key, value in i.items() if key not in  ["user_role", "id"]} for i in tutors_data if i["user_role"] == UserRole.USER or i["user_role"] == UserRole.HOST]
     if len(tutors_data) != len(user_uuids):
         response = Response(
             response=json.dumps({"code": 400, "message": "Some users can't be promoted to tutors"}),
@@ -164,7 +165,6 @@ def update_tutors():
             mimetype="application/json")
         return response
 
-    
     query = sql.SQL("SELECT id FROM sessions WHERE user_id IN ({user_ids})").format(user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
     result = db.custom_call(
         query=query,
@@ -185,7 +185,7 @@ def update_tutors():
     if request.method == "PUT":
         for user in tutors_data:
             asyncio.run(ws.broadcast(event="tutorAdded", data=user, skip_sid=session_id))
-            asyncio.run(ws.status(user_uuid=user["id"]))
+            asyncio.run(ws.status(user_uuid=user["user_uuid"]))
         for host in hosts_removed:
             asyncio.run(ws.broadcast(event="hostRemoved", data=host))
     else:

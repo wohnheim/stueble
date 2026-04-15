@@ -263,8 +263,8 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
     table: str,
     type_of_answer: ANSWER_TYPE = ANSWER_TYPE.LIST_ANSWER,
     columns: tuple[str] | list[str] = ("*",),
-    conditions: dict[str, Any] | None = None,
-    negated_conditions: dict[str, Any] | None = None,
+    conditions: dict[str, Any | list] | None = None,
+    negated_conditions: dict[str, Any | list] | None = None,
     select_max_of_key: str = "",
     specific_where: SQL | Composed = SQL(""),
     variables: list[str] | None = None,
@@ -335,7 +335,7 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
     # add conditions if any
     if len(all_conditions) > 0:
         query += SQL(" WHERE ") + \
-            SQL(' AND '.join([f'{{}} {'!' if value_data['negated'] is True else ''}= %s' # TODO: replace %s with sql.Placeholder()
+            SQL(' AND '.join([f'{{}} {'!' if value_data['negated'] is True else ''}= %s' if not isinstance(value_data["value"], list) else f'{{}} {'NOT ' if value_data['negated'] is True else ''}IN ({vals})'
                 for _, value_data in all_conditions.items()])) \
         .format(*[sql.Identifier(key) for key in all_conditions.keys()])
         if order_by is not None:

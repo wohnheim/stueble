@@ -188,8 +188,8 @@ def update_hosts():
         return response
 
     if request.method == "PUT":
-        query = sql.SQL("SELECT id, {application_group} \
-                        INTO stueble.applicants (user_id, application_group) \
+        query = sql.SQL("INSERT INTO stueble.applicants (user_id, application_group) \
+                        SELECT id, {application_group} \
                         FROM users \
                         WHERE user_uuid IN ({user_uuids})").format(
                             application_group=sql.Placeholder(),

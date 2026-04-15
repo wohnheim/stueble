@@ -325,7 +325,7 @@ def search_intern():
         return response
 
     keywords = ["first_name", "last_name", "user_uuid", "residence"]
-    negated_conditions = {"user_role": "extern"}
+    negated_conditions = {"user_role": ["extern", "admin"]}
     conditions: dict[str, Any] = {"deleted": False}
     # search user_name
     if "username" in data:
@@ -350,7 +350,6 @@ def search_intern():
     # search email
     elif "email" in data:
         conditions["email"] = data["email"]
-        negated_conditions = {"user_role": "extern"}
         result = db.select(
             table="users",
             columns=keywords,
@@ -379,7 +378,7 @@ def search_intern():
         query = f"""
         SELECT {', '.join(keywords)} FROM users
         WHERE {" AND ".join([search_dict[key] for key in data.keys()])}
-        AND user_role != 'extern'
+        AND user_role NOT IN ('extern', 'admin')
         """
         variables = [f"{value}%" if key in ["first_name", "last_name"] else value for key, value in data.items()]
         result = db.custom_call(query=query,
