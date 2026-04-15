@@ -24,6 +24,7 @@ from backend.sql_connection.common_functions import check_permissions
 from backend.sql_connection.conn_cursor_functions import *
 from backend.sql_connection.signup_validation import validate_user_data
 from backend.basic_functions import *
+from backend.temporary import verified_signup
 
 # NOTE frontend barely ever gets the real user role, rather just gets intern / extern
 # Initialize connections to database
@@ -222,14 +223,28 @@ def signup_data():
             mimetype="application/json")
         return response
 
-    # get connection and cursor
-    conn, cursor = get_conn_cursor()
-
     user_role = UserRole.USER
     user_info["user_role"] = user_role
     user_info["residence"] = Residence(user_info["residence"])
     check_info = user_info.copy()
     del check_info["password"]
+
+    #---------------------------------------------------------------------------------------#
+
+    # TODO: this is only temporary, remove afterwards, since it allows overwriting of old accounts
+    token = data.get("token", None)
+    if token == "355221cd-d664-48fe-901b-1e5d41cbd05d":
+        user_info["password_hash"] = hashed_password = hp.hash_pwd(user_info["password"])
+        del user_info["password"]
+        return verified_signup(
+            **user_info
+        )
+
+    #---------------------------------------------------------------------------------------#
+
+    # get connection and cursor
+    conn, cursor = get_conn_cursor()
+
     # check whether user data is unique
     result = validate_user_data(cursor=cursor, **check_info)
     if result["success"] is False:
