@@ -278,8 +278,8 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
     Args:
         table (str): table to select from
         columns (tuple[str] | list[str]): columns, that should be selected, if empty, get all
-        conditions (dict): under which conditions (key: column, value: value) values should be selected, if empty, no conditions
-        negated_conditions (dict): under which conditions (key: column, value: value) values should NOT be selected, if empty, no negated conditions
+        conditions (dict[str, Any | list]): under which conditions (key: column, value: value) values should be selected, if empty, no conditions
+        negated_conditions (dict[str, Any | list]): under which conditions (key: column, value: value) values should NOT be selected, if empty, no negated conditions
         type_of_answer (ANSWER_TYPE): specify whether one or more answers are to be received, therefore it changes, whether list or single object will be returned
         select_max_of_key (bool): conditions must be empty, otherwise it won't be used
         specific_where (SQL | Composed): select_max_of_key must be empty as well as conditions must be empty, else specific_where is ignored, allows to pass in a unique where statement (WHERE is already in the string),
@@ -309,8 +309,8 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
 
     # initialize variables
     columns = list(columns)
-    conditions = {} if conditions is None else conditions
-    negated_conditions = {} if negated_conditions is None else negated_conditions
+    conditions = dict() if conditions is None else conditions
+    negated_conditions = dict() if negated_conditions is None else negated_conditions
     result = {"success": False, "data": None, "error": None} # TODO: adjust to fit the assignments below
 
     # build query
@@ -335,13 +335,26 @@ def select(  # pylint: disable=too-many-branches, too-many-positional-arguments,
     # add conditions if any
     if len(all_conditions) > 0:
         query += SQL(" WHERE ") + \
-            SQL(' AND '.join([f'{{}} {'!' if value_data['negated'] is True else ''}= %s' if not isinstance(value_data["value"], list) else f'{{}} {'NOT ' if value_data['negated'] is True else ''}IN ({vals})'
-                for _, value_data in all_conditions.items()])) \
+            SQL(' AND '.join(
+                [
+                    f'{{}} {'!' if value_data['negated'] is True else ''}= %s' if not isinstance(value_data["value"], list) 
+                    else f'{{}} {'NOT ' if value_data['negated'] is True else ""}IN ({", ".join("%s" for _ in value_data["value"])})'
+                for _, value_data in all_conditions.items()
+                ]
+            )
+        ) \
         .format(*[sql.Identifier(key) for key in all_conditions.keys()])
         if order_by is not None:
             query += SQL(" ORDER BY {col} {direction}").format(col=sql.Identifier(order_by[0]), direction=sql.SQL(order_by[1].value))
         # get data based on answer type
-        data = fetch(query=query, type_of_answer=type_of_answer, variables=tuple(i["value"] for i in all_conditions.values()), commit=False)
+        variabs = []
+        for i in all_conditions.values():
+            if isinstance(i["value"], list):
+                variabs.extend(i["value"])
+            else:
+                variabs.append(i["value"])
+        variabs = tuple(variabs)
+        data = fetch(query=query, type_of_answer=type_of_answer, variables=variabs, commit=False)
         if data is None and type_of_answer == ANSWER_TYPE.LIST_ANSWER: data = []
 
         # map the data to the columns if columns are explicitly specified

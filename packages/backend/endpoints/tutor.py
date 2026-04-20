@@ -66,6 +66,8 @@ def update_tutors():
         return response
 
     data = request.get_json()
+
+    # user_uuids to be added or removed
     user_uuids = data.get("tutors", None)
 
     if not user_uuids:
@@ -90,7 +92,7 @@ def update_tutors():
             mimetype="application/json")
         return response
 
-    # get information about users
+    # get information about users, that should be updated
     result = users.get_users(user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role", "user_uuid"])
     if result.is_error:
         response = Response(
@@ -102,7 +104,7 @@ def update_tutors():
     # clean result data
     tutors_data = result.data
     tutors_data = [{"id": i["id"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"], "user_role": UserRole(i["user_role"]), "user_uuid": i["user_uuid"]} for i in tutors_data]
-    user_ids = [i["id"] for i in tutors_data]
+    user_ids = [i["id"] for i in tutors_data] # ids of users, that should be changed
 
     # check, whether all users were found
     if len(tutors_data) != len(user_uuids):
@@ -128,7 +130,7 @@ def update_tutors():
         new_role = UserRole.USER
 
         # remove wrong users from tutor list
-        tutors_data = [{key: value for key, value in i.items() if key != "user_role"} for i in tutors_data if i["user_role"] == UserRole.TUTOR]
+        tutors_data = [{key: value for key, value in i.items() if key != "user_role"} for i in tutors_data if i["user_role"] == UserRole.TUTOR] # filter all users, that should be removed from tutor and are actually tutor
     else:
         if any(i["user_role"] == UserRole.EXTERN for i in tutors_data):
             response = Response(
@@ -165,7 +167,7 @@ def update_tutors():
             mimetype="application/json")
         return response
 
-    query = sql.SQL("SELECT id FROM sessions WHERE user_id IN ({user_ids})").format(user_ids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
+    query = sql.SQL("SELECT id FROM sessions WHERE user_id IN ({uids})").format(uids=sql.SQL(', ').join(sql.Placeholder() * len(user_ids)))
     result = db.custom_call(
         query=query,
         type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
