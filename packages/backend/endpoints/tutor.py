@@ -103,7 +103,7 @@ def update_tutors():
 
     # clean result data
     tutors_data = result.data
-    tutors_data = [{"id": i["id"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"], "user_role": UserRole(i["user_role"]), "user_uuid": i["user_uuid"]} for i in tutors_data]
+    tutors_data = [{"id": i["id"], "firstName": i["first_name"], "lastName": i["last_name"], "residence": i["residence"], "user_role": UserRole(i["user_role"]), "user_uuid": str(i["user_uuid"])} for i in tutors_data]
     user_ids = [i["id"] for i in tutors_data] # ids of users, that should be changed
 
     # check, whether all users were found
