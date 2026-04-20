@@ -168,7 +168,8 @@ def update_hosts():
             status=404,
             mimetype="application/json")
         return response
-    application_id = result.data["stueble_id"]
+    # application_id = result.data["stueble_id"]
+    application_group = result.data["host_group"]
 
     # application_id is the id of the current stueble, therefore also delete the host priviledges from users
     result = users.get_users(user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role", "id"])
@@ -195,7 +196,7 @@ def update_hosts():
                             application_group=sql.Placeholder(),
                             user_uuids=sql.SQL(', ').join(sql.Placeholder() * len(user_uuids))
                         )
-        variables = [application_id] + user_uuids
+        variables = [application_group] + user_uuids
     else:
         query = sql.SQL("WITH selected_users AS (SELECT id FROM users WHERE user_uuid IN ({user_uuids})) \
                         DELETE FROM stueble.applicants \
@@ -203,7 +204,7 @@ def update_hosts():
                             application_group=sql.Placeholder(),
                             user_uuids=sql.SQL(', ').join(sql.Placeholder() * len(user_uuids))
                         )
-        variables = user_uuids + [application_id]
+        variables = user_uuids + [application_group]
 
     result = db.custom_call(query=query, type_of_answer=db.ANSWER_TYPE.NO_ANSWER, variables=variables)
 

@@ -158,7 +158,7 @@ def update_tutors():
     """).format(new_role=sql.Placeholder(), user_uuids=sql.SQL(', ').join(sql.Placeholder() * len(user_uuids)))
     result = db.custom_call(query=query,
                             type_of_answer=db.ANSWER_TYPE.LIST_ANSWER,
-                            variables=[new_role.value] + [i["id"] for i in tutors_data])
+                            variables=[new_role.value] + [i["user_uuid"] for i in tutors_data])
 
     if result.is_error:
         response = Response(

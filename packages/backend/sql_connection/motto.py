@@ -78,7 +78,7 @@ def get_info(date: date | None=None) -> FuncRes:
 
     result = db.select(
         table="stueble.motto",
-        columns=["id", "motto", "date_of_time", "description"],
+        columns=["id", "motto", "date_of_time", "description", "host_group"],
         type_of_answer=db.ANSWER_TYPE.SINGLE_ANSWER,
         **arguments # type: ignore
     )
