@@ -93,7 +93,7 @@ def update_tutors():
         return response
 
     # get information about users, that should be updated
-    result = users.get_users(user_uuids=user_uuids, keywords=["user_uuid", "first_name", "last_name", "residence", "user_role", "user_uuid"])
+    result = users.get_users(user_uuids=user_uuids, keywords=["id", "first_name", "last_name", "residence", "user_role", "user_uuid"])
     if result.is_error:
         response = Response(
             response=json.dumps({"code": 500, "message": str(result.error)}),
