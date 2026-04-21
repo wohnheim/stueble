@@ -1,4 +1,5 @@
 # TODO: update_hosts_tutors doesn't remove sessions correctly
+# TODO: add and remove ws from rooms when user roles change (up and down)
 import asyncio
 import base64
 import os
@@ -36,6 +37,7 @@ WS_PORT = os.getenv("WS_PORT") or 3001
 
 # initialize variables
 host_upwards_room = set()
+tutor_upwards_room = set()
 admins_room = set()
 
 connections = set()
@@ -46,6 +48,7 @@ message_log = {}
 # set room datatype
 class Room(str, Enum):
     HOST_UPWARDS = "host_upwards"
+    TUTOR_UPWARDS = "tutor_upwards"
     ADMINS = "admins"
 
 def update_hosts_tutors(hosts: list[str], method: Literal["add", "remove"]):
@@ -363,7 +366,8 @@ async def handle_ws(websocket):
         pass
     finally:
         host_upwards_room.discard(websocket)
-        admins_room.discard(session_id)
+        admins_room.discard(websocket)
+        tutor_upwards_room.discard(websocket)
         connections.discard(websocket)
         sid_to_websocket.pop(session_id, None)
 
@@ -479,6 +483,8 @@ async def connect(websocket):
 
         if user_role == UserRole.ADMIN:
             admins_room.add(websocket)
+        if user_role == UserRole.TUTOR:
+            tutor_upwards_room.add(websocket)
 
         # can only be "authorized": True but still checking
         await send(websocket=websocket, event="status", data= {
@@ -506,6 +512,7 @@ async def disconnect(websocket):
         return
     host_upwards_room.discard(websocket)
     admins_room.discard(websocket)
+    tutor_upwards_room.discard(websocket)
     connections.discard(websocket)
     sid_to_websocket.pop(session_id, None)
     del websockets_info[id(websocket)]
@@ -970,7 +977,7 @@ async def update_stueble_selection_draft(data):
     for sid in session_ids:
         websocket = get_websocket_by_sid(sid=sid)
         if websocket is not None:
-            asyncio.run(send(websocket=websocket, event="stueble_selection", data=data))
+            asyncio.run(send(websocket=websocket, event="stuebleSelection", data=data, room=Room.TUTOR_UPWARDS, skip_sid=sid))
 
 # Start server
 async def main():

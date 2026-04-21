@@ -301,6 +301,7 @@ def submit_application_selection():
             status=403,
             mimetype="application/json")
         return response
+    user_uuid = result.data["user_uuid"]
 
     data = request.get_json()
     application_uuids = data.get("application_ids", None)
@@ -371,6 +372,17 @@ def submit_application_selection():
             mimetype="application/json")
         return response
     
+    result = db.select(
+        table="stueble.applications",
+        columns=["uuid"],
+        conditions={"id": informing},
+        type_of_answer=db.ANSWER_TYPE.LIST_ANSWER
+    )
+
+    if result.is_success:
+        application_uuids = [str(i[0]) for i in result.data]
+        asyncio.run(ws.broadcast(event="stuebleSelection", data=application_uuids, room=ws.Room.TUTOR_UPWARDS, skip_sid=session_id))
+
     return Response(
         response=json.dumps({"code": 200, "message": "Application selection submitted successfully", "data": data}),
         status=200,
