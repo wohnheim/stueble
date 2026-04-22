@@ -22,6 +22,7 @@ from backend.sql_connection import (
 from backend.database import database as db
 from backend.mail_assets import templates
 from backend.sql_connection.common_functions import check_permissions
+from backend.datatypes.stueble_types import UserRole, EventType, FrontendUserRole
 from backend.basic_functions import *
 
 

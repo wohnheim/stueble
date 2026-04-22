@@ -69,6 +69,8 @@ def add_user(user_role: UserRole,
         if email is not None: arguments["email"] = email.email
         if password_hash is not None: arguments["password_hash"] = password_hash
         if user_name is not None: arguments["user_name"] = user_name
+    else:
+        arguments["password_algorithm"] = None # type: ignore
 
     result = db.insert(
         table="users",

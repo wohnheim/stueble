@@ -201,7 +201,7 @@ def update_tutors():
         return response
 
     response = Response(
-        response=json.dumps(tutors_data),
+        response=json.dumps([{k if k != "user_uuid" else "id": v for k, v in i.items()} for i in tutors_data]),
         status=201,
         mimetype="application/json")
     return response
