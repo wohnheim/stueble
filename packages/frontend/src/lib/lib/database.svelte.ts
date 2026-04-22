@@ -228,7 +228,7 @@ class Database {
   addGuestIntern = async (guest: GuestIntern) => {
     const { extern, ...guestWithoutExtern } = guest;
 
-    await this.database().put("guestsIntern", guestWithoutExtern);
+    await this.database().put("guestsIntern", $state.snapshot(guestWithoutExtern));
 
     const index = this.guests.findIndex((g) => guest.id == g.id);
     if (index !== -1) this.guests.splice(index, 1);
@@ -239,7 +239,7 @@ class Database {
   addGuestExtern = async (guest: GuestExtern) => {
     const { extern, ...guestWithoutExtern } = guest;
 
-    await this.database().put("guestsExtern", guestWithoutExtern);
+    await this.database().put("guestsExtern", $state.snapshot(guestWithoutExtern));
 
     const index = this.guests.findIndex((g) => guest.id == g.id);
     if (index !== -1) this.guests.splice(index, 1);
@@ -257,7 +257,7 @@ class Database {
   /* Hosts */
 
   addHost = async (host: HostOrTutor) => {
-    await this.database().put("hosts", host);
+    await this.database().put("hosts", $state.snapshot(host));
 
     const index = this.hosts.findIndex((h) => host.id == h.id);
     if (index !== -1) this.hosts.splice(index, 1);
@@ -287,7 +287,7 @@ class Database {
   /* Tutors */
 
   addTutor = async (tutor: HostOrTutor) => {
-    await this.database().put("tutors", tutor);
+    await this.database().put("tutors", $state.snapshot(tutor));
 
     const index = this.tutors.findIndex((t) => tutor.id == t.id);
     if (index !== -1) this.tutors.splice(index, 1);
@@ -323,7 +323,7 @@ class Database {
       timestamp: Date.now() / 1000,
     }) as StuebleDB["buffer"]["value"];
 
-    const key = await this.database().put("buffer", timestamped);
+    const key = await this.database().put("buffer", $state.snapshot(timestamped));
     this.buffer[key] = timestamped;
   };
 
