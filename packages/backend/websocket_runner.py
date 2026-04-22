@@ -32,9 +32,8 @@ def listen_to_db(connection: Connection, cursor: Cursor[TupleRow]):
     while True:
         if select.select([connection], [], [], 0.5) == ([], [], []):
             continue
-        connection.poll()
-        while connection.notifies:
-            notify = connection.notifies.pop(0)
+
+        for notify in connection.notifies():
             data = json.loads(notify.payload)
             if not set(data.keys()) == {"event", "user_id", "stueble_id"}:
                 # TODO catch this, e.g. by sending an error message to api.py
