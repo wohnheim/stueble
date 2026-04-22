@@ -121,24 +121,26 @@ BEGIN
                 RAISE EXCEPTION 'Maximum capacity of guests for stueble % already reached; code: 400', NEW.stueble_id;
             END IF;
 
-            CASE COALESCE((SELECT user_role FROM users WHERE id = NEW.invited_by), 'extern') AS user_role
-                -- handle admin different thatn extern, since behaviour might change
-                WHEN 'admin' THEN
-                    maximum_invitees := 0; -- admins are not allowed to invite, so this case should actually never happen
-                    RAISE EXCEPTION 'Admins are not allowed to invite users; code: 400';
-                    /*
-                WHEN 'host' THEN -- TODO: change this since it is wrong
-                    maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_invites_per_host'), 0);
-                    */
-                WHEN 'tutor' THEN
-                    maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_invites_per_tutor'), 0);
-                WHEN 'user' THEN
-                    maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_invites_per_user'), 0);
-                ELSE
-                    maximum_invitees := 0; -- externs are not allowed to invite, so this case should actually never happen
-                    RAISE EXCEPTION 'Externs are not allowed to invite users; code: 400';
-            END CASE;
-
+            IF NEW.invited_by IS NOT NULL
+            THEN
+                CASE COALESCE((SELECT user_role FROM users WHERE id = NEW.invited_by), 'extern') AS user_role
+                    -- handle admin different than extern, since behaviour might change
+                    WHEN 'admin' THEN
+                        maximum_invitees := 0; -- admins are not allowed to invite, so this case should actually never happen
+                        RAISE EXCEPTION 'Admins are not allowed to invite users; code: 400';
+                        /*
+                    WHEN 'host' THEN -- TODO: change this since it is wrong
+                        maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_invites_per_host'), 0);
+                        */
+                    WHEN 'tutor' THEN
+                        maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_invites_per_tutor'), 0);
+                    WHEN 'user' THEN
+                        maximum_invitees := COALESCE((SELECT CAST(value AS INTEGER) FROM configurations WHERE key = 'maximum_invites_per_user'), 0);
+                    ELSE
+                        maximum_invitees := 0; -- externs are not allowed to invite, so this case should actually never happen
+                        RAISE EXCEPTION 'Externs are not allowed to invite users; code: 400';
+                END CASE;
+            END IF;
             /*
             IF COALESCE((SELECT user_role FROM users WHERE id = NEW.invited_by), 'extern') != 'tutor'
             THEN
