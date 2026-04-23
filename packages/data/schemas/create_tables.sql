@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     residence RESIDENCE NULL CHECK ((user_role = 'extern') = (residence IS NULL)),
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-    password_hash VARCHAR(255) CHECK ((user_role = 'extern') = (password_hash IS NULL)),
+    password_hash VARCHAR(255) CHECK ((user_role = 'extern' AND password_hash IS NULL) OR user_role != 'extern'),
     password_salt VARCHAR(64) CHECK ((password_algorithm = 'bcrypt' OR password_hash IS NULL) = (password_salt IS NULL)),
     password_algorithm VARCHAR(20) CHECK (num_nulls(password_hash, password_algorithm) IN (0, 2)) DEFAULT 'bcrypt',
     email VARCHAR(255) CHECK (email ~ '^[^@]+@[^@]+\.[^@]+$' OR (user_role = 'extern' AND email IS NULL)),
