@@ -74,7 +74,7 @@ def remove_guest(user_id: int, stueble_id: int) -> FuncRes:
             FROM stueble.events
                 LEFT JOIN stueble.motto sm ON sm.id = stueble.events.stueble_id
             WHERE ((sm.date_of_time >= CURRENT_DATE)
-                OR (CURRENT_TIME <= '06:00:00' AND sm.date_of_time = CURRENT_DATE - 1))
+                OR (CURRENT_TIME < '06:00:00' AND sm.date_of_time = CURRENT_DATE - 1))
                         AND stueble.events.user_id = %s
                         AND stueble.events.event_type IN ('add', 'remove')
             ORDER BY stueble.events.stueble_id, stueble.events.submitted DESC 
