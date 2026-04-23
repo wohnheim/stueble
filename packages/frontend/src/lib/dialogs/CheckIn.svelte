@@ -63,6 +63,7 @@
       class="chip round not-clickable {guest.verified
         ? 'green black-text'
         : 'error-container'}"
+      tabindex="-1"
     >
       {!guest.verified ? "Überprüfen" : "Bestätigt"}
     </button>

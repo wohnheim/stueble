@@ -6,15 +6,12 @@
   import { ui_object, type RouteApplication } from "$lib/lib/UI.svelte";
   import { capitalizeFirstLetter } from "$lib/lib/utils";
 
-  let showPriorities = $state(false);
-
   let motto = $state("");
   let mottoValid = $state(true);
 
   let dates = $state<Date[]>([]);
   let selectedDates = $state<[Date, number][]>([]);
 
-  let dateInputCheckedValues = $state<boolean[]>([]);
   let dateInputNumberValues = $state<(number | undefined)[]>([]);
 
   const onDateInput = (
@@ -23,34 +20,16 @@
       currentTarget: EventTarget & HTMLInputElement;
     },
   ) => {
-    if (showPriorities) {
-      const value = event.currentTarget.valueAsNumber;
-      const selected_index = selectedDates.findIndex(
-        (d) => d[0].getTime() === dates[index]?.getTime(),
-      );
+    const value = event.currentTarget.valueAsNumber;
+    const selected_index = selectedDates.findIndex(
+      (d) => d[0].getTime() === dates[index]?.getTime(),
+    );
 
-      if (!value || Number.isNaN(value)) {
-        if (selected_index != -1) selectedDates.splice(selected_index, 1);
-        dateInputCheckedValues[index] = false;
-      } else {
-        if (selected_index != -1) selectedDates[selected_index]![1] = value;
-        else selectedDates.push([dates[index]!, value]);
-        dateInputCheckedValues[index] = true;
-      }
+    if (!value || Number.isNaN(value)) {
+      if (selected_index != -1) selectedDates.splice(selected_index, 1);
     } else {
-      const value = event.currentTarget.checked;
-      const selected_index = selectedDates.findIndex(
-        (d) => d[0].getTime() === dates[index]?.getTime(),
-      );
-
-      if (!value) {
-        if (selected_index != -1) selectedDates.splice(selected_index, 1);
-        dateInputNumberValues[index] = undefined;
-      } else {
-        if (selected_index != -1) selectedDates[selected_index]![1] = 1;
-        else selectedDates.push([dates[index]!, 1]);
-        dateInputNumberValues[index] = 1;
-      }
+      if (selected_index != -1) selectedDates[selected_index]![1] = value;
+      else selectedDates.push([dates[index]!, value]);
     }
   };
 
@@ -74,15 +53,20 @@
   });
 
   onMount(async () => {
-    dateInputCheckedValues.length = dates.length;
     dateInputNumberValues.length = dates.length;
 
     dates = await apiClient("http").getDates();
   });
 </script>
 
-<div class="margin">
-  <h6 class="centered-text">Termin-Anmeldung</h6>
+<div id="scrollable" class="margin">
+  <div class="row wrap center-align">
+    <h6>Termin-Anmeldung</h6>
+
+    <button class="chip round not-clickable error-container" tabindex="-1">
+      Deadline bis Montag, 27.04.2026 12:00 Uhr
+    </button>
+  </div>
 
   <p>
     Auf dieser Seite kannst du deine WG für einen Stüble-Termin anmelden. Gib
@@ -107,48 +91,47 @@
 
   <fieldset>
     <legend>Freie Stüble-Termine</legend>
+    <p>
+      Hier kannst du deine präferierten Stüble-Termine auswählen. Der Termin mit
+      Priorität 1 ist dein Lieblingstermin, die anderen Termine folgen
+      aufsteigend. <br />
+      Außerdem muss jedem Termin eine andere Priorität zugewiesen werden. Falls dir
+      ein Termin nicht passt, kannst du das Feld einfach leer lassen.
+    </p>
+
     <nav class="wrap">
-      {#if showPriorities}
-        {#each dates as date, index}
-          <label class="number row">
-            <div class="field tiny border">
-              <input
-                type="number"
-                min="1"
-                max={dates.length}
-                bind:value={dateInputNumberValues[index]}
-                oninput={(e) => onDateInput(index, e)}
-              />
-            </div>
-            <span>{date.toLocaleDateString("de-DE")}</span>
-          </label>
-        {/each}
-      {:else}
-        {#each dates as date, index}
-          <label class="checkbox">
+      {#each dates as date, index}
+        <label class="number row">
+          <div class="field tiny border">
             <input
-              type="checkbox"
-              bind:checked={dateInputCheckedValues[index]}
+              type="number"
+              min="1"
+              max={dates.length}
+              bind:value={dateInputNumberValues[index]}
               oninput={(e) => onDateInput(index, e)}
             />
-            <span>{date.toLocaleDateString("de-DE")}</span>
-          </label>
-        {/each}
-      {/if}
+          </div>
+          <span>{date.toLocaleDateString("de-DE")}</span>
+        </label>
+      {/each}
     </nav>
-
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_missing_attribute -->
-    <a
-      id="priorities"
-      class="primary-text"
-      onclick={() => (showPriorities = !showPriorities)}
-      >Prioritäten {showPriorities ? "ausblenden" : "einblenden"}</a
-    >
   </fieldset>
 
   <fieldset>
     <legend>Wirt*innen</legend>
+    <p>
+      Mit dem unten stehenden Link kannst du die ausschenkenden WG-Mitglieder
+      angeben. Achtung, du musst mindestens eine Person angeben.
+    </p>
+
     <ul>
+      <li>
+        {ui_object.user?.firstName}
+        {ui_object.user?.lastName} ({ui_object.user
+          ? capitalizeFirstLetter(ui_object.user.residence)
+          : ""})
+      </li>
+
       {#each ui_object.applicationHosts as host}
         <li>
           {host.firstName}
@@ -169,12 +152,20 @@
   <button
     id="send-button"
     class="center"
-    disabled={motto == "" || ui_object.applicationHosts.length == 0}
+    disabled={motto == "" ||
+      selectedDates.length == 0 ||
+      ui_object.applicationHosts.length == 0}
     onclick={() =>
+      ui_object.user !== undefined &&
       apiClient("http")
         .submitApplication(
           motto,
-          ui_object.applicationHosts.map((h) => h.id),
+          ui_object.applicationHosts
+            .filter(
+              (h) => ui_object.user !== undefined && h.id != ui_object.user.id,
+            )
+            .map((h) => h.id)
+            .concat([ui_object.user.id]),
           selectedDates.filter((d) => d[1] >= 1),
         )
         .then(
@@ -193,6 +184,16 @@
 </div>
 
 <style>
+  #scrollable {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .not-clickable {
+    pointer-events: none;
+  }
+
   .field.tiny {
     --_input: 1.8rem;
   }
@@ -212,15 +213,7 @@
     padding: 0;
   }
 
-  #priorities {
-    margin-top: 14px;
-  }
-
   #send-button {
     margin-top: 32px;
-  }
-
-  .centered-text {
-    text-align: center;
   }
 </style>
