@@ -17,7 +17,7 @@
 | ---- | ------ |
 |  Couldn't send stueble status 500 zu 404 | DONE |
 |  Auswahl der Stüblebewerbungen: stueble_selection: Dict aus uuid, selected: boolean; UUID der Bewerbung und ob ausgewählt oder nicht | DONE |
-|  Änderung der Stübleauswahl an alle Tutoren mit Hinweis, welcher Tutor, was verändert hat | - |
+|  Änderung der Stübleauswahl an alle Tutoren mit Hinweis, welcher Tutor, was verändert hat | DONE |
 
 # Schema
 
