@@ -372,7 +372,11 @@ BEGIN
     SET group_hash = new_group_hash
     WHERE id = OLD.application_group;
     END IF;
-    RETURN NEW;
+    IF TG_OP = 'INSERT' THEN
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -390,7 +394,11 @@ BEGIN
     THEN
         RAISE EXCEPTION 'Applications,that have been selected for a stueble date, cannot be deleted or moved from one date to another; code: 400';
     END IF;
-    RETURN NEW;
+    IF TG_OP = 'UPDATE' THEN
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -436,12 +444,12 @@ CREATE OR REPLACE TRIGGER add_hosts
     AFTER INSERT ON stueble.applicants
     FOR EACH ROW EXECUTE FUNCTION add_hosts();
 
-CREATE OR REPLACE TRIGGER delete_applicants_trigger
-    AFTER DELETE ON stueble.applications
-    FOR EACH ROW EXECUTE FUNCTION delete_applications();
-
 CREATE OR REPLACE TRIGGER delete_applications_trigger
     AFTER DELETE ON stueble.applicants
+    FOR EACH ROW EXECUTE FUNCTION delete_applications();
+
+CREATE OR REPLACE TRIGGER delete_applicants_trigger
+    AFTER DELETE ON stueble.applications
     FOR EACH ROW EXECUTE FUNCTION delete_applicants();
 
 CREATE OR REPLACE TRIGGER check_application_group_or_hash_uniqueness_trigger
