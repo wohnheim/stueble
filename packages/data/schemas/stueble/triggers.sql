@@ -380,19 +380,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION update_applicants()
-RETURNS trigger AS $$
-BEGIN
-    RAISE EXCEPTION 'Applicants cannot be updated, only inserted and deleted; code: 400';
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION check_deletion_change()
 RETURNS trigger AS $$
 BEGIN
     IF OLD.id IN (SELECT application_id FROM stueble.dates) AND OLD.date_of_time <> NEW.date_of_time
     THEN
-        RAISE EXCEPTION 'Applications,that have been selected for a stueble date, cannot be deleted or moved from one date to another; code: 400';
+        RAISE EXCEPTION 'Applications, that have been selected for a stueble date, cannot be deleted or moved from one date to another; code: 400';
     END IF;
     IF TG_OP = 'UPDATE' THEN
         RETURN NEW;
@@ -434,11 +427,6 @@ CREATE OR REPLACE TRIGGER event_guest_change_trigger
 BEFORE INSERT OR UPDATE ON stueble.events
 FOR EACH ROW
 EXECUTE FUNCTION event_guest_change();
-
--- NOTE: DO NOT CHANGE THIS NAME AS IT WOULD CHANGE THE ORDER OF EXECUTION
-CREATE OR REPLACE TRIGGER aa_update_applicants_trigger
-    BEFORE UPDATE ON stueble.applicants
-    FOR EACH ROW EXECUTE FUNCTION update_applicants();
 
 CREATE OR REPLACE TRIGGER add_hosts
     AFTER INSERT ON stueble.applicants
