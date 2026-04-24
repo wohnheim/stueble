@@ -56,8 +56,8 @@ CREATE TABLE IF NOT EXISTS configurations (
 -- set default configuration values
 INSERT INTO configurations (key, value) VALUES
 ('maximum_guests_per_stueble', '150'),
-('maximum_invites_per_user', '2'),
-('maximum_invites_per_host', '3'),
+('maximum_invites_per_user', '3'),
+('maximum_invites_per_host', '4'),
 ('maximum_invites_per_tutor', '10'),
 ('application_deadline_winter_semester', '2024-10-01T23:59:59Z'),
 ('application_deadline_summer_semester', '2025-03-31T23:59:59Z');

@@ -372,14 +372,11 @@ BEGIN
     SET group_hash = new_group_hash
     WHERE id = OLD.application_group;
     END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION update_applicants()
-RETURNS trigger AS $$
-BEGIN
-    RAISE EXCEPTION 'Applicants cannot be updated, only inserted and deleted; code: 400';
+    IF TG_OP = 'INSERT' THEN
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -388,9 +385,13 @@ RETURNS trigger AS $$
 BEGIN
     IF OLD.id IN (SELECT application_id FROM stueble.dates) AND OLD.date_of_time <> NEW.date_of_time
     THEN
-        RAISE EXCEPTION 'Applications,that have been selected for a stueble date, cannot be deleted or moved from one date to another; code: 400';
+        RAISE EXCEPTION 'Applications, that have been selected for a stueble date, cannot be deleted or moved from one date to another; code: 400';
     END IF;
-    RETURN NEW;
+    IF TG_OP = 'UPDATE' THEN
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -427,21 +428,16 @@ BEFORE INSERT OR UPDATE ON stueble.events
 FOR EACH ROW
 EXECUTE FUNCTION event_guest_change();
 
--- NOTE: DO NOT CHANGE THIS NAME AS IT WOULD CHANGE THE ORDER OF EXECUTION
-CREATE OR REPLACE TRIGGER aa_update_applicants_trigger
-    BEFORE UPDATE ON stueble.applicants
-    FOR EACH ROW EXECUTE FUNCTION update_applicants();
-
 CREATE OR REPLACE TRIGGER add_hosts
     AFTER INSERT ON stueble.applicants
     FOR EACH ROW EXECUTE FUNCTION add_hosts();
 
-CREATE OR REPLACE TRIGGER delete_applicants_trigger
-    AFTER DELETE ON stueble.applications
-    FOR EACH ROW EXECUTE FUNCTION delete_applications();
-
 CREATE OR REPLACE TRIGGER delete_applications_trigger
     AFTER DELETE ON stueble.applicants
+    FOR EACH ROW EXECUTE FUNCTION delete_applications();
+
+CREATE OR REPLACE TRIGGER delete_applicants_trigger
+    AFTER DELETE ON stueble.applications
     FOR EACH ROW EXECUTE FUNCTION delete_applicants();
 
 CREATE OR REPLACE TRIGGER check_application_group_or_hash_uniqueness_trigger
