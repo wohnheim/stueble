@@ -800,7 +800,7 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
     invited_guests = None
     result = motto.get_info(date=date)
     if result.message.code == 404:
-        data = {"date": None, "registered": None, "present": None}
+        data = {"registered": False, "present": False}
         if user_role >= UserRole.TUTOR:
             data["invitedGuests"] = None
         await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
