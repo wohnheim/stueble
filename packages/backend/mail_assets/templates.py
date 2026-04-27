@@ -2,6 +2,7 @@ import io
 from pathlib import Path
 from typing import Annotated
 from psycopg import sql
+from datetime import datetime as dt
 
 from backend.datatypes.funcres import FuncRes, Status, Message
 from backend.database import database as db
@@ -158,7 +159,7 @@ def stueble_applications(user_id: int | str,
     for i in stueble_events:
         i["hosts"] = [(host[0], host[1]) for host in result.data if host[2] == i["id"]]
 
-    def block(first_block: bool, motto: str, description: str, hosts: list[tuple[str, str]]) -> str:
+    def block(motto: str, description: str, hosts: list[tuple[str, str]], date: str) -> str:
         """
         Returns the HTML block for a stueble event.
         
@@ -167,57 +168,61 @@ def stueble_applications(user_id: int | str,
             motto (str): The motto of the stueble event.
             description (str): The description of the stueble event.
             hosts (list[tuple[str, str]]): A list of hosts for the stueble event, where each host is a tuple of (first_name, last_name).
+            date (str): date of the stueble in the str format YYYY-MM-DD
         Returns:
             str: The HTML block for the stueble event."""
         
         return f"""
-<!-- Stüble Termin Block 1 -->
-		<div class="mx-auto max-w-3xl rounded-2xl border-2 p-6 px-15 {' mt-8' if first_block is False else ''}
-			border-teal-300 bg-emerald-400/15 shadow-[inset_0_0_20px_#000000]">
-			<h2 class="mb-8 text-2xl font-bold text-gray-200 text-center">20.02.2026</h2>
+<!-- Stüble Termin Block -->
+    <div style="
+  margin-left: auto;
+  margin-top: 2rem;
+  margin-right: auto;
+  max-width: 30rem;
+  border-radius: 1rem;
+  border: 2px solid #2dd4bf;
+  padding: 1.5rem;
+  padding-left: 3.75rem;
+  padding-right: 3.75rem;
+  background-color: rgba(52, 211, 153, 0.15);
+  box-shadow: inset 0 0 20px #000000;
+">
+        <h2 style="
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e5e7eb;
+    text-align: center;
+  ">20.06.2026</h2>
 
-			<!-- Stüble Motto -->
-			<div class="mr-14 font-normal px-10 mb-10">
-				<p class="font-bold text-white-200 text-xl mb-3">Details</p>
-				<div class="grid grid-cols-[auto,1fr] gap-y-1 gap-x-10">
-					<p>Motto: </p>
-					<p>{motto}</p>
-					<p>Beschreibung: </p>
-					<p>{description}</p>
+        <!-- Stüble Motto -->
+        <div
+            style="margin:0 auto 1.5rem auto; padding:0 auto 0 auto; font-weight: 400;">
+            <p style="font-weight: 700; color: #ffffff; font-size: 1.25rem; margin-bottom: 0.75rem;">Details</p>
+            <p><i>Motto:</i>&nbsp;&nbsp;&nbsp;<span>{motto}</span></p>
+            <p><i>Beschreibung:</i>&nbsp;&nbsp;&nbsp;<span>{description}</span></p>
+        </div>
 
-				</div>
-
-			</div>
-
-			<!-- Stüble Wirte -->
-			<div class="mr-5 font-normal px-10 mb-10">
-				<p class="font-bold text-white-200 text-xl mb-2">Stüble-Wirte</p>
-				<ul class="list-disc text-left text-gray-300 ml-5">
-					{"\n".join(f'<li>{host[0]} {host[1]}</li>' for host in hosts)}
-				</ul>
-			</div>
-		"""
+        <!-- Stüble Wirte -->
+        <div
+            style="margin: 0 auto 1.25rem auto;font-weight:400;padding:0 auto 0 auto;">
+            <p style="font-weight:700;color:#e5e7eb;font-size:1.25rem;margin-bottom:0.5rem;">Stüble-Wirte</p>
+            <ul style="list-style-type:disc;text-align:left;color:#d1d5db;margin-left:0.5rem;">
+                {"\n".join(f'<li>{host[0]} {host[1]}</li>' for host in hosts)}
+            </ul>
+        </div>
+    </div>"""
 
     body = f"""
-<!DOCTYPE html>
-
-<head>
-	<meta charset="utf-8">
-	<html lang="de">
-
-	</html>
-	<script src="https://cdn.tailwindcss.com"></script>
-	<title>Bewerbung auf Stüble-Termine</title>
-</head>
-
-<body style="background-color:#1e293b; color:#e5e7eb; font-weight:500;">
-  <div style="display:flex; align-items:center; justify-content:center; margin-top:1.75rem;">
-    <img src='cid:{image_data[0]["name"]}' alt="Stüble Logo" width="150" />
-  </div>
-  <div style="margin:0 auto 2.5rem auto; max-width:768px; padding:2.5rem; font-size:1.125rem;">
+<html lang="de">
+<body style="background-color: #1e293b; text-align: center; font-family: Arial, sans-serif; padding: 20px; color: #e5e7eb; font-weight:500;">
+        <div>
+            <img src="cid:{image_data[0]["name"]}" alt="Stüble Logo" width="150">
+    </div>
+  <div style="margin:0 auto 1.5rem auto; max-width:768px; padding:1.5rem; font-size:1.125rem;">
     Hallo {first_name} {last_name},<br/><br/>
-    Dir wurden folgende Stüble-Termine als Wirt zugeteilt.<br/>
-    Zusätzlich darfst Du deswegen das gesamte Semester über 3 anstatt 2 Gäste zu Stüble-Terminen einladen.<br/><br/>
+    Dir wurden folgende Stüble-Termine als Wirt zugeteilt (siehe unten).<br/>
+    Zusätzlich darfst Du deswegen das gesamte Semester über 4 anstatt 3 Gäste zu Stüble-Terminen einladen.<br/><br/>
     Wir freuen uns auf Dich.<br/>
     Dein Tutoren-Team <br/><br/>
     <span style="font-size:12px;">
@@ -227,8 +232,7 @@ def stueble_applications(user_id: int | str,
       </a> mit.
     </span>
   </div>
-</body>
-    {"\n".join(block(first_block=index == 0, motto=event["motto"], description=event["description"], hosts=event["hosts"]) for index, event in enumerate(stueble_events))}
+    {"\n".join(block(motto=event["motto"], description=event["description"], hosts=event["hosts"], date=event["date_of_time"]) for index, event in enumerate(stueble_events))}
 </body>
 """
    
