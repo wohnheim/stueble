@@ -55,7 +55,10 @@
   onMount(async () => {
     dateInputNumberValues.length = dates.length;
 
-    dates = await apiClient("http").getDates();
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDay())
+
+    dates = (await apiClient("http").getDates()).filter(d => d >= today);
   });
 </script>
 
@@ -63,8 +66,8 @@
   <div class="row wrap center-align">
     <h6>Termin-Anmeldung</h6>
 
-    <button class="chip round not-clickable error-container" tabindex="-1">
-      Deadline bis Montag, 27.04.2026 12:00 Uhr
+    <button class="chip round not-clickable orange7 black-text" tabindex="-1">
+      Nachmeldephase
     </button>
   </div>
 
