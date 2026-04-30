@@ -56,7 +56,7 @@
     dateInputNumberValues.length = dates.length;
 
     const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDay())
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
     dates = (await apiClient("http").getDates()).filter(d => d >= today);
   });
