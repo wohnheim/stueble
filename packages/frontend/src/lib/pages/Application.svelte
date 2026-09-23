@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { PUBLIC_REGISTRATION_DEADLINE } from "$env/static/public";
 
   import { apiClient } from "$lib/api/client";
   import { error } from "$lib/lib/error";
   import { ui_object, type RouteApplication } from "$lib/lib/UI.svelte";
   import { capitalizeFirstLetter } from "$lib/lib/utils";
+
+  let now = $state<Date>();
+  const registrationDeadline = new Date(PUBLIC_REGISTRATION_DEADLINE);
 
   let motto = $state("");
   let mottoValid = $state(true);
@@ -55,10 +59,10 @@
   onMount(async () => {
     dateInputNumberValues.length = dates.length;
 
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    dates = (await apiClient("http").getDates()).filter(d => d >= today);
+    dates = (await apiClient("http").getDates()).filter((d) => d >= today);
   });
 </script>
 
@@ -66,9 +70,27 @@
   <div class="row wrap center-align">
     <h6>Termin-Anmeldung</h6>
 
-    <button class="chip round not-clickable orange7 black-text" tabindex="-1">
-      Nachmeldephase
-    </button>
+    {#if now !== undefined}
+      {#if registrationDeadline <= now}
+        <button
+          class="chip round not-clickable orange7 black-text"
+          tabindex="-1"
+        >
+          Nachmeldephase
+        </button>
+      {:else}
+        <button class="chip round not-clickable error-container" tabindex="-1">
+          Deadline bis {registrationDeadline.toLocaleString("de-DE", {
+            weekday: "long",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "numeric",
+            minute: "2-digit",
+          })} Uhr
+        </button>
+      {/if}
+    {/if}
   </div>
 
   <p>
