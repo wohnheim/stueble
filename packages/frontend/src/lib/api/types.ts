@@ -97,7 +97,7 @@ export type Capabilities = z.infer<typeof status>["data"]["capabilities"];
 export const stuebleStatus = z.object({
   event: constant("stuebleStatus"),
   data: z.object({
-    date: z.iso.date(),
+    date: z.iso.date().optional(),
     registrationStartsAt: z.iso.datetime().optional(),
     registered: z.boolean(),
     present: z.boolean(),
@@ -199,10 +199,12 @@ export const requestMotto = z.object({
 export const motto = z.object({
   event: constant("motto"),
   reqId,
-  data: z.object({
-    motto: z.string(),
-    description: z.string(),
-  }),
+  data: z.optional(
+    z.object({
+      motto: z.string(),
+      description: z.string(),
+    }),
+  ),
 });
 
 /* Operation: requestQRCode */

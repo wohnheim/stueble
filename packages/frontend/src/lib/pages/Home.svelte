@@ -24,97 +24,107 @@
   {/if}
 
   {#if ui_object.status?.date !== undefined}
-    <p>
-      Das Motto am <span class="primary-text bold"
-        >{ui_object.status.date.toLocaleDateString("de-DE")}
-      </span> lautet:
-    </p>
-  {:else}
-    <p>Das Motto lautet:</p>
-  {/if}
+    {#if settings.settings["motto"] !== undefined}
+      <p>
+        Das Motto am <span class="primary-text bold"
+          >{ui_object.status.date.toLocaleDateString("de-DE")}
+        </span> lautet:
+      </p>
 
-  <h5 class="primary-text bold medium-margin">{settings.settings["motto"]}</h5>
-
-  {#if settings.settings["description"]}
-    {#if !extended}
-      <div id="partial-text" class="no-margin row wrap center-align">
-        <p>
-          {settings.settings["description"]
-            ?.split("\n")
-            .at(0)
-            ?.split(" ", 7)
-            .join(" ")}
-        </p>
-        <button class="chip fill round" onclick={() => (extended = true)}>
-          ...
-        </button>
-      </div>
+      <h5 class="primary-text bold medium-margin">
+        {settings.settings["motto"]}
+      </h5>
     {:else}
-      <p class="no-margin">
-        {#each settings.settings["description"]?.split("\n") as line}
-          {line}<br />
-        {/each}
+      <p>
+        Das nächste Stüble findet am <span class="primary-text bold"
+          >{ui_object.status.date.toLocaleDateString("de-DE")}
+        </span> statt.
       </p>
     {/if}
-  {/if}
 
-  {#if !hostCapability && !ui_object.status?.registered}
-    {#if ui_object.status !== undefined && (ui_object.status.registrationStartsAt === undefined || ui_object.status.registrationStartsAt <= new Date())}
-      <button
-        class="top-margin-small"
-        onclick={() => apiClient("http").addToGuestList()}
-      >
-        <i>event</i>
-        <span>Anmelden</span>
-      </button>
+    {#if settings.settings["description"]}
+      {#if !extended}
+        <div id="partial-text" class="no-margin row wrap center-align">
+          <p>
+            {settings.settings["description"]
+              ?.split("\n")
+              .at(0)
+              ?.split(" ", 7)
+              .join(" ")}
+          </p>
+          <button class="chip fill round" onclick={() => (extended = true)}>
+            ...
+          </button>
+        </div>
+      {:else}
+        <p class="no-margin">
+          {#each settings.settings["description"]?.split("\n") as line}
+            {line}<br />
+          {/each}
+        </p>
+      {/if}
     {/if}
 
-    <span class="expand"></span>
-  {:else}
-    {#if !hostCapability}
-      <p class="bold">Du bist angemeldet!</p>
-    {/if}
-
-    <div>
-      {#if !hostCapability}
+    {#if !hostCapability && !ui_object.status?.registered}
+      {#if ui_object.status !== undefined && (ui_object.status.registrationStartsAt === undefined || ui_object.status.registrationStartsAt <= new Date())}
         <button
           class="top-margin-small"
-          onclick={() => ui_object.openDialog({ mode: "qrcode" })}
+          onclick={() => apiClient("http").addToGuestList()}
         >
-          <i>qr_code</i>
-          <span>QR-Code anzeigen</span>
+          <i>event</i>
+          <span>Anmelden</span>
         </button>
       {/if}
-      {#if !adminCapability}
+
+      <span class="expand"></span>
+    {:else}
+      {#if !hostCapability}
+        <p class="bold">Du bist angemeldet!</p>
+      {/if}
+
+      <div>
+        {#if !hostCapability}
+          <button
+            class="top-margin-small"
+            onclick={() => ui_object.openDialog({ mode: "qrcode" })}
+          >
+            <i>qr_code</i>
+            <span>QR-Code anzeigen</span>
+          </button>
+        {/if}
+        {#if !adminCapability}
+          <button
+            class="top-margin-small secondary"
+            onclick={() =>
+              ui_object.routing.changePath({ main: "start", sub: "einladen" })}
+          >
+            <i>person_add</i>
+            <span>Externer Gast</span>
+          </button>
+        {/if}
+      </div>
+
+      <span class="expand"></span>
+
+      {#if ui_object.status !== undefined && ui_object.status.registered && !ui_object.status.present}
+        <p class="no-margin">Doch kein Bock?</p>
+
         <button
-          class="top-margin-small secondary"
-          onclick={() =>
-            ui_object.routing.changePath({ main: "start", sub: "einladen" })}
+          class="large-margin"
+          onclick={async () =>
+            (await ui_object.openDialog({
+              mode: "confirm",
+              title: "Von Stüble abmelden",
+              description: `Möchtest du dich wirklich vom Stüble abmelden? Eingeladene Gäste werden ebenfalls abgemeldet.${hostCapability ? " Beachte, dass Du hiermit deine Rechte als Wirt*in verlierst." : ""}`,
+            })) && apiClient("http").removeFromGuestList()}
         >
-          <i>person_add</i>
-          <span>Externer Gast</span>
+          <i>cancel</i>
+          <span>Abmelden</span>
         </button>
       {/if}
-    </div>
-
-    <span class="expand"></span>
-
-    {#if ui_object.status !== undefined && ui_object.status.registered && !ui_object.status.present}
-      <p class="no-margin">Doch kein Bock?</p>
-
-      <button
-        class="large-margin"
-        onclick={async () =>
-          (await ui_object.openDialog({
-            mode: "confirm",
-            title: "Von Stüble abmelden",
-            description: `Möchtest du dich wirklich vom Stüble abmelden? Eingeladene Gäste werden ebenfalls abgemeldet.${hostCapability ? " Beachte, dass Du hiermit deine Rechte als Wirt*in verlierst." : ""}`,
-          })) && apiClient("http").removeFromGuestList()}
-      >
-        <i>cancel</i>
-        <span>Abmelden</span>
-      </button>
     {/if}
+  {:else}
+    <span class="expand"></span>
   {/if}
 </div>
 

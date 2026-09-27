@@ -112,8 +112,13 @@
       // Store in IndexedDB
       await settings.set("user", JSON.stringify(ui_object.user));
 
-      await settings.set("motto", mottoRes.motto);
-      await settings.set("description", mottoRes.description);
+      if (mottoRes !== undefined) {
+        await settings.set("motto", mottoRes.motto);
+        await settings.set("description", mottoRes.description);
+      } else {
+        settings.remove("motto");
+        settings.remove("description");
+      }
     }
   };
 

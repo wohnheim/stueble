@@ -722,7 +722,8 @@ class WebSocketClient {
 
       if (
         ui_object.status !== undefined &&
-        ui_object.status.date.getTime() != newStatus.date.getTime()
+        newStatus.date !== undefined &&
+        ui_object.status.date?.getTime() != newStatus.date?.getTime()
       ) {
         apiClient("http")
           .getGuestList()

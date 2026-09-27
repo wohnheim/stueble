@@ -57,6 +57,13 @@ class Settings {
     this.settings[key] = val;
   };
 
+  remove = async (
+    key: SettingsDB["settings"]["key"],
+  ) => {
+    await this.database().delete("settings", key);
+    delete this.settings[key];
+  };
+
   clear = async () => this.database().clear("settings");
 
   private keys = async () => this.database().getAllKeys("settings");

@@ -556,12 +556,17 @@ async def request_motto(websocket, msg, req_id):
         date = None
 
     result = motto.get_info(date=date)
-    if result.is_error:
+    motto_data = None
+
+    if result.is_success:
+        motto_data = {"motto": result.data["motto"], "description": result.data["description"], "date": result.data["date"].isoformat()}
+
+    elif result.is_error and result.status != Status.PARTIAL_SUCCESS:
         await send(websocket=websocket, event="error", reqId=req_id, data=
             {"code": str(result.message.code) if result.message is not None else "500",
              "message": str(result.error)})
         return
-    motto_data = {"motto": result.data["motto"], "description": result.data["description"], "date": result.data["date"].isoformat()}
+
     await send(websocket=websocket, event="motto", reqId=req_id, data=motto_data)
     return
 

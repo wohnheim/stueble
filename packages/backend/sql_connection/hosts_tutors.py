@@ -84,6 +84,7 @@ def get_hosts_tutors(session_id: str, path: str, date: date | None = None) -> Fu
 
         # through marking as full_success an empty list will be returned in backend/api/host.py - get_hosts_tutors
         if result.message.code == 404:
+            response.message.code = 200
             response._data = []
             response._status = Status.FULL_SUCCESS
         else:

@@ -70,7 +70,7 @@ export enum WohnheimType {
 export type StuebleStatus = Overwrite<
   StuebleStatusUnparsed,
   {
-    date: Date;
+    date?: Date;
     registrationStartsAt?: Date;
   }
 >;

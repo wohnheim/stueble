@@ -94,10 +94,9 @@ def get_info(date: date | None=None) -> FuncRes:
         )
     if result.data is None:
         return FuncRes(
-            error="no stueble party found",
-            status=Status.FULL_ERROR,
-            message=Message(name="Get Info Error",
-                            type="error",
+            status=Status.PARTIAL_SUCCESS,
+            message=Message(name="Get Info Partial Success",
+                            type="success",
                             category="Get Info",
                             code=404)
         )
