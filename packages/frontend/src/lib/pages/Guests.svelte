@@ -206,11 +206,11 @@
   }
 
   #search.field > a#left-button {
-    inset: 50% auto auto 0.4rem;
+    inset: 0.5rem auto auto 0.4rem;
   }
 
   #search.field > a#right-button {
-    inset: 50% 0.4rem auto auto;
+    inset: 0.5rem 0.4rem auto auto;
   }
 
   #left-button,

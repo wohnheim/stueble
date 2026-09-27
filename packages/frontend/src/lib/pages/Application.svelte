@@ -66,7 +66,7 @@
   });
 </script>
 
-<div id="scrollable" class="margin">
+<div id="scrollable" class="padding">
   <div class="row wrap center-align">
     <h6>Termin-Anmeldung</h6>
 
