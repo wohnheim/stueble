@@ -149,7 +149,7 @@
       angeben. Achtung, du musst mindestens eine Person angeben.
     </p>
 
-    <ul>
+    <ul class="indentend-list">
       <li>
         {ui_object.user?.firstName}
         {ui_object.user?.lastName} ({ui_object.user
@@ -240,5 +240,10 @@
 
   #send-button {
     margin-top: 32px;
+  }
+
+  .indentend-list {
+    padding-left: 40px;
+    margin-bottom: 14px;
   }
 </style>

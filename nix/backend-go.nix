@@ -11,6 +11,6 @@
 
     src = ../packages/backend-go;
 
-    vendorHash = "sha256-KloM9UlIzup855HHvCc9EQzCZkDDTJCGPHkBmJsRFho=";
+    vendorHash = "sha256-sN2ZTy2XcQ1M/39+T6iKwRuJmf3MCPG+h4qu/fdTVbc=";
   };
 }

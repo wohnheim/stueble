@@ -18,9 +18,9 @@ export default async function (config: ConfigEnv): Promise<UserConfig> {
         injectManifest: {
           globPatterns: ["**/*.{js,css,html,woff2}"],
         },
-        manifest: (await import(
-          "./static/manifest.json"
-        )) as Partial<ManifestOptions>,
+        manifest: (await import("./static/manifest.json", {
+          with: { type: "json" },
+        })) as Partial<ManifestOptions>,
       }),
       viteStaticCopy({
         targets: [
