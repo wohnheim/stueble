@@ -89,9 +89,11 @@
     >
       <div>
         <p id="title">Motto dieser Woche</p>
-        <p id="subtitle">
-          {settings.settings["motto"]}
-        </p>
+        {#if settings.settings["motto"]}
+          <p id="subtitle">
+            {settings.settings["motto"]}
+          </p>
+        {/if}
       </div>
     </Button>
 
@@ -114,9 +116,11 @@
     >
       <div>
         <p id="title">Motto-Beschreibung dieser Woche</p>
-        <p id="subtitle">
-          {settings.settings["description"]}
-        </p>
+        {#if settings.settings["description"]}
+          <p id="subtitle">
+            {settings.settings["description"]}
+          </p>
+        {/if}
       </div>
     </Button>
 
@@ -173,9 +177,11 @@
       >
         <div>
           <p id="title">Maximale Personenanzahl</p>
-          <p id="subtitle">
-            {ui_object.config?.maximumGuestsPerStueble ?? ""}
-          </p>
+          {#if ui_object.config !== undefined}
+            <p id="subtitle">
+              {ui_object.config.maximumGuestsPerStueble}
+            </p>
+          {/if}
         </div>
       </Button>
     {/if}

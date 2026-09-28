@@ -48,13 +48,17 @@
   }
 
   #common {
+    & :global(p) {
+      margin: 0;
+    }
+
     & :global(#title) {
       font-size: large;
     }
 
     & :global(#subtitle) {
       font-size: small;
-      margin-top: -0.5rem;
+      margin-top: 0;
     }
   }
 </style>
