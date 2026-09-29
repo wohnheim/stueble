@@ -51,6 +51,17 @@
   </a>
 
   <a
+    class={ui_object.routing.path.main == "musikraum" ? "active" : ""}
+    onclick={() =>
+      ui_object.routing.changePath({
+        main: "musikraum",
+      })}
+  >
+    <i>music_note_2</i>
+    <span>Musikraum</span>
+  </a>
+
+  <a
     class={ui_object.routing.path.main == "einstellungen" ? "active" : ""}
     onclick={() =>
       ui_object.routing.changePath({

@@ -17,7 +17,7 @@ import { Routing } from "$lib/lib/routing.svelte";
 /* Site navigation */
 
 const routesTop = z.object({
-  main: z.enum(["credits"]),
+  main: z.enum(["credits", "musikraum"]),
 });
 
 const routeMain = z.object({

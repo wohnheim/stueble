@@ -13,6 +13,7 @@
   import Invite from "$lib/pages/Invite.svelte";
   import Credits from "$lib/pages/Credits.svelte";
   import Application from "$lib/pages/Application.svelte";
+  import Musikraum from "$lib/pages/Musikraum.svelte";
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
@@ -211,4 +212,6 @@
   <Settings />
 {:else if ui_object.routing.path.main == "credits"}
   <Credits />
+{:else if ui_object.routing.path.main == "musikraum"}
+  <Musikraum />
 {/if}

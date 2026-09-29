@@ -66,6 +66,21 @@
       <span>Stüble veranstalten</span>
     </li>
 
+    <li
+      class="wave round {ui_object.routing.path.main == 'musikraum'
+        ? 'fill'
+        : ''}"
+      onclick={() => {
+        ui_object.routing.changePath({
+          main: "musikraum",
+        });
+        ui(ui_object.menuDialog);
+      }}
+    >
+      <i>music_note_2</i>
+      <span>Musikraum</span>
+    </li>
+
     <div class="divider"></div>
     <span class="section">Einstellungen</span>
 
