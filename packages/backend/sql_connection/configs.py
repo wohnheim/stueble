@@ -5,7 +5,7 @@ from backend.sql_connection.ultimate_functions import clean_single_data
 from backend.datatypes.funcres import FuncRes, Status, Message
 
 
-def get_configuration(key: str) -> FuncRes:
+def get_configuration(key: str) -> FuncRes[Any, str]:
     """
     gets a configuration value from the table configurations
     Args:
@@ -39,7 +39,7 @@ def get_configuration(key: str) -> FuncRes:
                             code=404)
         )
     return FuncRes(
-            data=clean_single_data(result.data),
+            data=clean_single_data(result.data)['value'],
             status=Status.FULL_SUCCESS,
             message=Message(name="Get Configuration Success",
                             type="success",
@@ -47,7 +47,7 @@ def get_configuration(key: str) -> FuncRes:
                             code=200)
     )
 
-def get_all_configurations() -> FuncRes:
+def get_all_configurations() -> FuncRes[dict[str, Any], str]:
     """
     gets all configuration values from the table configurations
     Returns:
@@ -76,7 +76,7 @@ def get_all_configurations() -> FuncRes:
                             code=200)
     )
 
-def change_configuration(key: str, value: Any) -> FuncRes:
+def change_configuration(key: str, value: Any) -> FuncRes[str, str]:
     """
     changes a configuration value from the table configurations
     Args:
@@ -117,7 +117,7 @@ def change_configuration(key: str, value: Any) -> FuncRes:
                             code=200)
     )
 
-def change_multiple_configurations(configurations: dict[str, Any]) -> FuncRes:
+def change_multiple_configurations(configurations: dict[str, Any]) -> FuncRes[str, str]:
     """
     changes multiple configuration values from the table configurations
     Args:
@@ -127,6 +127,7 @@ def change_multiple_configurations(configurations: dict[str, Any]) -> FuncRes:
         result = change_configuration(key, value)
         if result.is_error:
             return result
+
     return FuncRes(
         data=f"changed {len(configurations)} values",
         status=Status.FULL_SUCCESS,

@@ -22,7 +22,7 @@ from psycopg import sql
 from backend.sql_connection.common_functions import check_permissions
 from backend.datatypes.stueble_types import UserRole, VerificationMethod, valid_verification_method, get_leq_roles
 from backend.datatypes.funcres import FuncRes, Message, Status
-from backend.sql_connection import events, sessions, users, motto
+from backend.sql_connection import configs, events, sessions, users, motto
 from backend.database import database as db
 from backend import hash_pwd as hp
 
@@ -842,11 +842,19 @@ async def stueble_status(session_id: str | int, date: datetime.date | None=None,
         invited_guests = result.data
         invited_guests = [{snake_to_camel_case(key) if key != "user_uuid" else "id": value for key, value in guest.items()} for guest in invited_guests]
 
-    date = date.isoformat() # type: ignore
+    registration_duration = configs.get_configuration("stueble_registration_duration")
 
-    data = {"date": date, "registered": registered, "present": present}
+    data = {"date": date.isoformat(), "registered": registered, "present": present}
     if invited_guests is not None:
         data["invitedGuests"] = invited_guests
+    if registration_duration.is_success:
+        stueble_datetime = datetime.datetime.combine(date, datetime.time(22), ZoneInfo("Europe/Berlin")) # Assert that stueble starts at 22 o'clock
+        registration_duration = int(registration_duration.data)
+
+        if registration_duration > 0:
+            data["registrationStartsAt"] = (stueble_datetime - datetime.timedelta(0, 0, 0, 0, 0, registration_duration)).isoformat()
+        else:
+            data["registrationStartsAt"] = (stueble_datetime + datetime.timedelta(0, 0, 0, 0, 0, registration_duration * -1)).isoformat()
 
     await broadcast(event="stuebleStatus", data=data, room=user_room, skip_sid=skip_sid)
     return FuncRes(
